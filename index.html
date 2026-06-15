@@ -1,0 +1,860 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <title>Sausage the Seal: Arctic Math Adventure</title>
+
+  <!-- PWA manifest -->
+  <link rel="manifest" href="manifest.json">
+
+  <!-- iOS PWA support -->
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <meta name="apple-mobile-web-app-title" content="Sausage Seal">
+  <link rel="apple-touch-icon" href="icon-192.png">
+
+  <!-- Theme color (Android status bar) -->
+  <meta name="theme-color" content="#27c7de">
+
+  <!-- Description for stores -->
+  <meta name="description" content="Help Sausage the Seal rescue friends by solving maths problems across the Arctic!">
+
+  <link rel="stylesheet" href="styles.css">
+  <style>
+    /* Fallback: ensure profile screen is usable even if styles.css fails to load */
+    body { margin:0; font-family:"Trebuchet MS",Arial,sans-serif; }
+    .defs { position:absolute; width:0; height:0; overflow:hidden; }
+    .profile-screen { min-height:100vh; display:flex; align-items:center; justify-content:center; padding:20px; background:linear-gradient(160deg,#b0eaff,#d8f8ff,#e8fff7); }
+    .profile-screen-inner { width:100%; max-width:480px; text-align:center; }
+    .profile-logo { width:80px; height:80px; background:#fff; border-radius:50%; border:4px solid #c9f5ff; display:flex; align-items:center; justify-content:center; margin:0 auto 14px; }
+    .profile-logo svg { width:52px; height:52px; }
+    .profile-screen-header h1 { font-size:2rem; color:#17446a; margin:0; }
+    .profile-screen-sub { color:#5f7487; font-weight:700; margin:4px 0 0; }
+    .profile-choose-label { font-size:1.1rem; font-weight:900; color:#17446a; margin:20px 0 12px; }
+    .profile-list { display:flex; flex-direction:column; gap:10px; margin-bottom:14px; }
+    .profile-empty { color:#5f7487; padding:28px; line-height:1.6; }
+    .profile-card { display:flex; background:rgba(255,255,255,.9); border-radius:18px; border:3px solid #fff; box-shadow:0 8px 22px rgba(24,84,125,.12); overflow:hidden; }
+    .profile-play-btn { flex:1; display:flex; align-items:center; gap:12px; padding:14px 16px; border:0; background:transparent; cursor:pointer; text-align:left; font:inherit; }
+    .profile-card-emoji { font-size:2.2rem; line-height:1; }
+    .profile-card-name { display:block; font-size:1.1rem; font-weight:900; color:#17446a; }
+    .profile-card-sub { display:block; font-size:.82rem; color:#5f7487; }
+    .profile-edit-btn { border:0; background:transparent; font-size:1.2rem; padding:14px; cursor:pointer; opacity:.6; }
+    .profile-add-btn { width:100%; border:3px dashed #7de8f8; border-radius:16px; background:rgba(255,255,255,.7); color:#17446a; font-size:1rem; font-weight:900; padding:16px; cursor:pointer; font:inherit; margin-top:4px; }
+    /* Modal */
+    .profile-modal-overlay { position:fixed; inset:0; z-index:60; background:rgba(16,60,100,.45); display:flex; align-items:center; justify-content:center; padding:20px; }
+    .profile-modal-overlay[hidden] { display:none; }
+    .profile-modal-box { background:#fff; border-radius:24px; padding:24px 20px 20px; width:100%; max-width:380px; box-shadow:0 28px 70px rgba(0,0,0,.22); border:4px solid #c9f5ff; text-align:center; }
+    .profile-modal-title { margin:0 0 14px; font-size:1.3rem; color:#17446a; }
+    .profile-emoji-row { display:flex; flex-wrap:wrap; gap:5px; justify-content:center; margin-bottom:12px; }
+    .emoji-pick-btn { font-size:1.5rem; border:3px solid transparent; border-radius:10px; padding:4px 5px; cursor:pointer; background:#f4f8fc; line-height:1; font:inherit; }
+    .emoji-pick-btn.selected { border-color:#27c7de; background:#d0f5ff; }
+    .profile-name-input { width:100%; border:3px solid #d8f0ff; border-radius:12px; padding:10px 14px; font-size:1.1rem; font-weight:800; color:#17446a; text-align:center; margin-bottom:12px; font:inherit; background:#f8fdff; box-sizing:border-box; }
+    .profile-modal-actions { display:flex; flex-direction:column; gap:8px; margin-bottom:8px; }
+    .profile-modal-actions button { width:100%; min-height:48px; border:0; border-radius:14px; font:inherit; font-size:1rem; font-weight:900; cursor:pointer; }
+    #pmSave, #pmCreate { background:linear-gradient(180deg,#4fd6a8,#2ab890); color:#fff; }
+    #pmDupe { background:linear-gradient(180deg,#e4fbff,#a9ecff); color:#17446a; }
+    #pmDelete { background:linear-gradient(180deg,#ffe0e0,#ffaaa8); color:#6d1717; }
+    .profile-modal-cancel { border:0; background:transparent; color:#5f7487; font-size:.95rem; font-weight:700; cursor:pointer; padding:8px; width:100%; font:inherit; }
+  </style>
+</head>
+<body>
+
+  <!-- ═══ PROFILE SCREEN (shown before app) ═══ -->
+  <div id="profileScreen" class="profile-screen" role="dialog" aria-labelledby="profileScreenTitle">
+    <div class="profile-screen-inner">
+      <div class="profile-screen-header">
+        <div class="profile-logo">
+          <svg viewBox="0 0 64 64" aria-hidden="true"><use href="#seal-face"/></svg>
+        </div>
+        <h1 id="profileScreenTitle">Sausage the Seal</h1>
+        <p class="profile-screen-sub">Arctic Math Adventure</p>
+        <span class="profile-version-tag">v1.0.0</span>
+      </div>
+      <h2 class="profile-choose-label">Choose Player</h2>
+      <div class="profile-list" id="profileList"></div>
+      <button class="profile-add-btn" id="profileAddBtn">➕ New Player</button>
+    </div>
+  </div>
+
+  <!-- ═══ PROFILE EDIT MODAL ═══ -->
+  <div id="profileEditModal" class="profile-modal-overlay" hidden role="dialog" aria-labelledby="profileEditTitle">
+    <div class="profile-modal-box">
+      <h2 id="profileEditTitle" class="profile-modal-title">Player</h2>
+      <div class="profile-emoji-row" id="profileEmojiRow"></div>
+      <input type="text" id="profileNameInput" class="profile-name-input" maxlength="20" placeholder="Name…" autocomplete="off"/>
+      <div class="profile-modal-actions" id="profileModalActions"></div>
+      <button class="profile-modal-cancel" id="profileModalCancel">Cancel</button>
+    </div>
+  </div>
+
+  <div class="snow" aria-hidden="true"></div>
+
+  <!-- P10: screen reader live region -->
+  <div id="a11yLive" class="sr-only" aria-live="assertive" aria-atomic="true"></div>
+
+  <div id="app" hidden>
+    <header class="topbar">
+      <button class="profile-topbar-btn" id="profileTopbarBtn" aria-label="Switch player" title="Switch player">
+        <span class="profile-topbar-emoji" id="profileTopbarEmoji">🦭</span>
+        <span class="profile-topbar-name" id="profileTopbarName">Player</span>
+      </button>
+      <button class="lang-btn" id="langBtn" aria-label="Switch language" title="EN/RU/📖">EN</button>
+      <button class="icon-btn" id="menuBtn" aria-label="Open sections" title="Sections">
+        <span></span><span></span><span></span>
+      </button>
+      <div class="brand">
+        <div class="brand-mark" aria-hidden="true">
+          <svg viewBox="0 0 64 64"><use href="#seal-face"></use></svg>
+        </div>
+        <div>
+          <h1>Sausage the Seal</h1>
+          <p>Arctic Math Adventure</p>
+        </div>
+      </div>
+      <div class="resources" aria-label="Player rewards">
+        <span><b id="fishCount">0</b> <span data-i18n="fish">fish</span></span>
+        <span><b id="coinCount">0</b> <span data-i18n="coins">coins</span></span>
+        <span><b id="starCount">0</b> <span data-i18n="stars">stars</span></span>
+      </div>
+      <button class="icon-btn sound" id="muteBtn" aria-label="Toggle sound" title="Sound on">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 9v6h4l5 4V5L7 9H3zm14.5 3a4.5 4.5 0 0 0-2.1-3.8v7.6A4.5 4.5 0 0 0 17.5 12z"/></svg>
+      </button>
+    </header>
+
+    <nav class="tabs" id="tabs" aria-label="Game sections">
+      <button class="tab active" data-view="adventure">Adventure</button>
+      <button class="tab" data-view="seal">My Seal</button>
+      <button class="tab" data-view="town">Town</button>
+      <button class="tab" data-view="album">Album</button>
+      <button class="tab" data-view="rewards">Rewards</button>
+      <button class="tab" data-view="daily">Daily</button>
+      <button class="tab" data-view="parent">Parent</button>
+    </nav>
+
+    <main>
+      <section class="view active" id="adventure">
+        <div class="hero">
+          <div class="map-panel">
+            <div class="sky-layer">
+              <span class="cloud c1"></span>
+              <span class="cloud c2"></span>
+              <span class="cloud c3"></span>
+            </div>
+            <div class="ocean" aria-hidden="true"></div>
+            <div class="map" id="worldMap" aria-label="Arctic world map"></div>
+            <div class="travel-seal" id="travelSeal" aria-hidden="true">
+              <svg id="travelSealSvg" viewBox="0 0 260 220"><use href="#sausage-body"/><use href="" class="seal-costume-layer" id="travelSealCostume"/><use href="" class="seal-accessory-layer" id="travelSealAccessory"/><use href="" class="seal-pet-layer" id="travelSealPet"/></svg>
+            </div>
+          </div>
+          <aside class="quest-panel">
+            <div class="seal-card">
+              <div class="seal-svg-wrap seal-idle">
+                <svg class="seal-svg seal-avatar idle" id="heroSeal" viewBox="0 0 260 220" aria-label="Sausage the seal">
+                <use href="#sausage-body"/>
+
+                <use href="" class="seal-costume-layer" id="heroSealCostume"/>
+                <use href="" class="seal-accessory-layer" id="heroSealAccessory"/>
+                <use href="" class="seal-pet-layer" id="heroSealPet"/>
+              </svg>
+              </div><!-- /seal-svg-wrap -->
+              <div>
+                <h2 id="questTitle">Choose an island</h2>
+                <p id="questText">A storm scattered Sausage's friends. Sail out, solve adventure problems, and bring everyone home.</p>
+              </div>
+            </div>
+            <div class="dialog" id="dialogBox"></div>
+            <div class="progress-stack">
+              <div><span id="islandProgressText">Island 0%</span><div class="meter small"><i id="islandMeter"></i></div></div>
+              <div><span id="missionProgressText">Mission 0/5</span><div class="meter small"><i id="missionMeter"></i></div></div>
+              <div><span id="nextRewardText">Next reward: rescue friend</span></div>
+            </div>
+            <div class="level-meter">
+              <span>Level <b id="levelNumber">1</b></span>
+              <div class="meter"><i id="xpMeter"></i></div>
+            </div>
+            <button class="primary" id="startChallengeBtn">Start Mission</button>
+            <button class="secondary" id="miniGameBtn">Play Bonus Game</button>
+            <button class="secondary practice-mode-btn" id="practiceModeBtn">🎯 Practice Mode</button>
+          </aside>
+        </div>
+
+        <section class="challenge" id="challenge" hidden aria-label="Math challenge">
+          <div class="challenge-scene">
+            <div class="iceberg"></div>
+            <svg class="small-seal seal-avatar swim" id="missionSeal" viewBox="0 0 260 220" aria-hidden="true"><use href="#sausage-body"/><use href="" class="seal-costume-layer" id="missionSealCostume"/><use href="" class="seal-accessory-layer" id="missionSealAccessory"/><use href="" class="seal-pet-layer" id="missionSealPet"/></svg>
+            <div class="fish-stream" id="fishStream"></div>
+          </div>
+          <div class="problem-box">
+            <p class="eyebrow" id="topicLabel">Mission</p>
+            <div class="mission-strip">
+              <b id="missionTitle">Mission 1 of 5</b>
+              <span id="questionsLeft">3 questions remaining</span>
+            </div>
+            <h2 id="problemText" aria-live="polite">3 + 4 = ?</h2>
+            <!-- P2: correct answer reveal -->
+            <div class="correct-reveal" id="correctReveal" hidden aria-live="polite"></div>
+            <div class="answers" id="answers" role="group" aria-label="Choose your answer"></div>
+            <button class="hint" id="hintBtn">Show a friendly hint</button>
+            <p class="hint-text" id="hintText" hidden></p>
+          </div>
+        </section>
+
+        <section class="mini-game" id="miniGame" hidden aria-label="Bonus mini-game">
+          <div class="section-head">
+            <h2 id="miniTitle">Catch Fish</h2>
+            <p id="miniText">Tap the swimming fish before time runs out.</p>
+          </div>
+          <div class="mini-stage" id="miniStage"></div>
+          <button class="primary" id="closeMiniBtn">Return to Map</button>
+        </section>
+      </section>
+
+      <section class="view" id="seal">
+        <div class="seal-room">
+          <div class="seal-preview">
+            <svg class="seal-svg seal-avatar excited" id="customSeal" viewBox="0 0 260 220" aria-label="Customized Sausage"><use href="#sausage-body"/><use href="" class="seal-costume-layer" id="customSealCostume"/><use href="" class="seal-accessory-layer" id="customSealAccessory"/><use href="" class="seal-pet-layer" id="customSealPet"/></svg>
+            <div class="equipped-list" id="equippedList"></div>
+          </div>
+          <div>
+            <div class="section-head">
+              <h2>My Seal</h2>
+              <p>Choose Sausage's costume, accessory, and pet. Equipped rewards appear in missions and town.</p>
+            </div>
+            <div class="closet-grid" id="closetGrid"></div>
+          </div>
+        </div>
+      </section>
+
+      <section class="view" id="town">
+        <div class="section-head">
+          <h2>Arctic Town</h2>
+          <p>Buildings appear as Sausage earns stars and rescues friends.</p>
+        </div>
+        <div class="town-scene" id="townScene"></div>
+        <div class="town-grid" id="townGrid"></div>
+      </section>
+
+      <section class="view" id="album">
+        <div class="section-head">
+          <h2>Rescue Album</h2>
+          <p>Every rescued friend brings a fun Arctic fact.</p>
+        </div>
+        <div class="album-grid" id="albumGrid"></div>
+      </section>
+
+      <section class="view" id="rewards">
+        <div class="section-head">
+          <h2>Costumes and Pets</h2>
+          <p>Spend coins on playful looks for Sausage.</p>
+        </div>
+        <div class="shop-grid" id="shopGrid"></div>
+        <div class="section-head compact">
+          <h2>Achievements</h2>
+          <p id="achievementProgress">0 of 50 unlocked</p>
+        </div>
+        <div class="achievement-grid" id="achievementGrid"></div>
+      </section>
+
+      <section class="view" id="daily">
+        <div class="daily-wrap">
+          <div class="daily-card">
+            <h2>Daily Challenge</h2>
+            <!-- P9: narrative text set by JS -->
+            <p id="dailyText">Complete 5 rescue problems today for a bonus treasure.</p>
+            <div class="daily-bonus" id="dailyBonus">Today's treasure: Mystery Shell</div>
+            <button class="primary" id="dailyBtn">Play Daily Challenge</button>
+            <!-- P9: collected daily specials -->
+            <div id="dailyCollected" hidden></div>
+          </div>
+          <div class="streak" id="streakGrid" aria-label="Seven day streak"></div>
+        </div>
+      </section>
+
+      <section class="view" id="parent">
+        <div class="section-head">
+          <h2>Parent Dashboard</h2>
+          <p>Progress is saved on this device only.</p>
+        </div>
+        <div class="dashboard" id="dashboard"></div>
+        <div class="parent-tools">
+          <button class="secondary" id="exportBtn">Export &amp; Copy</button>
+          <button class="secondary" id="importBtn">Import Progress</button>
+          <button class="secondary" id="resetStatsBtn">Reset Statistics</button>
+          <button class="secondary" id="newAdventureBtn">New Adventure</button>
+          <button class="secondary danger" id="resetAllBtn">Reset Everything</button>
+        </div>
+        <textarea id="saveBox" class="save-box" aria-label="Exported or imported save data" placeholder="Exported progress appears here. Paste progress here to import."></textarea>
+
+        <!-- S2: Save Code section -->
+        <div class="save-code-section">
+          <h3 id="saveCodeLabel">Save Code</h3>
+          <p id="saveCodeDesc">Write down this 8-character code to restore progress on any device.</p>
+          <div class="save-code-row">
+            <input type="text" id="saveCodeBox" class="save-code-input" maxlength="8" placeholder="ABCD1234" aria-label="Save code" autocomplete="off" autocapitalize="characters" spellcheck="false"/>
+            <button class="secondary" id="saveCodeBtn">Copy Code</button>
+            <button class="secondary" id="restoreCodeBtn">Restore</button>
+          </div>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <div class="toast-stack" id="toastStack" aria-live="polite"></div>
+
+  <!-- S5: RESCUE CELEBRATION MODAL -->
+  <div class="rescue-celebration" id="rescueCelebration" hidden role="dialog" aria-labelledby="rescueCharName">
+    <div class="rescue-cel-box">
+      <div class="rescue-cel-stage">
+        <div class="rescue-cel-confetti" id="rescueConfetti"></div>
+        <div class="rescue-cel-char" id="rescueCelChar">🐧</div>
+        <div class="rescue-cel-bounce" id="rescueCelBounce"></div>
+      </div>
+      <h2 class="rescue-cel-name" id="rescueCharName">Pip</h2>
+      <p  class="rescue-cel-quote" id="rescueCelQuote">"Thank you!"</p>
+      <div class="rescue-cel-rewards" id="rescueCelRewards">
+        <span class="rescue-cel-chip">+50 🐟</span>
+        <span class="rescue-cel-chip">+10 ⭐</span>
+      </div>
+      <p class="rescue-cel-town">Joined Arctic Town!</p>
+      <button class="primary rescue-cel-btn" id="rescueCelClose">Keep Exploring 🗺️</button>
+    </div>
+  </div>
+
+  <!-- S5: ISLAND BRIEFING MODAL -->
+  <div class="briefing-modal" id="briefingModal" hidden role="dialog" aria-labelledby="briefingTitle">
+    <div class="briefing-box">
+      <div class="briefing-visual" id="briefingVisual">📚</div>
+      <div class="briefing-dots" id="briefingDots"></div>
+      <h2 class="briefing-title" id="briefingTitle">Island Briefing</h2>
+      <p  class="briefing-body"  id="briefingBody">Getting ready…</p>
+      <div class="briefing-example" id="briefingExample"></div>
+      <div class="briefing-actions">
+        <button class="secondary" id="briefingSkip">Skip</button>
+        <button class="primary"   id="briefingNext">Next →</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- S5: SMART HINT PANEL (teachable moment) -->
+  <div class="smart-hint-panel" id="smartHintPanel" hidden aria-live="polite">
+    <div class="smart-hint-inner">
+      <span class="smart-hint-icon">💡</span>
+      <div class="smart-hint-content">
+        <strong class="smart-hint-title" id="smartHintTitle">Quick tip</strong>
+        <p class="smart-hint-text" id="smartHintText"></p>
+        <div class="smart-hint-example" id="smartHintExample"></div>
+      </div>
+      <button class="smart-hint-close" id="smartHintClose" aria-label="Close tip">✕</button>
+    </div>
+  </div>
+
+  <!-- S3: Welcome back overlay -->
+  <div class="welcome-back-overlay" id="welcomeBackOverlay" hidden role="dialog" aria-label="Welcome back"></div>
+
+  <!-- Reward modal -->
+  <div class="reward-modal" id="rewardModal" hidden role="dialog" aria-labelledby="rewardTitle">
+    <div class="reward-box">
+      <div class="burst"></div>
+      <h2 id="rewardTitle">Rescue Complete!</h2>
+      <div id="rewardText">Sausage earned new rewards.</div>
+      <button class="primary" id="rewardClose">Keep Exploring</button>
+    </div>
+  </div>
+
+  <!-- P8: Building celebration overlay -->
+  <div class="building-celebration" id="buildingCelebration" hidden aria-live="polite"></div>
+
+  <!-- P3: Onboarding modal -->
+  <div class="onboarding-modal" id="onboardingModal" hidden role="dialog" aria-labelledby="onboardTitle">
+    <div class="onboard-box">
+      <span class="onboard-emoji" aria-hidden="true">🦭</span>
+      <h2 class="onboard-title" id="onboardTitle">Welcome!</h2>
+      <p class="onboard-text">Getting ready...</p>
+      <div class="onboard-dots"></div>
+      <div class="onboard-actions">
+        <button class="onboard-skip" onclick="closeOnboarding()">Skip</button>
+        <button class="onboard-next primary" onclick="advanceOnboarding()">Next →</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- PRACTICE MODE MODAL -->
+  <div class="practice-modal-overlay" id="practiceModeModal" hidden role="dialog" aria-label="Practice Mode">
+  </div>
+
+  <!-- CREDITS MODAL -->
+  <div class="info-modal-overlay" id="creditsModal" hidden role="dialog" aria-labelledby="creditsTitle">
+    <div class="info-modal-box credits-content">
+    </div>
+  </div>
+
+  <!-- PRIVACY MODAL -->
+  <div class="info-modal-overlay" id="privacyModal" hidden role="dialog" aria-label="Privacy Policy">
+    <div class="info-modal-box privacy-content">
+    </div>
+  </div>
+
+  <!-- RESCUE ANIMATION OVERLAY -->
+  <div class="rescue-anim-overlay" id="rescueAnimOverlay" hidden aria-hidden="true"></div>
+
+  <svg width="0" height="0" style="position:absolute;width:0;height:0;overflow:hidden" aria-hidden="true">
+    <!-- Seal face icon for brand mark -->
+    <symbol id="seal-face" viewBox="0 0 64 64">
+      <ellipse cx="32" cy="36" rx="23" ry="20" fill="#e8f4f8"/>
+      <path d="M11 40 Q20 58 32 57 Q44 58 53 40 Q46 52 32 52 Q18 52 11 40z" fill="#b8dce8"/>
+      <!-- eyes -->
+      <ellipse cx="24" cy="30" rx="4.5" ry="5" fill="#1a2a38"/>
+      <ellipse cx="40" cy="30" rx="4.5" ry="5" fill="#1a2a38"/>
+      <circle cx="25.5" cy="28.5" r="1.5" fill="#fff"/>
+      <circle cx="41.5" cy="28.5" r="1.5" fill="#fff"/>
+      <!-- nose -->
+      <ellipse cx="32" cy="38" rx="5" ry="3.5" fill="#e8929e"/>
+      <path d="M32 38 L29 42 M32 38 L35 42" fill="none" stroke="#c06070" stroke-width="1.2" stroke-linecap="round"/>
+      <!-- whiskers -->
+      <path d="M16 35 Q22 37 27 36" fill="none" stroke="#90aab8" stroke-width="1" stroke-linecap="round"/>
+      <path d="M16 38 Q22 39 27 38.5" fill="none" stroke="#90aab8" stroke-width="1" stroke-linecap="round"/>
+      <path d="M48 35 Q42 37 37 36" fill="none" stroke="#90aab8" stroke-width="1" stroke-linecap="round"/>
+      <path d="M48 38 Q42 39 37 38.5" fill="none" stroke="#90aab8" stroke-width="1" stroke-linecap="round"/>
+    </symbol>
+
+    <!-- ═══════════════════════════════════════════════════════
+         SAUSAGE — kawaii baby seal, Option B style + tail
+         viewBox 260×220, lying pose, thick outlines
+         ═══════════════════════════════════════════════════════ -->
+    <symbol id="sausage-body" viewBox="0 0 260 220">
+      <!-- shadow -->
+      <ellipse cx="124" cy="210" rx="90" ry="9" fill="rgba(100,160,200,.12)"/>
+
+      <!-- TAIL — pointed, right side, behind body -->
+      <path d="M196 128 Q224 112 238 98 Q228 114 214 126 Q206 134 198 134Z"
+            fill="#EEF4F8" stroke="#3A2E28" stroke-width="5"
+            stroke-linejoin="round" stroke-linecap="round"/>
+      <!-- tail fork line -->
+      <path d="M204 118 Q220 108 234 100" fill="none" stroke="#3A2E28" stroke-width="3" stroke-linecap="round"/>
+
+      <!-- BODY — wide rounded lying shape, head+body merged, no neck gap -->
+      <path d="M54 58
+               Q32 62  22 82
+               Q10 104  16 130
+               Q22 156  44 172
+               Q68 188 102 192
+               Q136 196 166 188
+               Q196 178 210 158
+               Q224 136 218 114
+               Q212  92 194 80
+               Q172  66 144 62
+               Q120  44  90 46
+               Q66   46  54 58 Z"
+            fill="#EEF4F8" stroke="#3A2E28" stroke-width="6"
+            stroke-linejoin="round" stroke-linecap="round"/>
+
+      <!-- belly — slightly whiter inner oval -->
+      <ellipse cx="118" cy="136" rx="66" ry="44" fill="#FAFCFF" opacity=".7"/>
+
+      <!-- LEFT FRONT FLIPPER — small stubby, bottom-left -->
+      <path d="M42 150 Q20 160  16 178 Q32 184 46 172 Q56 162 54 148Z"
+            fill="#EEF4F8" stroke="#3A2E28" stroke-width="5"
+            stroke-linejoin="round" stroke-linecap="round"/>
+
+      <!-- RIGHT FRONT FLIPPER — small far-side peek -->
+      <path d="M168 172 Q182 180 184 196 Q170 198 160 188 Q156 180 160 170Z"
+            fill="#E4EEF4" stroke="#3A2E28" stroke-width="4.5"
+            stroke-linejoin="round" stroke-linecap="round"/>
+
+      <!-- HEAD — very large round dome, sits upper-left of body -->
+      <circle cx="90" cy="90" r="72" fill="#EEF4F8" stroke="#3A2E28" stroke-width="6"/>
+
+      <!-- head highlight — top dome -->
+      <ellipse cx="76" cy="58" rx="36" ry="26" fill="#F8FBFF" opacity=".6"/>
+
+      <!-- MUZZLE — separate small oval, low on head -->
+      <ellipse cx="88" cy="116" rx="30" ry="22"
+               fill="#E8F2F8" stroke="#3A2E28" stroke-width="4.5"/>
+
+      <!-- muzzle highlight -->
+      <ellipse cx="84" cy="110" rx="16" ry="9" fill="#F8FBFF" opacity=".5"/>
+
+      <!-- NOSE — dark button with tiny highlight -->
+      <ellipse cx="88" cy="108" rx="10" ry="7.5" fill="#3A2E28"/>
+      <ellipse cx="86" cy="105" rx="3.5" ry="2.5" fill="#fff" opacity=".35"/>
+
+      <!-- SMILE — gentle curve -->
+      <path d="M72 122 Q88 134 104 122"
+            fill="none" stroke="#3A2E28" stroke-width="4" stroke-linecap="round"/>
+
+      <!-- EYES — large dark ovals, Option B style, plenty of specular -->
+      <!-- left eye -->
+      <ellipse cx="62" cy="80" rx="16" ry="18" fill="#1E1A16" stroke="#3A2E28" stroke-width="3"/>
+      <ellipse cx="62" cy="80" rx="10" ry="12" fill="#2A2420"/>
+      <circle  cx="68" cy="72" r="6"   fill="#fff" opacity=".92"/>
+      <circle  cx="58" cy="86" r="2.5" fill="#fff" opacity=".45"/>
+
+      <!-- right eye -->
+      <ellipse cx="112" cy="76" rx="15" ry="17" fill="#1E1A16" stroke="#3A2E28" stroke-width="3"/>
+      <ellipse cx="112" cy="76" rx="9"  ry="11" fill="#2A2420"/>
+      <circle  cx="118" cy="68" r="5.5" fill="#fff" opacity=".92"/>
+      <circle  cx="108" cy="82" r="2.2" fill="#fff" opacity=".45"/>
+
+      <!-- CHEEKS — blush circles, characteristic Option B -->
+      <ellipse cx="46"  cy="100" rx="14" ry="9" fill="#F4C8D0" opacity=".7"/>
+      <ellipse cx="128" cy="96"  rx="14" ry="9" fill="#F4C8D0" opacity=".7"/>
+
+      <!-- WHISKERS — thin, 2 per side -->
+      <line x1="26" y1="112" x2="56" y2="116" stroke="#3A2E28" stroke-width="2.5" stroke-linecap="round"/>
+      <line x1="24" y1="122" x2="56" y2="122" stroke="#3A2E28" stroke-width="2.5" stroke-linecap="round"/>
+      <line x1="120" y1="112" x2="150" y2="108" stroke="#3A2E28" stroke-width="2.5" stroke-linecap="round"/>
+      <line x1="120" y1="122" x2="152" y2="120" stroke="#3A2E28" stroke-width="2.5" stroke-linecap="round"/>
+
+      <!-- EAR HOLES — tiny, seals have no pinnae -->
+      <ellipse cx="30"  cy="56" rx="6" ry="5" fill="#C8DCE8" stroke="#3A2E28" stroke-width="2.5" transform="rotate(-15 30 56)"/>
+      <ellipse cx="144" cy="44" rx="6" ry="5" fill="#C8DCE8" stroke="#3A2E28" stroke-width="2.5" transform="rotate(10 144 44)"/>
+    </symbol>
+
+    <!-- ═══════════════════════════════════════════════════
+         COSTUME / ACCESSORY / PET OVERLAYS
+         ═══════════════════════════════════════════════════ -->
+
+    <!-- Pirate hat -->
+    <symbol id="costume-pirate" viewBox="0 0 260 220">
+      <!-- hat brim -->
+      <path d="M78 50 Q128 30 178 50" fill="#18182a" stroke="#18182a" stroke-width="2"/>
+      <ellipse cx="128" cy="52" rx="52" ry="8" fill="#18182a"/>
+      <!-- hat body -->
+      <path d="M82 50 Q85 18 128 12 Q171 18 174 50Z" fill="#18182a"/>
+      <!-- skull badge -->
+      <ellipse cx="128" cy="32" rx="11" ry="10" fill="#f0ede0"/>
+      <circle cx="124" cy="30" r="2.5" fill="#18182a"/>
+      <circle cx="132" cy="30" r="2.5" fill="#18182a"/>
+      <path d="M122 36 h12 M124 33 l-2 4 M134 33 l2 4" fill="none" stroke="#18182a" stroke-width="1.5" stroke-linecap="round"/>
+      <!-- hat band -->
+      <path d="M84 48 Q128 42 172 48" fill="none" stroke="#c8a030" stroke-width="3" stroke-linecap="round"/>
+    </symbol>
+
+    <!-- Astronaut helmet -->
+    <symbol id="costume-astronaut" viewBox="0 0 260 220">
+      <!-- outer helmet ring -->
+      <ellipse cx="128" cy="44" rx="60" ry="54" fill="none" stroke="#d0eeff" stroke-width="9" opacity="0.7"/>
+      <!-- visor tint -->
+      <ellipse cx="128" cy="44" rx="52" ry="46" fill="rgba(160,220,255,0.20)"/>
+      <!-- visor glare -->
+      <path d="M98 22 Q115 14 138 18" fill="none" stroke="#fff" stroke-width="3" stroke-linecap="round" opacity="0.6"/>
+      <!-- side controls -->
+      <rect x="178" y="34" width="18" height="10" rx="4" fill="#ff7b7b"/>
+      <rect x="178" y="48" width="18" height="10" rx="4" fill="#4fd6a8"/>
+      <rect x="60" y="34" width="18" height="10" rx="4" fill="#ffd45a"/>
+      <!-- neck ring -->
+      <path d="M82 84 Q128 92 174 84" fill="none" stroke="#c0d8e8" stroke-width="6" stroke-linecap="round"/>
+    </symbol>
+
+    <!-- Crown (king) -->
+    <symbol id="costume-king" viewBox="0 0 260 220">
+      <!-- crown band -->
+      <rect x="86" y="14" width="84" height="12" rx="4" fill="#e8a820" stroke="#c88010" stroke-width="1"/>
+      <!-- crown points -->
+      <polygon points="86,14 96,0 106,14" fill="#ffd45a" stroke="#c88010" stroke-width="1"/>
+      <polygon points="118,14 128,0 138,14" fill="#ffd45a" stroke="#c88010" stroke-width="1"/>
+      <polygon points="150,14 160,0 170,14" fill="#ffd45a" stroke="#c88010" stroke-width="1"/>
+      <!-- gems -->
+      <circle cx="128" cy="3" r="5" fill="#ff6080"/>
+      <circle cx="96" cy="4" r="3.5" fill="#60c8ff"/>
+      <circle cx="160" cy="4" r="3.5" fill="#80e860"/>
+      <!-- band gems -->
+      <circle cx="112" cy="20" r="3" fill="#ff8844"/>
+      <circle cx="144" cy="20" r="3" fill="#8844ff"/>
+    </symbol>
+
+    <!-- Superhero cape -->
+    <symbol id="costume-superhero" viewBox="0 0 260 220">
+      <!-- cape shape behind body -->
+      <path d="M88 80 Q55 130 62 185 Q100 162 128 170 Q156 162 196 185 Q204 130 172 80 Q150 100 128 104 Q106 100 88 80Z"
+            fill="#e02020"/>
+      <path d="M88 80 Q106 100 128 104 Q150 100 172 80" fill="none" stroke="#a01010" stroke-width="2"/>
+      <!-- cape inner shading -->
+      <path d="M62 185 Q80 165 128 170 Q128 185 100 190Z" fill="rgba(0,0,0,.12)"/>
+      <!-- S badge on chest -->
+      <circle cx="128" cy="118" r="17" fill="#ffd45a" stroke="#c8a020" stroke-width="2"/>
+      <text x="128" y="125" text-anchor="middle" font-size="18" font-weight="900" fill="#c01010">S</text>
+    </symbol>
+
+    <!-- Sunny hat (accessory) -->
+    <symbol id="accessory-sunny" viewBox="0 0 260 220">
+      <!-- wide brim -->
+      <ellipse cx="128" cy="20" rx="66" ry="11" fill="#ffd45a"/>
+      <!-- hat body -->
+      <path d="M94 20 Q96 2 128 0 Q160 2 162 20Z" fill="#ffd45a"/>
+      <path d="M98 18 Q100 6 128 4 Q156 6 158 18Z" fill="#ffb820"/>
+      <!-- hatband -->
+      <path d="M98 20 Q128 16 158 20" fill="none" stroke="#e84040" stroke-width="3" stroke-linecap="round"/>
+      <!-- sun rays on brim -->
+      <line x1="62" y1="20" x2="50" y2="14" stroke="#ffb820" stroke-width="2.5" stroke-linecap="round"/>
+      <line x1="194" y1="20" x2="206" y2="14" stroke="#ffb820" stroke-width="2.5" stroke-linecap="round"/>
+      <line x1="66" y1="28" x2="54" y2="34" stroke="#ffb820" stroke-width="2" stroke-linecap="round"/>
+      <line x1="190" y1="28" x2="202" y2="34" stroke="#ffb820" stroke-width="2" stroke-linecap="round"/>
+      <line x1="76" y1="10" x2="70" y2="0" stroke="#ffb820" stroke-width="2" stroke-linecap="round"/>
+      <line x1="180" y1="10" x2="186" y2="0" stroke="#ffb820" stroke-width="2" stroke-linecap="round"/>
+    </symbol>
+
+    <!-- Star scarf -->
+    <symbol id="accessory-scarf" viewBox="0 0 260 220">
+      <path d="M82 80 Q128 72 174 80 Q176 94 174 98 Q128 90 82 98 Q80 94 82 80Z" fill="#7858d8"/>
+      <path d="M82 80 Q84 90 82 98" fill="#5840b0"/>
+      <!-- stars -->
+      <text x="108" y="93" font-size="13" fill="#ffd45a" opacity="0.95">★</text>
+      <text x="128" y="88" font-size="11" fill="#ffd45a" opacity="0.9">★</text>
+      <text x="148" y="93" font-size="10" fill="#ffd45a" opacity="0.85">★</text>
+      <!-- scarf tail -->
+      <path d="M82 80 Q66 108 74 148 Q80 152 86 146 Q82 118 88 96" fill="#7858d8"/>
+      <path d="M86 146 Q80 152 74 148 Q72 158 80 160 Q88 158 86 146Z" fill="#6040b8"/>
+    </symbol>
+
+    <!-- Snow goggles -->
+    <symbol id="accessory-goggles" viewBox="0 0 260 220">
+      <!-- strap -->
+      <path d="M96 42 Q84 36 78 42" fill="none" stroke="#444" stroke-width="3" stroke-linecap="round"/>
+      <path d="M160 42 Q172 36 178 42" fill="none" stroke="#444" stroke-width="3" stroke-linecap="round"/>
+      <!-- left lens -->
+      <rect x="90" y="36" width="36" height="26" rx="12" fill="#00b8d8" opacity="0.75"/>
+      <rect x="92" y="38" width="32" height="22" rx="10" fill="rgba(180,240,255,0.3)"/>
+      <path d="M94 42 Q106 38 122 42" fill="none" stroke="#fff" stroke-width="1.5" stroke-linecap="round" opacity="0.6"/>
+      <!-- right lens -->
+      <rect x="130" y="36" width="36" height="26" rx="12" fill="#00b8d8" opacity="0.75"/>
+      <rect x="132" y="38" width="32" height="22" rx="10" fill="rgba(180,240,255,0.3)"/>
+      <path d="M134 42 Q146 38 162 42" fill="none" stroke="#fff" stroke-width="1.5" stroke-linecap="round" opacity="0.6"/>
+      <!-- bridge -->
+      <rect x="126" y="44" width="8" height="6" rx="3" fill="#338"/>
+    </symbol>
+
+    <!-- Fish pet -->
+    <symbol id="pet-fish" viewBox="0 0 260 220">
+      <!-- little fish companion near the seal -->
+      <ellipse cx="205" cy="165" rx="20" ry="12" fill="#ffb840"/>
+      <path d="M225 165 Q238 156 238 165 Q238 174 225 165Z" fill="#ffb840"/>
+      <ellipse cx="205" cy="165" rx="20" ry="12" fill="none" stroke="#e89020" stroke-width="1"/>
+      <!-- fin -->
+      <path d="M210 153 Q218 148 222 155" fill="#ffa020" stroke="none"/>
+      <!-- eye -->
+      <circle cx="196" cy="161" r="3" fill="#1a1a2e"/>
+      <circle cx="197" cy="160" r="1" fill="#fff"/>
+      <!-- mouth -->
+      <path d="M190 165 Q192 168 194 165" fill="none" stroke="#c07020" stroke-width="1" stroke-linecap="round"/>
+    </symbol>
+
+    <!-- ═══════════════════════════════════════════════════
+         CHARACTER SYMBOLS — 4 starter characters
+         All share viewBox 260×220 for consistent sizing
+         ═══════════════════════════════════════════════════ -->
+
+    <!-- SAUSAGE THE SEAL — idle (reuses existing sausage-body) -->
+    <symbol id="char-seal-idle" viewBox="0 0 260 220">
+      <use href="#sausage-body"/>
+    </symbol>
+
+    <!-- SAUSAGE — happy (slight bounce, raised head) -->
+    <symbol id="char-seal-happy" viewBox="0 0 260 220">
+      <!-- shadow -->
+      <ellipse cx="124" cy="212" rx="90" ry="8" fill="rgba(100,160,200,.12)"/>
+      <!-- body shifted up slightly -->
+      <path d="M54 52 Q32 56 22 76 Q10 98 16 124 Q22 150 44 166 Q68 182 102 186 Q136 190 166 182 Q196 172 210 152 Q224 130 218 108 Q212 86 194 74 Q172 60 144 56 Q120 38 90 40 Q66 40 54 52Z" fill="#EEF4F8" stroke="#3A2E28" stroke-width="6" stroke-linejoin="round"/>
+      <ellipse cx="118" cy="128" rx="66" ry="44" fill="#FAFCFF" opacity=".7"/>
+      <path d="M42 144 Q20 154 16 172 Q32 178 46 166 Q56 156 54 142Z" fill="#EEF4F8" stroke="#3A2E28" stroke-width="5" stroke-linejoin="round"/>
+      <path d="M168 166 Q182 174 184 190 Q170 192 160 182 Q156 174 160 164Z" fill="#E4EEF4" stroke="#3A2E28" stroke-width="4.5" stroke-linejoin="round"/>
+      <path d="M196 122 Q224 106 238 92 Q228 108 214 120 Q206 128 198 128Z" fill="#EEF4F8" stroke="#3A2E28" stroke-width="5" stroke-linejoin="round"/>
+      <!-- head (raised) -->
+      <circle cx="90" cy="82" r="72" fill="#EEF4F8" stroke="#3A2E28" stroke-width="6"/>
+      <ellipse cx="76" cy="50" rx="36" ry="26" fill="#F8FBFF" opacity=".6"/>
+      <ellipse cx="88" cy="108" rx="30" ry="22" fill="#E8F2F8" stroke="#3A2E28" stroke-width="4.5"/>
+      <ellipse cx="84" cy="102" rx="16" ry="9" fill="#F8FBFF" opacity=".5"/>
+      <ellipse cx="88" cy="100" rx="10" ry="7.5" fill="#3A2E28"/>
+      <!-- smile wider for happy -->
+      <path d="M70 120 Q88 136 106 120" fill="none" stroke="#3A2E28" stroke-width="4" stroke-linecap="round"/>
+      <!-- eyes with happy squint -->
+      <path d="M46 72 Q62 62 78 72" fill="none" stroke="#1E1A16" stroke-width="6" stroke-linecap="round"/>
+      <path d="M96 68 Q112 58 126 68" fill="none" stroke="#1E1A16" stroke-width="6" stroke-linecap="round"/>
+      <!-- cheeks brighter -->
+      <ellipse cx="46"  cy="96" rx="16" ry="11" fill="#F4A8B8" opacity=".8"/>
+      <ellipse cx="128" cy="92" rx="16" ry="11" fill="#F4A8B8" opacity=".8"/>
+      <!-- whiskers -->
+      <line x1="26" y1="108" x2="56" y2="112" stroke="#3A2E28" stroke-width="2.5" stroke-linecap="round"/>
+      <line x1="24" y1="118" x2="56" y2="118" stroke="#3A2E28" stroke-width="2.5" stroke-linecap="round"/>
+      <line x1="120" y1="108" x2="150" y2="104" stroke="#3A2E28" stroke-width="2.5" stroke-linecap="round"/>
+      <line x1="120" y1="118" x2="152" y2="116" stroke="#3A2E28" stroke-width="2.5" stroke-linecap="round"/>
+    </symbol>
+
+    <!-- SAUSAGE — victory (flippers raised) -->
+    <symbol id="char-seal-victory" viewBox="0 0 260 220">
+      <use href="#sausage-body"/>
+      <!-- victory stars -->
+      <text x="28" y="50" font-size="22" opacity="0.9">⭐</text>
+      <text x="192" y="45" font-size="18" opacity="0.8">✨</text>
+      <text x="150" y="30" font-size="14" opacity="0.7">🌟</text>
+    </symbol>
+
+    <!-- ═══ PIP THE PENGUIN CHARACTERS ═══ -->
+    <!-- PIP — idle -->
+    <symbol id="char-penguin-idle" viewBox="0 0 260 220">
+      <!-- shadow -->
+      <ellipse cx="130" cy="210" rx="70" ry="8" fill="rgba(40,60,100,.14)"/>
+      <!-- body -->
+      <ellipse cx="130" cy="140" rx="52" ry="64" fill="#1a2030"/>
+      <!-- belly -->
+      <ellipse cx="130" cy="148" rx="32" ry="48" fill="#f0f4f8"/>
+      <!-- head -->
+      <ellipse cx="130" cy="72" rx="44" ry="40" fill="#1a2030"/>
+      <!-- face -->
+      <ellipse cx="130" cy="74" rx="28" ry="26" fill="#f0c060"/>
+      <!-- eyes -->
+      <ellipse cx="116" cy="66" rx="9" ry="10" fill="#f0f4f8"/>
+      <ellipse cx="144" cy="66" rx="9" ry="10" fill="#f0f4f8"/>
+      <circle cx="118" cy="65" r="5" fill="#1a2030"/>
+      <circle cx="146" cy="65" r="5" fill="#1a2030"/>
+      <circle cx="120" cy="63" r="2" fill="#fff"/>
+      <circle cx="148" cy="63" r="2" fill="#fff"/>
+      <!-- beak -->
+      <ellipse cx="130" cy="82" rx="12" ry="8" fill="#ff9820"/>
+      <path d="M118 82 Q130 88 142 82" fill="none" stroke="#c07010" stroke-width="1.5"/>
+      <!-- left wing -->
+      <path d="M78 120 Q58 136 62 170 Q76 168 82 152 Q84 136 80 118Z" fill="#1a2030"/>
+      <!-- right wing -->
+      <path d="M182 120 Q202 136 198 170 Q184 168 178 152 Q176 136 180 118Z" fill="#1a2030"/>
+      <!-- feet -->
+      <ellipse cx="112" cy="204" rx="20" ry="8" fill="#ff9820" transform="rotate(-10 112 204)"/>
+      <ellipse cx="148" cy="204" rx="20" ry="8" fill="#ff9820" transform="rotate(10 148 204)"/>
+    </symbol>
+
+    <!-- PIP — happy -->
+    <symbol id="char-penguin-happy" viewBox="0 0 260 220">
+      <use href="#char-penguin-idle"/>
+      <!-- raised wings -->
+      <path d="M78 110 Q48 90 50 120 Q62 130 78 124Z" fill="#1a2030"/>
+      <path d="M182 110 Q212 90 210 120 Q198 130 182 124Z" fill="#1a2030"/>
+      <!-- happy squint eyes -->
+      <path d="M108 64 Q116 58 124 64" fill="none" stroke="#1a2030" stroke-width="4" stroke-linecap="round"/>
+      <path d="M136 64 Q144 58 152 64" fill="none" stroke="#1a2030" stroke-width="4" stroke-linecap="round"/>
+      <text x="96" y="50" font-size="18">✨</text>
+      <text x="154" y="46" font-size="14">⭐</text>
+    </symbol>
+
+    <!-- PIP — victory -->
+    <symbol id="char-penguin-victory" viewBox="0 0 260 220">
+      <use href="#char-penguin-idle"/>
+      <text x="70" y="52" font-size="22" opacity="0.9">🎉</text>
+      <text x="170" y="48" font-size="18" opacity="0.8">⭐</text>
+    </symbol>
+
+    <!-- ═══ NOVA THE ARCTIC FOX CHARACTERS ═══ -->
+    <!-- NOVA — idle -->
+    <symbol id="char-fox-idle" viewBox="0 0 260 220">
+      <!-- shadow -->
+      <ellipse cx="130" cy="210" rx="78" ry="8" fill="rgba(100,80,40,.12)"/>
+      <!-- bushy tail -->
+      <path d="M176 148 Q216 138 220 116 Q218 96 200 90 Q182 90 174 108 Q168 128 172 148Z" fill="#f0ece0"/>
+      <path d="M178 144 Q210 134 212 114 Q210 98 196 94 Q180 96 176 112 Q172 130 176 144Z" fill="#e0dcd0"/>
+      <!-- tail tip white -->
+      <ellipse cx="210" cy="108" rx="12" ry="16" fill="#fff" opacity="0.9"/>
+      <!-- body -->
+      <ellipse cx="124" cy="154" rx="54" ry="48" fill="#f0ece0"/>
+      <!-- chest lighter -->
+      <ellipse cx="124" cy="162" rx="32" ry="34" fill="#faf8f4"/>
+      <!-- head -->
+      <ellipse cx="124" cy="90" rx="48" ry="42" fill="#f0ece0"/>
+      <!-- ears -->
+      <path d="M90 58 Q80 28 100 34 Q110 48 106 62Z" fill="#f0ece0" stroke="#3a2a18" stroke-width="2"/>
+      <path d="M158 58 Q168 28 148 34 Q138 48 142 62Z" fill="#f0ece0" stroke="#3a2a18" stroke-width="2"/>
+      <!-- inner ear pink -->
+      <path d="M92 58 Q84 34 100 38 Q108 48 104 60Z" fill="#f08080" opacity="0.6"/>
+      <path d="M156 58 Q164 34 148 38 Q140 48 144 60Z" fill="#f08080" opacity="0.6"/>
+      <!-- eyes -->
+      <ellipse cx="108" cy="88" rx="10" ry="11" fill="#1a2030"/>
+      <ellipse cx="140" cy="88" rx="10" ry="11" fill="#1a2030"/>
+      <circle cx="112" cy="84" r="3.5" fill="#fff"/>
+      <circle cx="144" cy="84" r="3.5" fill="#fff"/>
+      <!-- muzzle -->
+      <ellipse cx="124" cy="104" rx="18" ry="13" fill="#e8dcc8"/>
+      <!-- nose -->
+      <ellipse cx="124" cy="98" rx="7" ry="5" fill="#3a2a18"/>
+      <ellipse cx="122" cy="96" rx="2.5" ry="1.8" fill="#fff" opacity="0.4"/>
+      <!-- smile -->
+      <path d="M114 108 Q124 116 134 108" fill="none" stroke="#3a2a18" stroke-width="3" stroke-linecap="round"/>
+      <!-- legs/paws -->
+      <ellipse cx="100" cy="198" rx="18" ry="10" fill="#f0ece0" stroke="#3a2a18" stroke-width="2"/>
+      <ellipse cx="148" cy="198" rx="18" ry="10" fill="#f0ece0" stroke="#3a2a18" stroke-width="2"/>
+    </symbol>
+
+    <!-- NOVA — happy -->
+    <symbol id="char-fox-happy" viewBox="0 0 260 220">
+      <use href="#char-fox-idle"/>
+      <text x="58" y="55" font-size="18">✨</text>
+      <text x="172" y="50" font-size="16">⭐</text>
+    </symbol>
+
+    <!-- NOVA — victory -->
+    <symbol id="char-fox-victory" viewBox="0 0 260 220">
+      <use href="#char-fox-idle"/>
+      <text x="58" y="48" font-size="22">🎉</text>
+      <text x="172" y="44" font-size="18">🌟</text>
+    </symbol>
+
+    <!-- ═══ MISKA THE POLAR BEAR CHARACTERS ═══ -->
+    <!-- MISKA — idle -->
+    <symbol id="char-bear-idle" viewBox="0 0 260 220">
+      <!-- shadow -->
+      <ellipse cx="128" cy="212" rx="88" ry="8" fill="rgba(80,120,100,.14)"/>
+      <!-- body -->
+      <ellipse cx="128" cy="152" rx="68" ry="58" fill="#f4f0e8"/>
+      <!-- legs -->
+      <path d="M72 196 Q52 200 50 212 Q72 218 80 208 Q82 202 78 196Z" fill="#ece8e0"/>
+      <path d="M184 196 Q204 200 206 212 Q184 218 176 208 Q174 202 178 196Z" fill="#ece8e0"/>
+      <!-- arms -->
+      <path d="M62 148 Q34 144 28 158 Q32 176 52 172 Q62 166 64 152Z" fill="#ece8e0"/>
+      <path d="M194 148 Q222 144 228 158 Q224 176 204 172 Q194 166 192 152Z" fill="#ece8e0"/>
+      <!-- head -->
+      <ellipse cx="128" cy="86" rx="56" ry="50" fill="#f4f0e8"/>
+      <!-- ears (round) -->
+      <ellipse cx="80" cy="44" rx="18" ry="17" fill="#f4f0e8" stroke="#3a3028" stroke-width="2.5"/>
+      <ellipse cx="176" cy="44" rx="18" ry="17" fill="#f4f0e8" stroke="#3a3028" stroke-width="2.5"/>
+      <ellipse cx="80" cy="44" rx="10" ry="10" fill="#e0c8b8"/>
+      <ellipse cx="176" cy="44" rx="10" ry="10" fill="#e0c8b8"/>
+      <!-- face -->
+      <ellipse cx="128" cy="100" rx="24" ry="18" fill="#e8dcc8"/>
+      <!-- nose -->
+      <ellipse cx="128" cy="94" rx="12" ry="9" fill="#3a3028"/>
+      <ellipse cx="125" cy="91" rx="4" ry="3" fill="#fff" opacity="0.35"/>
+      <!-- eyes -->
+      <ellipse cx="108" cy="82" rx="10" ry="12" fill="#1a1a28"/>
+      <ellipse cx="148" cy="82" rx="10" ry="12" fill="#1a1a28"/>
+      <circle cx="112" cy="78" r="4" fill="#fff"/>
+      <circle cx="152" cy="78" r="4" fill="#fff"/>
+      <!-- smile -->
+      <path d="M114 108 Q128 120 142 108" fill="none" stroke="#3a3028" stroke-width="4" stroke-linecap="round"/>
+      <!-- cheeks -->
+      <ellipse cx="90"  cy="100" rx="14" ry="9" fill="#f4b8b0" opacity=".55"/>
+      <ellipse cx="166" cy="100" rx="14" ry="9" fill="#f4b8b0" opacity=".55"/>
+    </symbol>
+
+    <!-- MISKA — happy -->
+    <symbol id="char-bear-happy" viewBox="0 0 260 220">
+      <use href="#char-bear-idle"/>
+      <!-- arms raised -->
+      <path d="M60 130 Q32 110 30 128 Q34 148 56 148 Q66 142 64 132Z" fill="#ece8e0"/>
+      <path d="M196 130 Q224 110 226 128 Q222 148 200 148 Q190 142 192 132Z" fill="#ece8e0"/>
+      <text x="46" y="58" font-size="18">✨</text>
+      <text x="184" y="52" font-size="16">⭐</text>
+    </symbol>
+
+    <!-- MISKA — victory -->
+    <symbol id="char-bear-victory" viewBox="0 0 260 220">
+      <use href="#char-bear-idle"/>
+      <text x="46" y="48" font-size="22">🏆</text>
+      <text x="182" y="44" font-size="20">🌟</text>
+    </symbol>
+
+    <!-- sausage-full alias -->
+    <symbol id="sausage-full" viewBox="0 0 260 220">
+      <use href="#sausage-body"/>
+    </symbol>
+  </svg>
+
+  <script src="game.js"></script>
+</body>
+</html>

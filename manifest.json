@@ -1,0 +1,26 @@
+{
+  "name": "Sausage the Seal: Arctic Math Adventure",
+  "short_name": "Sausage Seal",
+  "description": "Help Sausage the Seal rescue friends by solving maths problems across the Arctic!",
+  "start_url": "/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#b0eaff",
+  "theme_color": "#27c7de",
+  "lang": "en",
+  "categories": ["education", "games", "kids"],
+  "icons": [
+    {
+      "src": "icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}
