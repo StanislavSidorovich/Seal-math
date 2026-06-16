@@ -1,340 +1,176 @@
 /* ═══════════════════════════════════════════════════════
    MOBILE STYLES — Sausage the Seal
-   Add as second <link> after styles.css:
    <link rel="stylesheet" href="styles-mobile.css">
-   Breakpoints: ≤768px tablet, ≤480px phone
+   after styles.css in index.html
    ═══════════════════════════════════════════════════════ */
 
-/* ── Base mobile resets ─────────────────────────────── */
+/* ── Topbar — 2 rows on mobile ──────────────────────── */
 @media (max-width: 768px) {
-  #app {
-    padding: 8px;
-  }
+  #app { padding: 8px; }
 
-  /* ── Topbar ──────────────────────────────────────── */
   .topbar {
-    grid-template-columns: auto auto 1fr auto auto;
+    display: grid;
+    grid-template-columns: auto auto auto 1fr auto;
     grid-template-rows: auto auto;
-    gap: 8px;
+    gap: 6px;
     padding: 10px;
     border-radius: 16px;
   }
+  /* Row 1: profile | lang | menu | resources | mute */
+  #profileTopbarBtn { grid-column: 1; grid-row: 1; }
+  #langBtn          { grid-column: 2; grid-row: 1; }
+  #menuBtn          { grid-column: 3; grid-row: 1; }
+  .resources        { grid-column: 4; grid-row: 1; justify-content: flex-start; flex-wrap: nowrap; gap: 4px; }
+  #muteBtn          { grid-column: 5; grid-row: 1; }
+  /* Row 2: brand full width */
+  .brand            { grid-column: 1 / -1; grid-row: 2; gap: 8px; }
 
-  /* Row 1: profile btn | lang | [spacer] | resources | mute */
-  .profile-topbar-btn { grid-column: 1; grid-row: 1; }
-  .lang-btn           { grid-column: 2; grid-row: 1; }
-  .resources          { grid-column: 3; grid-row: 1; justify-content: flex-start; }
-  .icon-btn.sound     { grid-column: 4; grid-row: 1; }
-  .icon-btn#menuBtn   { grid-column: 5; grid-row: 1; }
+  .brand h1    { font-size: 1.05rem; }
+  .brand p     { font-size: .78rem; }
+  .brand-mark  { width: 36px; height: 36px; }
+  .resources span { padding: 5px 8px; font-size: .76rem; }
 
-  /* Row 2: brand spans full width */
-  .brand {
-    grid-column: 1 / -1;
-    grid-row: 2;
-    gap: 8px;
-  }
-  .brand h1 { font-size: 1.1rem; }
-  .brand p  { font-size: .8rem; }
-  .brand-mark { width: 38px; height: 38px; }
-
-  .resources {
-    gap: 5px;
-    flex-wrap: nowrap;
-  }
-  .resources span {
-    padding: 5px 8px;
-    font-size: .78rem;
-  }
-
-  /* ── Tabs ────────────────────────────────────────── */
-  .tabs {
-    gap: 5px;
-    margin: 10px 0;
-    -webkit-overflow-scrolling: touch;
-    scrollbar-width: none;
-  }
+  /* ── Tabs ─────────────────────────────────────────── */
+  .tabs { gap: 5px; margin: 10px 0; -webkit-overflow-scrolling: touch; scrollbar-width: none; }
   .tabs::-webkit-scrollbar { display: none; }
+  .tab  { min-height: 42px; padding: 0 12px; font-size: .82rem; border-radius: 12px; }
 
-  .tab {
-    min-height: 42px;
-    padding: 0 13px;
-    font-size: .85rem;
-    border-radius: 12px;
-  }
+  /* ── Hero / map ───────────────────────────────────── */
+  .hero { grid-template-columns: 1fr; gap: 12px; }
+  .map-panel { min-height: 300px; border-radius: 18px; position: relative; overflow: hidden; }
+  .map { min-height: 300px; grid-template-columns: repeat(2, 1fr); grid-template-rows: repeat(4, auto); gap: 8px; padding: 10px; }
+  .island { width: min(100%, 140px); }
+  .island span { font-size: .72rem; padding: 3px 5px; }
+  .travel-seal { width: 55px; }
+  .quest-panel { gap: 12px; padding: 14px; border-radius: 18px; }
+  .seal-svg { width: min(160px, 55%); }
 
-  /* ── Adventure: hero layout ─────────────────────── */
-  .hero {
-    grid-template-columns: 1fr;
-    gap: 12px;
-  }
-
-  .map-panel {
-    min-height: 340px;
-    border-radius: 18px;
-  }
-
-  .map {
-    min-height: 340px;
-    grid-template-columns: repeat(4, minmax(72px, 1fr));
-    gap: 8px;
-    padding: 12px;
-  }
-
-  .island {
-    width: min(100%, 90px);
-  }
-  .island span {
-    font-size: .72rem;
-    padding: 3px 5px;
-  }
-
-  .travel-seal { width: 62px; }
-
-  /* quest panel below map on mobile */
-  .quest-panel {
-    gap: 12px;
-    padding: 14px;
-    border-radius: 18px;
-  }
-
-  .seal-svg { width: min(180px, 60%); }
-
-  /* ── Challenge (problem screen) ──────────────────── */
-  .challenge {
-    grid-template-columns: 1fr;
-    gap: 12px;
-    padding: 12px;
-    margin-top: 12px;
-  }
-
-  .challenge-scene { min-height: 180px; }
-  .small-seal       { width: 120px; }
-  .iceberg          { width: 140px; height: 60px; }
-
+  /* ── Challenge ────────────────────────────────────── */
+  .challenge { grid-template-columns: 1fr; gap: 12px; padding: 12px; margin-top: 10px; }
+  .challenge-scene { min-height: 160px; }
+  .small-seal { width: 110px; }
   #problemText { font-size: clamp(1.8rem, 9vw, 3rem); }
+  .answers { gap: 10px; }
+  .answer  { min-height: 60px; font-size: clamp(1.2rem, 7vw, 1.8rem); border-radius: 14px; }
 
-  .answers {
-    grid-template-columns: repeat(2, 1fr);
+  /* ── My Seal ──────────────────────────────────────── */
+  .seal-room    { grid-template-columns: 1fr; gap: 12px; }
+  .seal-preview { min-height: 260px; padding: 14px; }
+
+  /* ── Grids ────────────────────────────────────────── */
+  .town-grid, .album-grid, .shop-grid,
+  .achievement-grid, .dashboard, .closet-grid {
+    grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
     gap: 10px;
   }
-  .answer {
-    min-height: 60px;
-    font-size: clamp(1.2rem, 7vw, 1.8rem);
-    border-radius: 14px;
-  }
+  .town-scene { min-height: 240px; }
+  .section-head { padding: 14px; border-radius: 18px; }
+  .section-head h2, .seal-card h2, .daily-card h2 { font-size: clamp(1.2rem, 5vw, 1.6rem); }
 
-  /* ── My Seal ─────────────────────────────────────── */
-  .seal-room {
-    grid-template-columns: 1fr;
-    gap: 12px;
-  }
-  .seal-preview { min-height: 280px; padding: 14px; }
-
-  /* ── Town / Album / Shop grids ───────────────────── */
-  .town-grid,
-  .album-grid,
-  .shop-grid,
-  .achievement-grid,
-  .dashboard,
-  .closet-grid {
-    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
-    gap: 10px;
-  }
-
-  .town-scene { min-height: 260px; }
-
-  /* ── Section heads ───────────────────────────────── */
-  .section-head {
-    padding: 14px;
-    border-radius: 18px;
-  }
-  .section-head h2,
-  .seal-card h2,
-  .daily-card h2 {
-    font-size: clamp(1.2rem, 5vw, 1.6rem);
-  }
-
-  /* ── Parent dashboard chart ──────────────────────── */
-  .topic-bar-row {
-    grid-template-columns: 80px 1fr 40px;
-    gap: 6px;
-  }
+  /* ── Parent dashboard ─────────────────────────────── */
+  .topic-bar-row { grid-template-columns: 80px 1fr 40px; gap: 6px; }
   .topic-bar-label { font-size: .74rem; }
-
-  .accuracy-ring-wrap { gap: 14px; }
   .accuracy-ring { width: 72px; height: 72px; }
   .accuracy-ring-pct { font-size: 1.1rem; }
 
-  /* ── Daily card ──────────────────────────────────── */
-  .daily-card { padding: 14px; border-radius: 18px; }
-
-  /* ── Primary/secondary buttons ───────────────────── */
+  /* ── Buttons ──────────────────────────────────────── */
   .primary   { min-height: 52px; font-size: 1rem; }
   .secondary { min-height: 46px; font-size: .9rem; }
 
-  /* ── Profile screen ──────────────────────────────── */
+  /* ── Profile ──────────────────────────────────────── */
   .profile-screen { padding: 14px; }
   .profile-screen-header h1 { font-size: 1.6rem; }
   .profile-modal-box { padding: 20px 16px 16px; }
 }
 
-/* ── Small phones (≤480px) ──────────────────────────── */
+/* ── Small phones ≤480px ────────────────────────────── */
 @media (max-width: 480px) {
   #app { padding: 6px; }
-
-  .topbar {
-    padding: 8px;
-    gap: 6px;
-  }
-
-  /* Collapse resources to icons only on tiny screens */
-  .resources span { padding: 4px 7px; font-size: .72rem; }
-
-  .tab { min-height: 38px; padding: 0 10px; font-size: .8rem; }
-
-  /* Map: 2×4 grid on small phones */
-  .map {
-    grid-template-columns: repeat(2, 1fr);
-    grid-template-rows: repeat(4, auto);
-    min-height: 280px;
-    gap: 8px;
-    padding: 10px;
-  }
-  .island { width: min(100%, 130px); }
-
-  .map-panel { min-height: 280px; }
-  .travel-seal { width: 50px; }
-
-  /* Challenge scene: even more compact */
-  .challenge-scene { min-height: 150px; }
-  .small-seal { width: 90px; bottom: 12px; right: 10px; }
-  .iceberg    { width: 110px; height: 48px; left: 10px; }
-
-  #problemText { font-size: clamp(1.5rem, 10vw, 2.4rem); }
-  .answer      { min-height: 54px; border-radius: 12px; }
-
-  .seal-svg    { width: min(150px, 55%); }
-  .seal-preview { min-height: 240px; }
-
-  .town-grid,
-  .album-grid,
-  .shop-grid,
-  .achievement-grid,
-  .dashboard,
-  .closet-grid {
-    grid-template-columns: repeat(2, 1fr);
-  }
-
-  .town-scene { min-height: 220px; }
-
-  /* Mini-games */
-  .mini-stage { min-height: 240px; }
-  .mini-stage.mini-pairs {
-    grid-template-columns: repeat(3, 1fr);
-    gap: 6px;
-    padding: 8px;
-  }
-  .pairs-card { font-size: 1.4rem; }
-
-  /* Parent dashboard */
-  .topic-bar-row { grid-template-columns: 68px 1fr 36px; }
-
-  /* Progress stack compact */
-  .progress-stack { padding: 10px; }
-  .meter          { height: 14px; }
-
-  /* Profile modal */
-  .profile-modal-box { padding: 16px 12px 14px; border-radius: 20px; }
-  .profile-emoji-row  { gap: 4px; }
-  .emoji-pick-btn     { font-size: 1.3rem; padding: 3px 4px; }
+  .topbar { padding: 8px; gap: 5px; }
+  .resources span { padding: 4px 7px; font-size: .7rem; }
+  .tab { min-height: 38px; padding: 0 10px; font-size: .78rem; }
+  .island { width: min(100%, 120px); }
+  .seal-svg { width: min(140px, 50%); }
+  .mini-stage { min-height: 220px; }
+  .mini-stage.mini-pairs { grid-template-columns: repeat(3, 1fr); gap: 5px; padding: 8px; }
+  .pairs-card { font-size: 1.3rem; }
+  .town-grid, .album-grid, .shop-grid,
+  .achievement-grid, .dashboard, .closet-grid { grid-template-columns: repeat(2, 1fr); }
 }
 
-/* ── Touch improvements (all touch devices) ─────────── */
+/* ── Touch improvements ─────────────────────────────── */
 @media (hover: none) and (pointer: coarse) {
-  /* Larger tap targets */
-  .answer      { min-height: 64px; }
-  .tab         { min-height: 44px; }
-  .icon-btn    { width: 44px; height: 44px; }
-  .primary     { min-height: 56px; }
-  .island      { padding: 4px; }
-
-  /* Remove hover effects that don't apply on touch */
-  .island:hover         { transform: none; }
-  .town-building:hover  { transform: none; }
-
-  /* Bigger hit area for answer buttons */
-  .answer { padding: 8px; }
-
-  /* Disable scroll momentum snapping on tab bar */
+  .answer   { min-height: 64px; }
+  .tab      { min-height: 44px; }
+  .primary  { min-height: 56px; }
+  .island:hover        { transform: none; }
+  .town-building:hover { transform: none; }
   .tabs { scroll-snap-type: x mandatory; }
   .tab  { scroll-snap-align: start; }
 }
 
-/* ═══════════════════════════════════════════════════════
-   PATCH — topbar mute fix + travel seal + back-to-map btn
-   ═══════════════════════════════════════════════════════ */
-
-/* Fix: mute button was floating outside topbar grid.
-   The topbar HTML order is: profile | lang | menu | brand | resources | mute
-   We reassign grid positions explicitly */
-@media (max-width: 768px) {
-  .topbar {
-    /* 5 cols: profile | lang | menu | resources | mute */
-    grid-template-columns: auto auto auto 1fr auto;
-    grid-template-rows: auto auto;
-  }
-
-  /* Row 1 */
-  #profileTopbarBtn          { grid-column: 1; grid-row: 1; order: 1; }
-  #langBtn                   { grid-column: 2; grid-row: 1; order: 2; }
-  #menuBtn                   { grid-column: 3; grid-row: 1; order: 3; }
-  .resources                 { grid-column: 4; grid-row: 1; order: 4; }
-  #muteBtn                   { grid-column: 5; grid-row: 1; order: 5; }
-
-  /* Row 2: brand full width */
-  .brand                     { grid-column: 1 / -1; grid-row: 2; order: 6; }
-
-  /* Travel seal must stay inside map-panel (position:relative).
-     Ensure map-panel is the containing block */
-  .map-panel {
-    position: relative;
-    overflow: hidden; /* clip the seal inside */
-  }
-
-  /* Back-to-map button */
-  .back-to-map-btn {
-    display: inline-flex;
-    align-items: center;
-    gap: 6px;
-    border: 0;
-    background: rgba(255,255,255,0.9);
-    color: #17446a;
-    font: inherit;
-    font-size: .9rem;
-    font-weight: 900;
-    padding: 8px 14px;
-    border-radius: 12px;
-    cursor: pointer;
-    box-shadow: 0 4px 12px rgba(24,84,125,.15);
-    margin-bottom: 10px;
-  }
-  .back-to-map-btn:active { opacity: .75; }
-}
-
-/* Back-to-map button also shows on desktop (inside challenge) */
+/* ── Back-to-map button (all screens) ───────────────── */
 .back-to-map-btn {
   display: inline-flex;
   align-items: center;
+  gap: 5px;
   border: 0;
-  background: rgba(255,255,255,0.9);
+  background: rgba(255,255,255,0.88);
   color: #17446a;
   font: inherit;
-  font-size: .9rem;
+  font-size: .88rem;
   font-weight: 900;
-  padding: 8px 16px;
+  padding: 7px 14px;
   border-radius: 12px;
   cursor: pointer;
-  box-shadow: 0 4px 12px rgba(24,84,125,.15);
-  margin-bottom: 12px;
+  box-shadow: 0 3px 10px rgba(24,84,125,.14);
+  margin-bottom: 10px;
 }
-.back-to-map-btn:hover { background: #fff; }
+.back-to-map-btn:active { opacity: .75; transform: translateY(1px); }
+
+/* ── Mini-game result overlay ───────────────────────── */
+.mini-result {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  padding: 24px 16px;
+  min-height: 200px;
+  text-align: center;
+}
+.mini-result-icon { font-size: 3rem; line-height: 1; }
+.mini-result-msg  { font-size: 1.4rem; font-weight: 900; color: #17446a; }
+.mini-result-sub  { font-size: 1rem; color: #5f7487; font-weight: 700; }
+.mini-result-btns { display: flex; gap: 10px; flex-wrap: wrap; justify-content: center; margin-top: 8px; }
+.mini-play-again-btn { min-width: 160px; }
+.mini-map-btn        { min-width: 140px; }
+
+/* ── Speed selector for Catch Fish ──────────────────── */
+.mini-speed-bar {
+  display: flex;
+  gap: 6px;
+  justify-content: center;
+  padding: 8px 10px;
+  position: absolute;
+  top: 8px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 5;
+  background: rgba(255,255,255,.85);
+  border-radius: 12px;
+  backdrop-filter: blur(4px);
+}
+.speed-btn {
+  border: 2px solid transparent;
+  border-radius: 10px;
+  background: #f0f8ff;
+  color: #17446a;
+  font: inherit;
+  font-size: .8rem;
+  font-weight: 900;
+  padding: 5px 10px;
+  cursor: pointer;
+  white-space: nowrap;
+}
+.speed-btn.active { border-color: #27c7de; background: #d0f5ff; }

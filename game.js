@@ -1057,6 +1057,8 @@ function exitMission() {
   if (!confirm("Exit this mission? Your progress on this question will be lost.")) return;
   trip.active = false;
   $("challenge").hidden = true;
+  const old = $("backToMapBtn");
+  if (old) old.remove();
   renderQuest();
 }
 
@@ -1067,16 +1069,15 @@ function startMission(daily) {
   trip = { active:true, world:selectedWorld, mission, solved:0, needed:5+(mission>2?2:0), correct:0, daily, mistakes:0 };
   $("challenge").hidden = false;
   $("miniGame").hidden  = true;
-  // Add back-to-map button if not already there
-  if (!$("backToMapBtn")) {
-    const btn = document.createElement("button");
-    btn.id = "backToMapBtn";
-    btn.className = "back-to-map-btn";
-    btn.setAttribute("aria-label", "Back to map");
-    btn.innerHTML = "← Map";
-    btn.addEventListener("click", exitMission);
-    $("challenge").prepend(btn);
-  }
+  // Back-to-map button — recreate fresh each time
+  const old = $("backToMapBtn");
+  if (old) old.remove();
+  const backBtn = document.createElement("button");
+  backBtn.id = "backToMapBtn";
+  backBtn.className = "back-to-map-btn";
+  backBtn.innerHTML = "← Map";
+  backBtn.addEventListener("click", exitMission);
+  $("challenge").prepend(backBtn);
   // P6: apply island palette to challenge scene
   const w = worlds[trip.world];
   const scene = document.querySelector(".challenge-scene");
@@ -2182,17 +2183,16 @@ function renderDashboard() {
 }
 
 
-// ─── S2: Mini-games (6 distinct games) ───────────────────────────────────────
+// ─── S2: Mini-games (5 games, Treasure Hunt removed) ─────────────────────────
 function startMiniGame() {
   $("miniGame").hidden  = false;
   $("challenge").hidden = true;
   if (miniGameTimer) { clearTimeout(miniGameTimer); miniGameTimer = null; }
-  const gameIndex = state.miniGamesPlayed % 6;
+  const gameIndex = state.miniGamesPlayed % 5;
   if      (gameIndex === 0) startCatchFish();
-  else if (gameIndex === 1) startTreasureHunt();
-  else if (gameIndex === 2) startFindPenguin();
-  else if (gameIndex === 3) startIceSlide();
-  else if (gameIndex === 4) startSnowballCatch();
+  else if (gameIndex === 1) startFindPenguin();
+  else if (gameIndex === 2) startIceSlide();
+  else if (gameIndex === 3) startSnowballCatch();
   else                       startMatchPairs();
 }
 
@@ -2203,37 +2203,57 @@ function startCatchFish() {
   const stage = $("miniStage");
   stage.innerHTML = "";
   stage.className = "mini-stage mini-catchfish";
+
+  // Speed selector — default SLOW
+  let fishSpeed = 9000; // ms to cross screen (slow)
+  const speedBar = document.createElement("div");
+  speedBar.className = "mini-speed-bar";
+  speedBar.innerHTML = `
+    <button class="speed-btn active" data-speed="9000">🐢 Slow</button>
+    <button class="speed-btn" data-speed="5500">🐟 Normal</button>
+    <button class="speed-btn" data-speed="3000">⚡ Fast</button>`;
+  stage.appendChild(speedBar);
+  speedBar.querySelectorAll(".speed-btn").forEach(btn => {
+    btn.addEventListener("click", () => {
+      speedBar.querySelectorAll(".speed-btn").forEach(b => b.classList.remove("active"));
+      btn.classList.add("active");
+      fishSpeed = Number(btn.dataset.speed);
+    });
+  });
+
   let caught = 0;
   const TOTAL = 9;
 
-  // Use actual stage dimensions so fish are visible on any screen size
-  const stageW = stage.offsetWidth  || 360;
-  const stageH = stage.offsetHeight || 280;
-  const safeH  = Math.max(40, stageH - 60);
+  // Wait one frame so stage has rendered and has real dimensions
+  requestAnimationFrame(() => {
+    const stageW = stage.offsetWidth  || 360;
+    const stageH = stage.offsetHeight || 260;
+    const safeH  = Math.max(30, stageH - 80);
 
-  for (let i=0; i<TOTAL; i++) {
-    const fish = document.createElement("button");
-    fish.className = "mini-target";
-    fish.style.left = `${-70 - i * 80}px`;
-    fish.style.top  = `${20 + Math.random() * safeH}px`;
-    fish.style.animationDelay = `${i * 0.22}s`;
-    // Override swim distance to match actual stage width
-    fish.style.setProperty("--swim-dist", `${stageW + 120}px`);
-    fish.setAttribute("aria-label","Catch this fish");
-    fish.addEventListener("click", () => {
-      if (fish.dataset.caught) return;
-      fish.dataset.caught = "1";
-      caught++;
-      fish.style.opacity = "0";
-      state.fish += 2;
-      playSound("coin");
-      toast(`+2 fish! (${caught}/5)`);
-      renderHeader();
-      if (caught >= 5) finishMiniGame(caught, "catchfish");
-    });
-    stage.appendChild(fish);
-  }
-  miniGameTimer = setTimeout(() => finishMiniGame(caught, "catchfish"), 7000);
+    for (let i = 0; i < TOTAL; i++) {
+      const fish = document.createElement("button");
+      fish.className = "mini-target";
+      fish.style.left = `${-70 - i * 80}px`;
+      fish.style.top  = `${30 + Math.random() * safeH}px`;
+      fish.style.setProperty("--swim-dist", `${stageW + 120}px`);
+      fish.style.setProperty("--swim-dur",  `${fishSpeed + i * 200}ms`);
+      fish.style.animationDelay = `${i * 0.3}s`;
+      fish.setAttribute("aria-label", "Catch this fish");
+      fish.addEventListener("click", () => {
+        if (fish.dataset.caught) return;
+        fish.dataset.caught = "1";
+        caught++;
+        fish.style.opacity = "0";
+        state.fish += 2;
+        playSound("coin");
+        toast(`+2 fish! (${caught}/5)`);
+        renderHeader();
+        if (caught >= 5) finishMiniGame(caught, "catchfish");
+      });
+      stage.appendChild(fish);
+    }
+    miniGameTimer = setTimeout(() => finishMiniGame(caught, "catchfish"), 18000);
+  });
 }
 
 // Mini-game 2: Treasure Hunt — tap the right shell to find coins
@@ -2355,13 +2375,30 @@ function finishMiniGame(caught, type) {
   if (caught >= 5) {
     state.stars += 2;
     react("victory");
-    toast("Mini-game win! +2 stars ⭐");
     playSound("level");
-  } else {
-    toast("Good effort! Keep practising.");
   }
   save();
-  renderAll();
+
+  // Show result overlay inside mini-game instead of hiding it
+  const stage = $("miniStage");
+  stage.innerHTML = `
+    <div class="mini-result">
+      <div class="mini-result-icon">${caught >= 5 ? "🎉" : "💪"}</div>
+      <div class="mini-result-msg">${caught >= 5 ? "Well done!" : "Good effort!"}</div>
+      <div class="mini-result-sub">+${Math.min(caught,5)} coins${caught >= 5 ? " and +2 stars earned!" : ""}</div>
+      <div class="mini-result-btns">
+        <button class="primary mini-play-again-btn">Next Mini-game 🎮</button>
+        <button class="secondary mini-map-btn">Return to Map 🗺️</button>
+      </div>
+    </div>`;
+  stage.querySelector(".mini-play-again-btn").addEventListener("click", () => {
+    startMiniGame();
+  });
+  stage.querySelector(".mini-map-btn").addEventListener("click", () => {
+    $("miniGame").hidden = true;
+    renderAll();
+  });
+  renderHeader();
 }
 
 // ─── S2: Mini-game 4 — Ice Slide: tap LEFT/RIGHT to dodge rocks ──────────────

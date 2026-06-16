@@ -388,6 +388,7 @@ button { font: inherit; color: inherit; }
   border-bottom: 7px solid transparent;
 }
 @keyframes miniSwim { to { transform: translateX(var(--swim-dist, 1150px)); } }
+.mini-target { animation-duration: var(--swim-dur, 5500ms); }
 
 .section-head { padding: 18px; margin-bottom: 14px; }
 .section-head.compact { margin-top: 16px; }
