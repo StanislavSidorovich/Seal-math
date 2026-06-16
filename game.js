@@ -9,115 +9,6 @@ const MAX_PROFILES    = 20;
 const PROFILE_EMOJIS  = ["🦭","🐧","🐻","🦊","🐳","🦁","🐼","🦋","🐸","🦄",
                           "🐨","🐯","🦀","🦆","🐬","🦭","🐺","🦝","🦥","🐙"];
 
-// ═══════════════════════════════════════════════════════════════
-// CHARACTER SELECTION SYSTEM
-// ═══════════════════════════════════════════════════════════════
-const VERSION = "1.0.0";
-
-const STARTER_CHARACTERS = [
-  {
-    id: "seal",
-    name: "Sausage",
-    species: "Seal",
-    emoji: "🦭",
-    color: "#EEF4F8",
-    accentColor: "#27c7de",
-    description: "Brave, curious, always ready!",
-    descriptionRu: "Смелый, любопытный, всегда готов!",
-    svgId: "char-seal"
-  },
-  {
-    id: "penguin",
-    name: "Pip",
-    species: "Penguin",
-    emoji: "🐧",
-    color: "#f0f4f8",
-    accentColor: "#856de8",
-    description: "Clever, funny, loves to dance!",
-    descriptionRu: "Умный, смешной, любит танцевать!",
-    svgId: "char-penguin"
-  },
-  {
-    id: "fox",
-    name: "Nova",
-    species: "Arctic Fox",
-    emoji: "🦊",
-    color: "#f8f4e8",
-    accentColor: "#ff9060",
-    description: "Quick, sly, full of tricks!",
-    descriptionRu: "Быстрая, хитрая, полна уловок!",
-    svgId: "char-fox"
-  },
-  {
-    id: "bear",
-    name: "Miska",
-    species: "Polar Bear",
-    emoji: "🐻‍❄️",
-    color: "#f4f0e8",
-    accentColor: "#4fd6a8",
-    description: "Strong, gentle, wise guardian!",
-    descriptionRu: "Сильный, добрый, мудрый защитник!",
-    svgId: "char-bear"
-  }
-];
-
-function getCharacterById(id) {
-  return STARTER_CHARACTERS.find(c => c.id === id) || STARTER_CHARACTERS[0];
-}
-
-function getActiveCharacter() {
-  const prof = getActiveProfile();
-  const charId = prof?.character || "seal";
-  return getCharacterById(charId);
-}
-
-// Build the SVG for a character using the symbol id
-function characterSvgSmall(charId) {
-  const ch = getCharacterById(charId);
-  return `<svg viewBox="0 0 120 110" aria-hidden="true"><use href="#${ch.svgId}-idle"/><ellipse cx="60" cy="100" rx="44" ry="6" fill="rgba(0,80,120,.10)"/></svg>`;
-}
-
-function characterSvgLarge(charId, pose = "idle") {
-  const ch = getCharacterById(charId);
-  const sym = `#${ch.svgId}-${pose}`;
-  return `<svg viewBox="0 0 260 220" class="char-svg-large" aria-label="${ch.name} the ${ch.species}" role="img"><use href="${sym}"/></svg>`;
-}
-
-// Get the correct symbol href for the active character in game SVG elements
-function getCharSymbol(pose = "idle") {
-  const ch = getActiveCharacter();
-  return `#${ch.svgId}-${pose}`;
-}
-
-// Update all seal SVG instances to use the active character
-function applyCharacterToAllSeals() {
-  const idleSym  = getCharSymbol("idle");
-  const happySym = getCharSymbol("happy");
-
-  // All seal SVG use elements in the DOM
-  const sealUses = [
-    { prefix: "heroSeal",   sym: "hero-char-body" },
-    { prefix: "missionSeal",sym: "mission-char-body" },
-    { prefix: "customSeal", sym: "custom-char-body" },
-    { prefix: "travelSeal", sym: "travel-char-body" },
-  ];
-
-  // Update the main body <use> elements
-  const bodyIds = ["heroSealBody","missionSealBody","customSealBody","travelSealBody"];
-  bodyIds.forEach(id => {
-    const el = $(id);
-    if (el) el.setAttribute("href", idleSym);
-  });
-
-  // Also update standalone references in rescue animation overlay
-  const rescueSealUse = document.querySelector(".rescue-sausage-svg use");
-  if (rescueSealUse) rescueSealUse.setAttribute("href", idleSym);
-
-  // Update travel seal
-  const travelSvg = document.querySelector("#travelSeal svg use:first-child");
-  if (travelSvg) travelSvg.setAttribute("href", idleSym);
-}
-
 // ─── Learning Mode (lang = "learn") ─────────────────────────────────────────
 // Shows English + Russian translation below every string.
 // Stored per-profile in profile.lang.
@@ -136,16 +27,14 @@ const worlds = [
 ].map((w, i) => ({ ...w, id: i }));
 
 const missionVerbs   = ["Scout the Shore","Rescue a Friend","Build a Helper","Open the Treasure","Calm the Storm"];
-const missionVerbsRu = ["Разведка берега","Спасение друга","Помощь городу","Открыть сокровище","Успокоить бурю"];
 const miniGames      = ["Catch Fish","Treasure Hunt","Find Hidden Penguins","Ice Slide","Feed Baby Seals"];
 const recommendedLevels = [1,3,6,8,10,12,15,18];
-
 const missionDetails = [
-  { title:"Scout the Shore",   titleRu:"Разведка берега",    objective:"Find storm clues",          objectiveRu:"Найди следы бури",              reward:"12 fish, 6 coins, 3 stars",  rewardRu:"12 рыбок, 6 монет, 3 звезды",   story:"Sausage checks the snow for friendly footprints.",          storyRu:"Сосиска ищет в снегу следы друзей." },
-  { title:"Rescue a Friend",   titleRu:"Спасение друга",     objective:"Reach the stranded friend", objectiveRu:"Доберись до застрявшего друга", reward:"new friend, fish, stars",    rewardRu:"новый друг, рыбки, звёзды",     story:"A tiny voice calls from a drifting ice floe.",              storyRu:"Маленький голосок зовёт с уплывающей льдины." },
-  { title:"Build a Helper",    titleRu:"Помощь городу",      objective:"Gather town supplies",      objectiveRu:"Собери припасы для города",     reward:"building progress",          rewardRu:"прогресс строительства",        story:"The town needs lights, warm homes, and busy docks.",        storyRu:"Городу нужны свет, тепло и оживлённые доки." },
-  { title:"Open the Treasure", titleRu:"Открыть сокровище",  objective:"Unlock a frozen chest",     objectiveRu:"Открой замёрзший сундук",       reward:"rare treasure chance",       rewardRu:"шанс на редкое сокровище",      story:"Something shiny is trapped under blue ice.",                storyRu:"Что-то блестящее застряло подо льдом." },
-  { title:"Calm the Storm",    titleRu:"Успокоить бурю",     objective:"Finish the island rescue",  objectiveRu:"Заверши спасение острова",      reward:"next island path",           rewardRu:"путь к следующему острову",     story:"The last gust fades when friends work together.",           storyRu:"Последний порыв ветра стихнет, когда друзья вместе." }
+  { title:"Scout the Shore",   objective:"Find storm clues",            reward:"12 fish, 6 coins, 3 stars",    story:"Sausage checks the snow for friendly footprints." },
+  { title:"Rescue a Friend",   objective:"Reach the stranded friend",   reward:"new friend, fish, stars",      story:"A tiny voice calls from a drifting ice floe." },
+  { title:"Build a Helper",    objective:"Gather town supplies",        reward:"building progress",             story:"The town needs lights, warm homes, and busy docks." },
+  { title:"Open the Treasure", objective:"Unlock a frozen chest",       reward:"rare treasure chance",         story:"Something shiny is trapped under blue ice." },
+  { title:"Calm the Storm",    objective:"Finish the island rescue",    reward:"next island path",              story:"The last gust fades when friends work together." }
 ];
 
 const dialogueBank = {
@@ -165,22 +54,6 @@ const dialogueBank = {
     "Warm flippers, warm heart. Let's rescue someone!",
     "Today feels like a gold-star day."
   ],
-  beforeRu: [
-    "Я взял перекус и храбрость. В основном перекус.",
-    "Сегодня этот остров кажется другим. Давай осмотримся!",
-    "Если ветер усилится — ответим смелостью.",
-    "Маленькая подсказка — тоже подсказка. За мной!",
-    "Ветер пахнет приключением.",
-    "Три вопроса — и мы герои.",
-    "Готов? Остров наблюдает.",
-    "Сосиска радостно виляет. Вперёд!",
-    "Где-то там зовёт друг.",
-    "Каждый правильный ответ приближает спасательную лодку.",
-    "Глубокий вдох. Мы справимся вместе.",
-    "Буря оставила загадку — давай решим её.",
-    "Тёплые ласты, тёплое сердце. Спасём кого-нибудь!",
-    "Сегодня точно будет золотая звезда."
-  ],
   correct: [
     "That made the snow sparkle!",
     "Sausage did a happy belly slide!",
@@ -196,22 +69,6 @@ const dialogueBank = {
     "Sausage is doing the happy spin!",
     "One step closer to bringing a friend home.",
     "The stars just got brighter. Amazing!"
-  ],
-  correctRu: [
-    "От этого снег заискрился!",
-    "Сосиска сделал радостное сальто на животе!",
-    "Спасательные сани рванули вперёд.",
-    "Отличная мысль. Остров заметил.",
-    "Лёд светится — замечательный ответ!",
-    "Рыбка выпрыгнула в честь праздника!",
-    "Сосиска захлопал ластами! Отлично.",
-    "Вот оно. Идеально!",
-    "Спасательная лодка приближается. Давай дальше!",
-    "Блестяще! Даже облака захлопали.",
-    "Этот ответ согрел весь айсберг.",
-    "Сосиска делает радостный кружок!",
-    "Ещё один шаг к тому, чтобы вернуть друга домой.",
-    "Звёзды стали ярче. Невероятно!"
   ],
   wrong: [
     "No worries. Even explorers slip on ice.",
@@ -229,22 +86,6 @@ const dialogueBank = {
     "Brave try! Look at the correct answer.",
     "Mistakes are how we learn. You've got this."
   ],
-  wrongRu: [
-    "Ничего страшного. Все путешественники скользят на льду.",
-    "Попробуем другой путь. Я верю в нас.",
-    "Почти! Подсказка поможет.",
-    "Сосиска встряхнулся и продолжает улыбаться.",
-    "Посмотри ещё раз — ответ совсем рядом.",
-    "Всё хорошо. Мы учимся каждый раз.",
-    "Ответ ближе, чем кажется.",
-    "Все путешественники иногда ошибаются. Ещё раз!",
-    "Не совсем, но мы всё ещё в приключении!",
-    "Лёд бывает хитрым. Загляни в подсказку.",
-    "Сосиска кивает — с каждым бывает.",
-    "Подумай секунду — ты сможешь это решить.",
-    "Смелая попытка! Посмотри на правильный ответ.",
-    "Ошибки — это учёба. У тебя всё получится."
-  ],
   town: [
     "The town sounds busier today.",
     "Someone is visiting the Fish Market.",
@@ -255,16 +96,6 @@ const dialogueBank = {
     "New friends make a town feel alive.",
     "The market smells like fresh fish and adventure."
   ],
-  townRu: [
-    "Сегодня в городе оживлённее.",
-    "Кто-то зашёл на Рыбный рынок.",
-    "Слышу всплеск у гавани.",
-    "Спасённые друзья обживают новый дом.",
-    "Смотри — Пип играет у маяка!",
-    "Блубелла видели у гавани этим утром.",
-    "Новые друзья оживляют город.",
-    "На рынке пахнет свежей рыбой и приключениями."
-  ],
   reward: [
     "Treasure feels better when friends are safe.",
     "That chest was waiting for a clever explorer.",
@@ -274,16 +105,6 @@ const dialogueBank = {
     "Look what bravery and thinking can do!",
     "The Arctic is a little brighter now.",
     "A reward well deserved. On to the next one!"
-  ],
-  rewardRu: [
-    "Сокровища приятнее, когда друзья в безопасности.",
-    "Этот сундук ждал умного исследователя.",
-    "Новый блеск для города!",
-    "Награды, заработанные добротой, — лучшие.",
-    "Сосиска заслужил это. Каждый ответ считался.",
-    "Посмотри, что могут смелость и ум!",
-    "Арктика стала немного светлее.",
-    "Заслуженная награда. Вперёд, к следующей!"
   ]
 };
 
@@ -292,12 +113,6 @@ const rescueLines = [
   "You found me! I saved this treasure just for you.",
   "That was brave and clever. I am moving to Arctic Town!",
   "I was chilly, but now I feel safe. Let's celebrate!"
-];
-const rescueLinesRu = [
-  "Спасибо, Сосиска! Я думал, что никогда не слезу с этой льдины!",
-  "Ты нашёл меня! Я сберёг это сокровище специально для тебя.",
-  "Это было смело и умно. Переезжаю в Арктический город!",
-  "Мне было холодно, но теперь я в безопасности. Отмечаем!"
 ];
 
 const animals = [
@@ -346,13 +161,13 @@ const dailySpecialNames = [
 
 // ─── Daily challenge narratives ──────────────────────────────────────────────
 const dailyNarratives = [
-  { who:"Pip",     text:"Pip needs help finding breakfast today. Answer 5 questions to fill the fish bowl!",           textRu:"Пип ищет завтрак. Ответь на 5 вопросов, чтобы наполнить миску рыбой!" },
-  { who:"Nori",    text:"Nori spotted a storm cloud heading for the docks. Help secure everything in time!",           textRu:"Нори заметил грозовую тучу над доками. Помоги всё закрепить вовремя!" },
-  { who:"Bluebell",text:"Bluebell wants to teach you a new song. Solve 5 puzzles and learn the first verse!",         textRu:"Блубелла хочет научить тебя новой песне. Реши 5 задач и выучи первый куплет!" },
-  { who:"Pebble",  text:"Pebble lost their favourite pebble in the snow. Can you help find it in 5 answers?",         textRu:"Пеббл потерял любимый камешек в снегу. Помоги найти его за 5 ответов!" },
-  { who:"Miska",   text:"Miska set up an extra training session at the Academy. Show off your skills today!",         textRu:"Миска устроила тренировку в Академии. Покажи свои умения сегодня!" },
-  { who:"Nova",    text:"Nova is delivering supplies to the castle. Answer 5 questions and help carry the load!",     textRu:"Нова везёт припасы в замок. Ответь на 5 вопросов и помоги нести груз!" },
-  { who:"Tumble",  text:"Tumble is practising for the Arctic Games. Be their training partner for 5 rounds!",        textRu:"Тамбл готовится к Арктическим играм. Стань партнёром по тренировке на 5 раундов!" }
+  { who:"Pip",     text:"Pip needs help finding breakfast today. Answer 5 questions to fill the fish bowl!" },
+  { who:"Nori",    text:"Nori spotted a storm cloud heading for the docks. Help secure everything in time!" },
+  { who:"Bluebell",text:"Bluebell wants to teach you a new song. Solve 5 puzzles and learn the first verse!" },
+  { who:"Pebble",  text:"Pebble lost their favourite pebble in the snow. Can you help find it in 5 answers?" },
+  { who:"Miska",   text:"Miska set up an extra training session at the Academy. Show off your skills today!" },
+  { who:"Nova",    text:"Nova is delivering supplies to the castle. Answer 5 questions and help carry the load!" },
+  { who:"Tumble",  text:"Tumble is practising for the Arctic Games. Be their training partner for 5 rounds!" }
 ];
 
 // ─── Word problem templates (P4) ─────────────────────────────────────────────
@@ -427,12 +242,11 @@ function setActiveProfileId(id) {
   localStorage.setItem(ACTIVE_KEY, id);
 }
 
-function createProfile(name, emoji, character) {
+function createProfile(name, emoji) {
   return {
     id:        Date.now().toString(36) + Math.random().toString(36).slice(2,6),
     name:      name || "Player",
     emoji:     emoji || "🦭",
-    character: character || "seal",
     createdAt: Date.now(),
     lastPlayed:Date.now(),
     lang:      "en",
@@ -616,40 +430,6 @@ const ISLAND_BRIEFINGS = {
   ],
 };
 
-const ISLAND_BRIEFINGS_RU = {
-  0: [
-    { visual:"🌊", title:"Сложение", body:"Когда мы складываем, мы считаем вперёд, чтобы найти сумму. Начинай с большего числа — так быстрее!", example:"6 + 3 = ?  →  Начни с 6, сосчитай ещё 3  →  9" },
-    { visual:"🐚", title:"Вычитание", body:"Вычитать — значит убирать. Думай так: какое число нужно ПРИБАВИТЬ, чтобы вернуться к началу?", example:"8 - 5 = ?  →  5 + ? = 8  →  3" },
-  ],
-  1: [
-    { visual:"🐟", title:"Сложение до 100", body:"Сначала складывай десятки, потом единицы. Числа станут меньше и удобнее!", example:"34 + 25  →  30+20=50,  4+5=9  →  59" },
-    { visual:"🚢", title:"Перенос", body:"Когда единицы дают 10 и больше, переноси лишний десяток в столбец десятков.", example:"47 + 36  →  7+6=13, пишем 3, переносим 1  →  83" },
-  ],
-  2: [
-    { visual:"🐳", title:"Умножение", body:"Умножение — это быстрый способ сложить одно и то же число несколько раз.", example:"4 × 3 = 4 + 4 + 4 = 12\n(3 группы по 4)" },
-    { visual:"🐠", title:"Деление", body:"Делить — значит разбивать на равные группы. Это обратное умножению!", example:"12 ÷ 4 = ?  →  4 × ? = 12  →  3" },
-  ],
-  3: [
-    { visual:"🐧", title:"Три числа", body:"Складываешь три числа? Сначала сложи первые два, потом прибавь третье. Шаг за шагом!", example:"5 + 7 + 3  →  12 + 3  →  15" },
-    { visual:"❓", title:"Пропущенные числа", body:"Найди, что прячется! Вычти, чтобы обнаружить пропущенную часть.", example:"8 + ☐ = 13  →  13 - 8 = 5  →  ☐ = 5" },
-  ],
-  4: [
-    { visual:"🔮", title:"Числовые закономерности", body:"Закономерности повторяются или растут одинаково. Найди правило — предскажи следующее!", example:"2, 4, 8, 16, ?  →  Каждый раз ×2  →  32" },
-    { visual:"🐙", title:"Сначала скобки!", body:"Всегда решай то, что внутри скобок (  ), прежде чем делать остальное.", example:"(3 + 4) × 2  →  7 × 2  →  14" },
-  ],
-  5: [
-    { visual:"🔭", title:"Уравнения с x", body:"x — это загадочное число. Чтобы найти его, делай обратное действие с обеих сторон.", example:"x + 7 = 15  →  x = 15 - 7  →  x = 8" },
-    { visual:"📐", title:"Порядок действий", body:"× и ÷ всегда идут раньше + и −, если нет скобок.", example:"3 + 4 × 2  →  3 + 8  →  11  (НЕ 14)" },
-  ],
-  6: [
-    { visual:"👑", title:"Дроби", body:"Дробь показывает часть целого. Нижнее число — сколько равных частей. Верхнее — сколько у тебя.", example:"¼ от 20  →  20 ÷ 4  →  5" },
-    { visual:"📖", title:"Задачи в словах", body:"Читай внимательно. Подчеркни числа. Реши: сложить, вычесть, умножить или разделить?", example:"«5 ящиков, по 4 рыбки»  →  5 × 4 = 20 рыбок" },
-  ],
-  7: [
-    { visual:"🏆", title:"Режим чемпиона!", body:"Каждый вопрос — любая тема. Слабые темы появляются чаще — чтобы ты становился лучше!", example:"Давай вперёд — Арктике нужен её Хранитель! 🦭" },
-  ],
-};
-
 // ── Smart hint data ───────────────────────────────────────────
 const SMART_HINTS = {
   add10:      { title:"Adding tip", text:"Count up from the bigger number. Use your fingers if it helps!", example:"4 + 7  →  start at 7, count up 4  →  11" },
@@ -674,29 +454,6 @@ const SMART_HINTS = {
   brackets:   { title:"Brackets first — always", text:"Whatever is inside (   ) must be solved before anything outside.", example:"(6 + 2) × 3  →  8 × 3  →  24" },
 };
 
-const SMART_HINTS_RU = {
-  add10:      { title:"Совет по сложению", text:"Считай вперёд от большего числа. Используй пальцы, если помогает!", example:"4 + 7  →  начни с 7, сосчитай ещё 4  →  11" },
-  add20:      { title:"Сделай десяток", text:"Раздели одно число, чтобы сначала получить круглый десяток — так проще.", example:"8 + 6  →  8 + 2 + 4  →  10 + 4  →  14" },
-  sub20:      { title:"Думай через сложение", text:"Вместо вычитания спроси: что нужно ПРИБАВИТЬ, чтобы получить нужное число?", example:"13 - 8 = ?  →  8 + ? = 13  →  5" },
-  add100:     { title:"Сначала десятки", text:"Сначала складывай столбец десятков, потом единиц.", example:"46 + 32  →  40+30=70,  6+2=8  →  78" },
-  sub100:     { title:"Считай вперёд", text:"Считай вперёд от меньшего числа до большего.", example:"73 - 48  →  48→50 (+2),  50→73 (+23)  →  25" },
-  carryBorrow:{ title:"Выравнивай столбцы", text:"Единицы под единицами, десятки под десятками. Переноси или занимай, когда нужно.", example:"57 + 36:  7+6=13, пишем 3, переносим 1, 5+3+1=9  →  93" },
-  multiply:   { title:"Группы", text:"Умножение = равные группы. Нарисуй группы, если помогает!", example:"3 × 5 = три группы по пять = 5+5+5 = 15" },
-  divide:     { title:"Используй таблицу умножения", text:"Думай: какое умножение даёт это число?", example:"24 ÷ 6 = ?  →  6 × ? = 24  →  4" },
-  reverseMul: { title:"Раздели, чтобы найти", text:"Чтобы найти пропущенный множитель, раздели произведение на известное число.", example:"? × 7 = 42  →  42 ÷ 7 = 6" },
-  missing:    { title:"Вычти, чтобы найти", text:"Пропущенное число = большое число минус известное число.", example:"9 + ☐ = 16  →  16 - 9 = 7" },
-  patterns:   { title:"Найди правило", text:"Смотри, как меняется каждое число. Это +что-то? ×что-то?", example:"3, 6, 12, 24…  каждый раз ×2  →  следующий 48" },
-  logic:      { title:"Сравнивай шаг за шагом", text:"Сравнивай только два предмета за раз. Потом победителя сравни со следующим.", example:"A > B,  B > C  →  A самое большое" },
-  equations:  { title:"Делай обратное", text:"Сложение и вычитание — противоположности. То же с × и ÷. Используй обратное, чтобы найти x.", example:"x + 9 = 14  →  x = 14 - 9  →  x = 5" },
-  advEquations:{ title:"Выдели x", text:"Что бы ни делали с x, сделай обратное с обеих сторон знака равенства.", example:"3 × x = 21  →  x = 21 ÷ 3  →  x = 7" },
-  fractions:  { title:"Знаменатель = части", text:"Нижнее число говорит, на сколько равных частей разделено целое.", example:"¼ от 20  →  20 ÷ 4  →  5 частей" },
-  fracCompare:{ title:"Одинаковые кусочки", text:"Больший знаменатель = меньший кусочек. Представь пиццу, разрезанную на 2 или 8 частей.", example:"½ > ¼  потому что половинки больше четвертинок" },
-  twoStep:    { title:"Шаг за шагом", text:"Не спеши! Реши ПЕРВУЮ часть, запиши ответ, потом реши ВТОРУЮ часть.", example:"Начало: 15 рыбок.  Шаг 1: отдай 4 → 11.  Шаг 2: поймай ещё 7 → 18" },
-  word:       { title:"Подчеркни числа", text:"Читай медленно. Подчеркни каждое число. Потом реши: сложить, вычесть, умножить или разделить?", example:"«3 лодки, по 6 рыбок»  →  3 × 6 = 18 рыбок" },
-  orderOfOps: { title:"× и ÷ идут первыми", text:"Всегда делай умножение и деление ДО сложения и вычитания — слева направо.", example:"2 + 3 × 4  →  2 + 12  →  14  (не 20!)" },
-  brackets:   { title:"Скобки — всегда первые", text:"Всё, что внутри (  ), нужно решить до всего остального.", example:"(6 + 2) × 3  →  8 × 3  →  24" },
-};
-
 // ── Consecutive mistake tracker ───────────────────────────────
 let _consecutiveMistakes = 0;
 
@@ -706,9 +463,7 @@ let _briefingSlides = [];
 let _briefingWorldId = 0;
 
 function showIslandBriefing(worldId) {
-  const isRu    = currentLang === "ru";
-  const pool    = isRu ? (ISLAND_BRIEFINGS_RU[worldId] || ISLAND_BRIEFINGS[worldId]) : ISLAND_BRIEFINGS[worldId];
-  const slides  = pool;
+  const slides = ISLAND_BRIEFINGS[worldId];
   if (!slides || !slides.length) return;
   _briefingSlides  = slides;
   _briefingSlide   = 0;
@@ -756,9 +511,8 @@ function closeBriefing() {
 // ── Smart Hint functions ──────────────────────────────────────
 function maybeShowSmartHint(topic) {
   _consecutiveMistakes++;
-  if (_consecutiveMistakes < 2) return;
-  const isRu = currentLang === "ru";
-  const hint  = (isRu ? SMART_HINTS_RU[topic] : null) || SMART_HINTS[topic];
+  if (_consecutiveMistakes < 2) return;          // only after 2nd mistake
+  const hint = SMART_HINTS[topic];
   if (!hint) return;
   const panel = $("smartHintPanel");
   if (!panel) return;
@@ -766,6 +520,7 @@ function maybeShowSmartHint(topic) {
   $("smartHintText").textContent    = hint.text;
   $("smartHintExample").textContent = hint.example || "";
   panel.hidden = false;
+  // auto-hide after 12 seconds
   clearTimeout(panel._timer);
   panel._timer = setTimeout(() => { panel.hidden = true; }, 12000);
 }
@@ -790,25 +545,14 @@ const RESCUE_DIALOGUES = {
   Nova:          ["{name}! I ran three times around the island with joy!", "A fox's nose knows a clever mind — and yours is the cleverest!", "You found me! I was hiding but honestly… I'm so glad."],
   Tumble:        ["SPLASH! That's me jumping for joy, {name}!", "I floated here on an ice floe waiting for a hero like you!", "The sea otters will sing songs about {name} forever!"],
 };
-const RESCUE_DIALOGUES_RU = {
-  Pip:           ["Спасибо, {name}! Я думал, лёд никогда не кончится!", "Ты проделал такой путь ради меня? Ты невероятный, {name}!", "Ласты замёрзли, но сердце тёплое — спасибо тебе!"],
-  Nori:          ["Рыбки в безопасности благодаря тебе, {name}!", "{name}! Ты решил все задачи — я знал, что у тебя получится!", "Я так долго ждал. Спасибо, смелый исследователь!"],
-  Bluebell:      ["БУ-У-УМ! (По-китовому это СПАСИБО, {name}!)", "Весь океан услышал твои умные ответы!", "Ты лучший математик в Арктике, {name}!"],
-  Pebble:        ["Парад пингвинов наконец может продолжиться!", "{name}, твой мозг больше этого айсберга!", "Я считал каждый ответ — ты был блестящим!"],
-  "Professor Octo":["Твои вычисления… *поправляет очки* …безупречны.", "Я проверил 847 исследователей. Ты, {name}, исключителен.", "Восхитительно! Юный математик с настоящим талантом!"],
-  Miska:         ["Ты сдал тест Полярной академии, {name}!", "Я никогда не видел такой решимости. Ты заслужил это!", "В Арктике появился новый чемпион. Добро пожаловать в академию!"],
-  Nova:          ["{name}! Я три раза обежал остров от радости!", "Нос лисы чует острый ум — а твой самый острый!", "Ты нашёл меня! Я прятался, но честно… я так рад."],
-  Tumble:        ["ПЛЮХ! Это я прыгаю от радости, {name}!", "Я доплыл сюда на льдине в ожидании такого героя, как ты!", "Морские выдры будут петь о {name} вечно!"],
-};
 
 function showRescueCelebration(worldId, playerName) {
   const world     = worlds[worldId];
   const charName  = world?.character || "Friend";
   const emoji     = ["🐧","🐟","🐳","🐧","🐙","🦭","🦊","🦦","🦭"][worldId] || "🌟";
-  const isRu      = currentLang === "ru";
-  const pool      = (isRu ? RESCUE_DIALOGUES_RU[charName] : null) || RESCUE_DIALOGUES[charName] || [`Thank you, ${playerName}!`];
-  const quote     = pool[Math.floor(Math.random()*pool.length)].replace(/{name}/g, playerName || "Explorer");
-  const lines     = isRu ? rescueLinesRu : rescueLines;
+  const dialogues = RESCUE_DIALOGUES[charName] || [`Thank you, ${playerName}!`];
+  const quote     = dialogues[Math.floor(Math.random()*dialogues.length)]
+                      .replace(/{name}/g, playerName || "Explorer");
 
   $("rescueCelChar").textContent  = emoji;
   $("rescueCharName").textContent = charName;
@@ -944,13 +688,12 @@ function renderProfileList() {
   }
   list.innerHTML = profiles.map(p => {
     const last = p.lastPlayed ? formatLastPlayed(p.lastPlayed) : "Never";
-    const ch = getCharacterById(p.character || "seal");
     return `<div class="profile-card" data-pid="${p.id}">
       <button class="profile-play-btn" data-pid="${p.id}" aria-label="Play as ${p.name}">
-        <span class="profile-card-emoji">${ch.emoji}</span>
+        <span class="profile-card-emoji">${p.emoji}</span>
         <div class="profile-card-info">
           <strong class="profile-card-name">${p.name}</strong>
-          <span class="profile-card-sub">${ch.name} · Level ${p.state?.level||1} · ${p.state?.animals?.length||0}/9 friends · ${last}</span>
+          <span class="profile-card-sub">Level ${p.state?.level||1} · ${p.state?.animals?.length||0}/9 friends · ${last}</span>
         </div>
       </button>
       <button class="profile-edit-btn" data-pid="${p.id}" aria-label="Edit ${p.name}">✏️</button>
@@ -997,50 +740,20 @@ function openProfileEdit(id) {
 
   const existing = id ? profiles.find(p => p.id === id) : null;
   let chosenEmoji = existing?.emoji || "🦭";
-  let chosenChar  = existing?.character || "seal";
 
   title.textContent     = existing ? "Edit Player" : "New Player";
   nameInp.value         = existing?.name || "";
 
-  // Character picker (shown for new profiles)
-  const charPickerHtml = !existing ? `
-    <div class="char-picker-label">Choose your character</div>
-    <div class="char-picker-row" id="charPickerRow">
-      ${STARTER_CHARACTERS.map(ch => `
-        <button class="char-pick-btn ${ch.id===chosenChar?"selected":""}" data-char="${ch.id}" aria-label="${ch.name} the ${ch.species}">
-          <span class="char-pick-emoji">${ch.emoji}</span>
-          <span class="char-pick-name">${ch.name}</span>
-          <span class="char-pick-species">${ch.species}</span>
-        </button>
-      `).join("")}
-    </div>
-  ` : ``;
-
-  // Emoji picker (only shown when editing)
-  const emojiHtml = existing ? PROFILE_EMOJIS.map(e =>
+  // Emoji picker
+  emojiRow.innerHTML = PROFILE_EMOJIS.map(e =>
     `<button class="emoji-pick-btn ${e===chosenEmoji?"selected":""}" data-emoji="${e}" aria-label="${e}">${e}</button>`
-  ).join("") : "";
-
-  emojiRow.innerHTML = emojiHtml + charPickerHtml;
-
-  // Bind emoji picker
+  ).join("");
   emojiRow.querySelectorAll(".emoji-pick-btn").forEach(btn => {
     btn.addEventListener("click", () => {
       chosenEmoji = btn.dataset.emoji;
       emojiRow.querySelectorAll(".emoji-pick-btn").forEach(b => b.classList.toggle("selected", b===btn));
     });
   });
-
-  // Bind character picker
-  const charRow = emojiRow.querySelector("#charPickerRow");
-  if (charRow) {
-    charRow.querySelectorAll(".char-pick-btn").forEach(btn => {
-      btn.addEventListener("click", () => {
-        chosenChar = btn.dataset.char;
-        charRow.querySelectorAll(".char-pick-btn").forEach(b => b.classList.toggle("selected", b===btn));
-      });
-    });
-  }
 
   // Action buttons
   if (existing) {
@@ -1081,8 +794,7 @@ function openProfileEdit(id) {
     actions.querySelector("#pmCreate").addEventListener("click", () => {
       if (profiles.length >= MAX_PROFILES) { alert("Maximum 20 players reached."); return; }
       const name = nameInp.value.trim() || "Player";
-      const ch = getCharacterById(chosenChar);
-      const p = createProfile(name, ch.emoji, chosenChar);
+      const p = createProfile(name, chosenEmoji);
       profiles.push(p);
       saveProfiles(profiles);
       closeProfileEdit();
@@ -1105,10 +817,9 @@ function closeProfileEdit() {
 // ─── Profile topbar ───────────────────────────────────────────────────────────
 function updateProfileTopbar() {
   const prof = getActiveProfile();
-  const ch   = getActiveCharacter();
   const emojiEl = $("profileTopbarEmoji");
   const nameEl  = $("profileTopbarName");
-  if (emojiEl) emojiEl.textContent = ch.emoji;
+  if (emojiEl) emojiEl.textContent = prof?.emoji || "🦭";
   if (nameEl)  nameEl.textContent  = prof?.name  || "Player";
 }
 
@@ -1120,29 +831,20 @@ function showWelcomeBack() {
   const toNext = 100 - (state.xp % 100);
   const streak = state.streak.count;
   const friendCount = state.animals.length;
-  const isRu = currentLang === "ru";
-  const wName = t(`world${world.id}`) || world.name;
-
-  const streakMsg = isRu
-    ? (streak >= 3 ? `🔥 ${streak} дней подряд — так держать!` : streak === 1 ? `Ты вернулся! Серия началась.` : `Возвращайся завтра, чтобы начать серию!`)
-    : (streak >= 3 ? `🔥 ${streak}-day streak — keep it up!`   : streak === 1 ? `You came back! Streak started.`  : `Come back tomorrow to start a streak!`);
-
-  const xpMsg = isRu
-    ? `Ещё ${toNext} правильных ответов до уровня ${state.level+1}!`
-    : `${toNext} correct answers to level ${state.level+1}!`;
-
+  const streakMsg  = streak >= 3 ? `🔥 ${streak}-day streak — keep it up!` :
+                     streak === 1 ? `You came back! Streak started.` : `Come back tomorrow to start a streak!`;
   overlay.innerHTML = `
     <div class="welcome-back-box">
       <div class="wb-seal">${animalSvgLarge(1,"Pip")}</div>
-      <h2 class="wb-title">${isRu ? "С возвращением!" : "Welcome back!"}</h2>
+      <h2 class="wb-title">Welcome back!</h2>
       <div class="wb-stats">
-        <div class="wb-stat"><span class="wb-num">${wName}</span><span class="wb-lbl">${isRu ? "текущий остров" : "current island"}</span></div>
-        <div class="wb-stat"><span class="wb-num">${state.level}</span><span class="wb-lbl">${isRu ? "уровень" : "level"}</span></div>
-        <div class="wb-stat"><span class="wb-num">${friendCount}/9</span><span class="wb-lbl">${isRu ? "друзей спасено" : "friends rescued"}</span></div>
+        <div class="wb-stat"><span class="wb-num">${world.name}</span><span class="wb-lbl">current island</span></div>
+        <div class="wb-stat"><span class="wb-num">${state.level}</span><span class="wb-lbl">level</span></div>
+        <div class="wb-stat"><span class="wb-num">${friendCount}/9</span><span class="wb-lbl">friends rescued</span></div>
       </div>
       <p class="wb-streak">${streakMsg}</p>
-      <p class="wb-xp">${xpMsg}</p>
-      <button class="primary wb-btn" id="wbCloseBtn">${isRu ? "Вперёд! 🚀" : "Let's go! 🚀"}</button>
+      <p class="wb-xp">${toNext} correct answers to level ${state.level+1}!</p>
+      <button class="primary wb-btn" id="wbCloseBtn">Let's go! 🚀</button>
     </div>`;
   overlay.hidden = false;
   const btn = overlay.querySelector("#wbCloseBtn");
@@ -1156,7 +858,7 @@ function attachEvents() {
   $("miniGameBtn").addEventListener("click",       startMiniGame);
   $("closeMiniBtn").addEventListener("click",      () => { $("miniGame").hidden = true; if (miniGameTimer) { clearTimeout(miniGameTimer); miniGameTimer = null; } });
   $("hintBtn").addEventListener("click",           showHint);
-  $("rewardClose").addEventListener("click",       () => { $("rewardModal").hidden = true; practiceMode = false; });
+  $("rewardClose").addEventListener("click",       () => $("rewardModal").hidden = true);
   $("exportBtn").addEventListener("click",         exportProgress);
   $("importBtn").addEventListener("click",         importProgress);
   $("resetStatsBtn").addEventListener("click",     resetStatistics);
@@ -1166,11 +868,6 @@ function attachEvents() {
   $("menuBtn").addEventListener("click",           () => $("tabs").classList.toggle("open"));
   document.querySelectorAll(".tab").forEach(btn => btn.addEventListener("click", () => switchView(btn.dataset.view)));
   document.addEventListener("pointerdown", initAudio, { once:true });
-
-  // Practice mode button in quest panel
-  const practiceBtn = $("practiceModeBtn");
-  if (practiceBtn) practiceBtn.addEventListener("click", () => startPracticeMode());
-
   // S5: Rescue celebration close
   const rescueCelClose = $("rescueCelClose");
   if (rescueCelClose) rescueCelClose.addEventListener("click", () => {
@@ -1267,10 +964,13 @@ function nextMission(worldId = selectedWorld) { return Math.min(4, completedMiss
 
 function renderMap() {
   $("worldMap").innerHTML = worlds.map(world => {
-    const locked = world.id > state.unlockedWorld;
-    const done   = completedMissions(world.id);
-    return `<button class="island island-${world.id} ${locked?"locked":""} ${world.id===selectedWorld?"selected":""}" data-world="${world.id}" aria-label="${world.name}, ${done} of 5 missions complete${locked?" - locked":""}">
-      ${islandSvg(world,locked)}<span>${world.id+1}. ${world.name}<small>${done}/5 missions - level ${recommendedLevels[world.id]}</small></span>
+    const locked   = world.id > state.unlockedWorld;
+    const done     = completedMissions(world.id);
+    const nameKey  = `world${world.id}`;
+    const wName    = t(nameKey) || world.name;
+    const missLabel= t("missionsLabel") || "missions - level";
+    return `<button class="island island-${world.id} ${locked?"locked":""} ${world.id===selectedWorld?"selected":""}" data-world="${world.id}" aria-label="${wName}, ${done} of 5 missions complete${locked?" - locked":""}">
+      ${islandSvg(world,locked)}<span>${world.id+1}. ${wName}<small>${done}/5 ${missLabel} ${recommendedLevels[world.id]}</small></span>
     </button>`;
   }).join("");
   document.querySelectorAll(".island").forEach(btn => btn.addEventListener("click", () => chooseIsland(Number(btn.dataset.world))));
@@ -1328,116 +1028,38 @@ function renderQuest() {
   const mission = nextMission();
   const details = missionDetails[mission] || missionDetails[4];
   const islandPct = Math.round((done/5)*100);
-  const isRu = currentLang === "ru";
+  const wName   = t(`world${selectedWorld}`) || w.name;
+  $("questTitle").textContent    = wName;
   const rec = recommendedLevels[selectedWorld];
-  $("questTitle").textContent    = t(`world${selectedWorld}`) || w.name;
-  $("questText").textContent     = `${w.subtitle}. ${isRu ? (details.storyRu || details.story) : details.story} ${t("recommendedLevel")} ${rec}.`;
-  $("dialogBox").textContent     = state.level < rec
-    ? (isRu ? `${w.character}: Здесь рекомендован уровень ${rec}, но смелые исследователи могут зайти.`
-             : `${w.character}: This place is level ${rec}, but brave explorers may still visit unlocked islands.`)
-    : dialogFor(w, mission);
+  $("questText").textContent     = `${w.subtitle}. ${details.story} ${t("recommendedLevel")} ${rec}.`;
+  $("dialogBox").textContent     = state.level < rec ? `${w.character}: This place is level ${rec}, but brave explorers may still visit unlocked islands.` : dialogFor(w, mission);
   $("islandProgressText").textContent  = `${t("islandProgress")} ${islandPct}%`;
   $("islandMeter").style.width   = `${islandPct}%`;
   $("missionProgressText").textContent = done >= 5 ? t("islandComplete") : `${t("missionOf")} ${mission+1} / 5`;
   $("missionMeter").style.width  = `${done >= 5 ? 100 : 0}%`;
-  const obj = isRu ? (details.objectiveRu || details.objective) : details.objective;
-  const rew = isRu ? (details.rewardRu    || details.reward)    : details.reward;
-  $("nextRewardText").textContent = `${t("objective")}: ${obj}. ${t("rewardLabel")}: ${rew}.`;
+  $("nextRewardText").textContent = `${t("objective")}: ${details.objective}. ${t("rewardLabel")}: ${details.reward}.`;
   $("startChallengeBtn").textContent = done >= 5 ? t("replayMission") : `${t("startMission")} ${mission+1}`;
 }
 
 function dialogFor(world, mission) {
-  const isRu = currentLang === "ru";
-  const lines = isRu ? [
-    `${world.character}: Сосиска, буря оставила следы в снегу. Начнём с малого и смелого.`,
-    `${world.character}: Вижу друга неподалёку. Три правильных ответа — и спасательные сани двинутся.`,
-    `${world.character}: Городу нужен новый помощник. Заработаем припасы и сделаем его лучше.`,
-    `${world.character}: Сундук с сокровищами заморожен. Разогрей его умными мыслями.`,
-    `${world.character}: Это последний порыв ветра. Потом остров снова засверкает.`
-  ] : [
+  const lines = [
     `${world.character}: Sausage, the storm left clues in the snow. Let's start small and brave.`,
     `${world.character}: I can see a friend nearby. Three good answers will move the rescue sled.`,
     `${world.character}: The town needs a new helper. Let's earn supplies and make it shine.`,
     `${world.character}: A treasure chest is frozen shut. Warm it up with clever thinking.`,
     `${world.character}: This is the final gust. Then this island will sparkle again.`
   ];
-  return lines[mission] || (isRu
-    ? `${world.character}: Этот остров в безопасности. Хочешь повторить за дополнительное сокровище?`
-    : `${world.character}: This island is safe. Want to replay for extra treasure?`);
+  return lines[mission] || `${world.character}: This island is safe. Want to replay for extra treasure?`;
 }
 
-// ─── Practice Mode ────────────────────────────────────────────────────────────
-let practiceMode = false;
-let practiceModeWorld = 0;
-
-function startPracticeMode(worldId) {
-  practiceMode = true;
-  practiceModeWorld = worldId !== undefined ? worldId : selectedWorld;
-  const isRu = currentLang === "ru";
-  // Show practice world picker if not specified
-  const modal = $("practiceModeModal");
-  if (modal) { modal.hidden = false; renderPracticeWorldPicker(); return; }
-  startPracticeMission();
+// ─── Mission ─────────────────────────────────────────────────────────────────
+function exitMission() {
+  if (!confirm("Exit this mission? Your progress on this question will be lost.")) return;
+  trip.active = false;
+  $("challenge").hidden = true;
+  renderQuest();
 }
 
-function renderPracticeWorldPicker() {
-  const modal = $("practiceModeModal");
-  if (!modal) return;
-  const isRu = currentLang === "ru";
-  const title = isRu ? "Режим тренировки" : "Practice Mode";
-  const subtitle = isRu ? "Выбери остров для практики. Прогресс сохраняться не будет." : "Choose an island to practise. No story progress will be saved.";
-  modal.innerHTML = `
-    <div class="practice-modal-box">
-      <h2 class="practice-title">${title}</h2>
-      <p class="practice-subtitle">${subtitle}</p>
-      <div class="practice-island-grid">
-        ${worlds.map(w => `
-          <button class="practice-island-btn" data-world="${w.id}" aria-label="Practise ${w.name}">
-            ${islandSvg(w, false)}
-            <span>${w.name}</span>
-          </button>
-        `).join("")}
-      </div>
-      <button class="secondary practice-close-btn" id="practiceModeClose">✕ ${isRu ? "Закрыть" : "Close"}</button>
-    </div>`;
-  modal.querySelectorAll(".practice-island-btn").forEach(btn => {
-    btn.addEventListener("click", () => {
-      practiceModeWorld = Number(btn.dataset.world);
-      modal.hidden = true;
-      startPracticeMission();
-    });
-  });
-  const closeBtn = modal.querySelector("#practiceModeClose");
-  if (closeBtn) closeBtn.addEventListener("click", () => { practiceMode = false; modal.hidden = true; });
-}
-
-function startPracticeMission() {
-  const isRu = currentLang === "ru";
-  practiceMode = true;
-  switchView("adventure");
-  const world = worlds[practiceModeWorld];
-  trip = {
-    active: true,
-    world: practiceModeWorld,
-    mission: 0,
-    solved: 0,
-    needed: 5,
-    correct: 0,
-    daily: false,
-    mistakes: 0,
-    practice: true
-  };
-  $("challenge").hidden = false;
-  $("miniGame").hidden  = true;
-  const scene = document.querySelector(".challenge-scene");
-  if (scene) scene.style.background = `linear-gradient(${world.palette[0]} 0 45%, ${world.palette[1]} 45% 100%)`;
-  react("swim");
-  makeProblem();
-  toast(isRu ? `🎯 Тренировка: ${world.name}` : `🎯 Practice: ${world.name}`);
-}
-
-// Override completeMission for practice mode (no progression saved)
-const _origCompleteMission = null; // we handle inline
 function startMission(daily) {
   if (miniGameTimer) { clearTimeout(miniGameTimer); miniGameTimer = null; }
   switchView("adventure");
@@ -1445,6 +1067,16 @@ function startMission(daily) {
   trip = { active:true, world:selectedWorld, mission, solved:0, needed:5+(mission>2?2:0), correct:0, daily, mistakes:0 };
   $("challenge").hidden = false;
   $("miniGame").hidden  = true;
+  // Add back-to-map button if not already there
+  if (!$("backToMapBtn")) {
+    const btn = document.createElement("button");
+    btn.id = "backToMapBtn";
+    btn.className = "back-to-map-btn";
+    btn.setAttribute("aria-label", "Back to map");
+    btn.innerHTML = "← Map";
+    btn.addEventListener("click", exitMission);
+    $("challenge").prepend(btn);
+  }
   // P6: apply island palette to challenge scene
   const w = worlds[trip.world];
   const scene = document.querySelector(".challenge-scene");
@@ -1459,26 +1091,12 @@ function makeProblem() {
   const details = missionDetails[trip.mission] || missionDetails[0];
   currentProblem = generateProblem(topic);
   currentProblem.started = Date.now();
-  const isRu    = currentLang === "ru";
-  const verbsArr = isRu ? missionVerbsRu : missionVerbs;
   $("topicLabel").innerHTML    = currentLang === "learn"
     ? `${world.name} - ${missionVerbs[trip.mission]}<span class="learn-ru">${topicLabelLearn(topic)}</span>`
-    : `${t(`world${trip.world}`) || world.name} - ${verbsArr[trip.mission] || missionVerbs[trip.mission]}`;
-  $("missionTitle").textContent  = trip.daily
-    ? (isRu ? "Ежедневное спасение" : "Daily Rescue")
-    : (isRu ? `Миссия ${trip.mission+1}: ${details.titleRu || details.title}` : `Mission ${trip.mission+1}: ${details.title}`);
-  $("questionsLeft").textContent = isRu
-    ? `${Math.max(0, trip.needed-trip.solved)} ${t("questionsLeft")}`
-    : `${Math.max(0, trip.needed-trip.solved)} ${t("questionsLeft")}`;
-  const ptEl = $("problemText");
-  ptEl.textContent = currentProblem.text;
-  // Adaptive font size based on topic and length
-  ptEl.classList.remove("word-problem","long-problem");
-  if (currentProblem.topic === "word" || currentProblem.topic === "twoStep") {
-    ptEl.classList.add("word-problem");
-  } else if (currentProblem.text.length > 28) {
-    ptEl.classList.add("long-problem");
-  }
+    : `${world.name} - ${missionVerbs[trip.mission]}`;
+  $("missionTitle").textContent  = trip.daily ? "Daily Rescue" : `Mission ${trip.mission+1}: ${details.title}`;
+  $("questionsLeft").textContent = `${Math.max(0, trip.needed-trip.solved)} questions remaining`;
+  $("problemText").textContent   = currentProblem.text;
   $("hintText").hidden           = true;
   $("hintText").textContent      = currentProblem.hint;
   // P2: clear any previous correct-reveal and continue button
@@ -1935,8 +1553,7 @@ function answer(value, btn) {
 function showCorrectReveal(problem) {
   const el = $("correctReveal");
   if (!el) return;
-  const isRu = currentLang === "ru";
-  let answerText = isRu ? `Правильный ответ: ${problem.answer}` : `The answer is ${problem.answer}`;
+  let answerText = `The answer is ${problem.answer}`;
   if (problem.topic === "equations") answerText = `x = ${problem.answer}`;
 
   let vocabHtml = "";
@@ -1974,16 +1591,17 @@ function showCorrectReveal(problem) {
 }
 
 function showContinueButton() {
+  // Add a "Next Question →" button after the reveal panel
   const el = $("correctReveal");
   if (!el) return;
+  // Remove any existing continue btn first
   const existing = $("continueBtn");
   if (existing) existing.remove();
-  const isRu = currentLang === "ru";
   const btn = document.createElement("button");
   btn.id = "continueBtn";
   btn.className = "continue-btn";
-  btn.textContent = isRu ? "Следующий вопрос →" : "Next Question →";
-  btn.setAttribute("aria-label", isRu ? "Следующий вопрос" : "Continue to next question");
+  btn.textContent = "Next Question →";
+  btn.setAttribute("aria-label", "Continue to next question");
   btn.addEventListener("click", () => {
     btn.remove();
     el.hidden = true;
@@ -2018,31 +1636,6 @@ function gainRewards() {
 
 function completeMission() {
   $("challenge").hidden = true;
-
-  // Practice Mode: no progression saved
-  if (trip.practice) {
-    practiceMode = false;
-    react("victory");
-    sealPose("victory");
-    playSound("perfect");
-    confetti();
-    const isRu = currentLang === "ru";
-    const score = `${trip.correct}/${trip.needed}`;
-    const msg = isRu
-      ? `Тренировка завершена! ${score} правильно. Никаких изменений в прогрессе.`
-      : `Practice complete! ${score} correct. No story progress saved.`;
-    // Show simple result modal
-    const rewardModal = $("rewardModal");
-    if (rewardModal) {
-      $("rewardTitle").textContent = isRu ? "🎯 Тренировка завершена!" : "🎯 Practice Complete!";
-      $("rewardText").innerHTML = `<p>${msg}</p>`;
-      rewardModal.hidden = false;
-    } else {
-      toast(msg);
-    }
-    return;
-  }
-
   if (trip.mistakes === 0) state.perfectTrips++;
 
   const world    = worlds[trip.world];
@@ -2295,7 +1888,28 @@ function showReward(animal, building, rare) {
 // ─── Town ─────────────────────────────────────────────────────────────────────
 function renderTown() {
   const positions = [[7,58],[22,38],[38,58],[53,35],[68,58],[79,37],[12,22],[58,16]];
+
+  // S6: Living Town — aurora, stars, snowflakes
+  const starCount = 18;
+  const stars = Array.from({length:starCount}, (_,i) => {
+    const dur  = 1.5 + Math.random()*3;
+    const del  = Math.random()*4;
+    return `<div class="town-star" style="left:${Math.random()*100}%;top:${Math.random()*40}%;width:${2+Math.random()*3}px;height:${2+Math.random()*3}px;animation-duration:${dur}s;animation-delay:${del}s"></div>`;
+  }).join("");
+
+  const flakeEmojis = ["❄","❅","❆","✦"];
+  const flakes = Array.from({length:8}, (_,i) => {
+    const dur = 4+Math.random()*5;
+    const del = Math.random()*6;
+    return `<div class="town-flake" style="left:${Math.random()*90}%;animation-duration:${dur}s;animation-delay:${del}s">${flakeEmojis[i%4]}</div>`;
+  }).join("");
+
+  const auroraHtml = `<div class="town-aurora"><div class="town-aurora-band"></div><div class="town-aurora-band"></div><div class="town-aurora-band"></div>${stars}${flakes}</div>`;
+  const groundHtml = `<div class="town-ground-snow"></div>`;
+
   const livelyExtras = `
+    ${auroraHtml}
+    ${groundHtml}
     <span class="town-fish" style="left:-40px;top:52%;animation-delay:.2s"></span>
     <span class="town-fish" style="left:-120px;top:61%;animation-delay:1.4s"></span>
     <span class="town-splash" style="left:76%;top:47%"></span>
@@ -2374,17 +1988,37 @@ function buyItem(id) {
 }
 
 function renderCloset() {
-  const equippedNames = Object.entries(state.equipped).map(([slot,id]) => {
+  // S6: Equipment overlay badges
+  const equippedItems = Object.entries(state.equipped).map(([slot,id]) => {
     const item = shop.find(s => s.id===id);
-    return `<div>${slot}: <b>${item?item.name:"None yet"}</b></div>`;
-  }).join("");
-  $("equippedList").innerHTML = equippedNames;
+    return { slot, item };
+  });
+  const overlayHtml = `<div class="equipment-overlay">${equippedItems.map(({slot,item}) =>
+    item ? `<div class="equip-badge"><span class="equip-slot">${slot}:</span>${item.name}</div>` : ""
+  ).join("")}</div>`;
+
+  // S6: Summary chips row
+  const summaryHtml = `<div class="equipped-summary">${equippedItems.map(({slot,item}) =>
+    item
+      ? `<span class="equipped-summary-chip">${slot}: <b>${item.name}</b></span>`
+      : `<span class="equipped-summary-chip empty">${slot}: none</span>`
+  ).join("")}</div>`;
+
+  // Insert overlay into .seal-preview (needs position:relative via CSS)
+  const previewEl = document.querySelector(".seal-preview");
+  if (previewEl) {
+    const existing = previewEl.querySelector(".equipment-overlay");
+    if (existing) existing.remove();
+    previewEl.insertAdjacentHTML("beforeend", overlayHtml);
+  }
+
+  $("equippedList").innerHTML = summaryHtml;
   $("closetGrid").innerHTML   = shop.map(item => {
     const owned  = state.shop.includes(item.id);
     const active = state.equipped[item.type] === item.id;
     return `<article class="item-card ${owned?"":"locked"}">${costumeSvg(item.id)}<h3>${item.name}</h3>
       <p>${owned?`Slot: ${item.type}`:`Buy in Rewards for ${item.cost} coins.`}</p>
-      <button class="equip-btn ${active?"active":""}" data-equip="${item.id}" ${owned?"":"disabled"} aria-label="${active?"Equipped":"Equip "+item.name}">${active?"Equipped":"Equip"}</button></article>`;
+      <button class="equip-btn ${active?"active":""}" data-equip="${item.id}" ${owned?"":"disabled"} aria-label="${active?"Equipped":"Equip "+item.name}">${active?t("equipped"):t("equip")}</button></article>`;
   }).join("");
   const closetGrid = $("closetGrid");
   if (closetGrid && !closetGrid.dataset.bound) {
@@ -2423,14 +2057,10 @@ function renderDaily() {
 
   // P9: pick a narrative based on day of week
   const narrative = dailyNarratives[new Date().getDay() % dailyNarratives.length];
-  const isRu = currentLang === "ru";
-  const narrativeText = isRu ? (narrative.textRu || narrative.text) : narrative.text;
-  const moreToGo = isRu
-    ? `(ещё ${Math.max(0,5-state.daily.solved)})`
-    : `(${Math.max(0,5-state.daily.solved)} more to go)`;
+
   $("dailyText").textContent = state.daily.claimed
     ? t("dailyClaimed")
-    : narrativeText + ` ${moreToGo}`;
+    : narrative.text + ` (${Math.max(0,5-state.daily.solved)} more to go)`;
   $("dailyBonus").textContent = `Today's treasure: ${state.dailySpecial}. Streak bonus: +${Math.min(20, state.streak.count*3)} fish and coins.`;
   $("dailyBtn").disabled      = state.daily.claimed;
 
@@ -2452,242 +2082,107 @@ function renderDaily() {
 }
 
 // ─── Dashboard ────────────────────────────────────────────────────────────────
+// ─── Dashboard ────────────────────────────────────────────────────────────────
 function renderDashboard() {
-  const prof      = getActiveProfile();
-  const accuracy  = state.solved ? Math.round((state.correct/state.solved)*100) : 0;
-  const sorted    = Object.entries(state.topics).sort((a,b) => weakness(a[0]) - weakness(b[0]));
-  const strong    = sorted.slice(0,3).map(([t]) => topicLabel(t)).join(", ") || "Play to discover";
-  const weak      = sorted.slice(-3).reverse().map(([t]) => topicLabel(t)).join(", ") || "Play to discover";
-  const minutes   = Math.round((state.timePlayed+(Date.now()-state.startedAt)/1000)/60);
+  const prof        = getActiveProfile();
+  const accuracy    = state.solved ? Math.round((state.correct/state.solved)*100) : 0;
+  const sorted      = Object.entries(state.topics).sort((a,b) => weakness(a[0]) - weakness(b[0]));
+  const strong      = sorted.slice(0,3).map(([tk]) => topicLabel(tk)).join(", ") || t("playToDiscover");
+  const weak        = sorted.slice(-3).reverse().map(([tk]) => topicLabel(tk)).join(", ") || t("playToDiscover");
+  const minutes     = Math.round((state.timePlayed+(Date.now()-state.startedAt)/1000)/60);
   const missionTotal= Object.values(state.missions).reduce((a,b)=>a+b,0);
   const langDisplay = currentLang === "learn" ? "📖 Learning" : currentLang === "ru" ? "🇷🇺 Russian" : "🇺🇸 English";
-  const ch = getActiveCharacter();
-  const isRu = currentLang === "ru";
 
-  // Build 7-day accuracy data
-  const sevenDayChart = buildSevenDayChart();
-  // Build topic performance chart
-  const topicChart = buildTopicChart(sorted);
+  // S6: Accuracy ring
+  const circ     = Math.PI * 2 * 34;
+  const filled   = circ * (accuracy / 100);
+  const ringColor= accuracy >= 80 ? "#4fd6a8" : accuracy >= 55 ? "#ffd45a" : "#ff7b7b";
+  const accuracyRingHtml = `
+    <div class="parent-chart-area">
+      <p class="parent-chart-title">${t("accuracy")}</p>
+      <div class="accuracy-ring-wrap">
+        <div class="accuracy-ring">
+          <svg viewBox="0 0 88 88">
+            <circle cx="44" cy="44" r="34" fill="none" stroke="#e0f0f8" stroke-width="9"/>
+            <circle cx="44" cy="44" r="34" fill="none" stroke="${ringColor}" stroke-width="9"
+              stroke-dasharray="${filled.toFixed(1)} ${(circ-filled).toFixed(1)}"
+              stroke-linecap="round"/>
+          </svg>
+          <div class="accuracy-ring-text">
+            <span class="accuracy-ring-pct">${accuracy}%</span>
+            <span class="accuracy-ring-lbl">acc</span>
+          </div>
+        </div>
+        <div class="accuracy-stats-list">
+          <div class="accuracy-stat-item">${t("solvedProblems")} <span>${state.solved}</span></div>
+          <div class="accuracy-stat-item">Correct <span>${state.correct}</span></div>
+          <div class="accuracy-stat-item">Wrong <span>${state.wrong}</span></div>
+          <div class="accuracy-stat-item">${t("timePlayed")} <span>${minutes} min</span></div>
+        </div>
+      </div>
+    </div>`;
+
+  // S6: Topic performance bars
+  const playedTopics = Object.entries(state.topics)
+    .map(([key, v]) => ({ key, total: v.correct + v.wrong, acc: v.correct + v.wrong > 0 ? Math.round(v.correct/(v.correct+v.wrong)*100) : null }))
+    .filter(x => x.total > 0)
+    .sort((a,b) => b.total - a.total)
+    .slice(0, 8);
+  const topicBarsHtml = playedTopics.length > 0 ? `
+    <div class="parent-chart-area">
+      <p class="parent-chart-title">Topic Performance</p>
+      <div class="topic-bar-chart">
+        ${playedTopics.map(({ key, acc }) => {
+          const cls = acc === null ? "mid" : acc >= 80 ? "strong" : acc >= 55 ? "mid" : "weak";
+          const pct = acc ?? 0;
+          return `<div class="topic-bar-row">
+            <span class="topic-bar-label">${topicLabel(key)}</span>
+            <div class="topic-bar-track"><div class="topic-bar-fill ${cls}" style="width:${pct}%"></div></div>
+            <span class="topic-bar-pct">${acc !== null ? acc+"%" : "—"}</span>
+          </div>`;
+        }).join("")}
+      </div>
+    </div>` : "";
+
+  // S6: Island progress timeline
+  const worldBars   = worlds.map(w => {
+    const done = completedMissions(w.id);
+    const pct  = done / 5 * 100;
+    const wName= t(`world${w.id}`) || w.name;
+    return `<div class="timeline-bar" style="height:${Math.max(4,pct*0.54)}px" data-label="${wName}: ${done}/5"></div>`;
+  }).join("");
+  const worldLabels = worlds.map(w => `<span class="timeline-label">${w.id+1}</span>`).join("");
+  const timelineHtml = `
+    <div class="parent-chart-area">
+      <p class="parent-chart-title">Island Progress</p>
+      <div class="progress-timeline">${worldBars}</div>
+      <div class="timeline-labels">${worldLabels}</div>
+    </div>`;
+
+  // Stat overview cards
+  const statCards = [
+    [t("playerLabel") || "Player",         prof ? `${prof.emoji} ${prof.name}` : "—"],
+    [t("languageLabel") || "Language",     langDisplay],
+    [t("currentLevel"),                    state.level],
+    [t("missionProgress"),                 `${missionTotal}/40`],
+    [t("townProgress"),                    `${state.buildings.length}/8`],
+    [t("friendRescue"),                    `${state.animals.length}/9`],
+    [t("collection"),                      `${state.shop.length}/8`],
+    [t("strongTopics"),                    strong],
+    [t("weakTopics"),                      weak],
+  ].map(s => `<article class="stat-card"><h3>${s[0]}</h3><p>${s[1]}</p></article>`).join("");
 
   $("dashboard").innerHTML = `
-    <div class="dash-overview">
-      <div class="dash-profile-card">
-        <span class="dash-char-emoji">${ch.emoji}</span>
-        <div>
-          <strong class="dash-player-name">${prof ? prof.name : "—"}</strong>
-          <span class="dash-char-name">${ch.name} the ${ch.species}</span>
-          <span class="dash-lang">${langDisplay}</span>
-        </div>
-      </div>
-      <div class="dash-stats-grid">
-        ${dashStat(t("accuracy"),       `${accuracy}%`, accuracy >= 80 ? "🌟" : accuracy >= 60 ? "📈" : "💪")}
-        ${dashStat(t("solvedProblems"), state.solved,   "🧮")}
-        ${dashStat(t("currentLevel"),   state.level,    "⬆️")}
-        ${dashStat(t("timePlayed"),     `${minutes} min`,"⏱️")}
-        ${dashStat(t("missionProgress"),`${missionTotal}/40`,"🗺️")}
-        ${dashStat(t("friendRescue"),   `${state.animals.length}/9`,"🐾")}
-        ${dashStat(t("townProgress"),   `${state.buildings.length}/8`,"🏘️")}
-        ${dashStat(t("collection"),     `${state.shop.length}/8`,"👘")}
-      </div>
-    </div>
-
-    <div class="dash-charts">
-      <div class="dash-chart-box">
-        <h3 class="dash-chart-title">${isRu ? "Точность за 7 дней" : "7-Day Accuracy"}</h3>
-        ${sevenDayChart}
-      </div>
-      <div class="dash-chart-box">
-        <h3 class="dash-chart-title">${isRu ? "Темы" : "Topic Performance"}</h3>
-        ${topicChart}
-      </div>
-    </div>
-
-    <div class="dash-topics-summary">
-      <div class="dash-topic-group strong">
-        <span class="dash-topic-icon">⭐</span>
-        <div>
-          <strong>${isRu ? "Сильные темы" : "Strong Topics"}</strong>
-          <p>${strong}</p>
-        </div>
-      </div>
-      <div class="dash-topic-group weak">
-        <span class="dash-topic-icon">🎯</span>
-        <div>
-          <strong>${isRu ? "Темы для практики" : "Topics to Practise"}</strong>
-          <p>${weak}</p>
-        </div>
-      </div>
-    </div>
-
-    <div class="dash-streak-section">
-      <h3>${isRu ? "Серия дней" : "Learning Streak"}</h3>
-      <div class="dash-streak-chips">
-        ${Array.from({length:7}, (_,i) => `
-          <div class="dash-streak-day ${i < state.streak.count ? "done" : ""}">
-            <span>${["M","T","W","T","F","S","S"][i]}</span>
-            <span>${i < state.streak.count ? "🔥" : "○"}</span>
-          </div>
-        `).join("")}
-      </div>
-      <p class="dash-streak-count">${state.streak.count} ${isRu ? "дней подряд" : "day streak"}</p>
-    </div>
-
-    <div class="dash-actions-section">
-      <h3>${isRu ? "Инструменты" : "Parent Tools"}</h3>
-      <div class="dash-tool-btns">
-        <button class="secondary" id="dashReplayTutorialBtn">📖 ${isRu ? "Повторить обучение" : "Replay Tutorial"}</button>
-        <button class="secondary" id="dashPracticeBtn">🎯 ${isRu ? "Режим тренировки" : "Practice Mode"}</button>
-        <button class="secondary" id="dashCreditsBtn">ℹ️ ${isRu ? "О приложении" : "About / Credits"}</button>
-        <button class="secondary" id="dashPrivacyBtn">🔒 ${isRu ? "Конфиденциальность" : "Privacy"}</button>
-      </div>
-    </div>
+    ${accuracyRingHtml}
+    ${topicBarsHtml}
+    ${timelineHtml}
+    <p class="parent-section-title">Overview</p>
+    <div style="display:grid;gap:10px;grid-template-columns:repeat(auto-fill,minmax(148px,1fr))">${statCards}</div>
   `;
-
-  // Bind dashboard buttons
-  $("dashReplayTutorialBtn")?.addEventListener("click", () => {
-    state.onboarded = false;
-    save();
-    showOnboarding();
-  });
-  $("dashPracticeBtn")?.addEventListener("click", () => {
-    startPracticeMode();
-  });
-  $("dashCreditsBtn")?.addEventListener("click", showCreditsModal);
-  $("dashPrivacyBtn")?.addEventListener("click", showPrivacyModal);
 }
 
-function dashStat(label, value, icon) {
-  return `<article class="stat-card"><span class="stat-icon">${icon}</span><h3>${label}</h3><p>${value}</p></article>`;
-}
 
-function buildSevenDayChart() {
-  // Build 7 days of accuracy data from streak info
-  // We don't have historical per-day accuracy, so we simulate from current accuracy
-  // with small variations to make it meaningful
-  const acc = state.solved ? Math.round((state.correct/state.solved)*100) : 0;
-  const days = Array.from({length:7}, (_,i) => {
-    const dayStr = new Date(Date.now() - (6-i)*86400000).toISOString().slice(0,10);
-    const wasActive = state.streak.days?.includes(dayStr);
-    return wasActive ? Math.max(40, Math.min(100, acc + (Math.random()*16-8 | 0))) : 0;
-  });
-
-  const W = 280, H = 120, PAD = 20, maxVal = 100;
-  const barW = (W - PAD*2) / 7;
-  const dayLabels = ["M","T","W","T","F","S","S"];
-  const today = new Date().getDay();
-  const labels = Array.from({length:7}, (_,i) => dayLabels[(today - 6 + i + 7) % 7]);
-
-  const bars = days.map((v,i) => {
-    const barH = v > 0 ? Math.max(4, (v/maxVal) * (H - 40)) : 0;
-    const x = PAD + i * barW + barW*0.15;
-    const y = H - 20 - barH;
-    const fill = v >= 80 ? "#4fd6a8" : v >= 60 ? "#ffd45a" : v > 0 ? "#ff9060" : "#e0eaf0";
-    return `
-      <rect x="${x}" y="${y}" width="${barW*0.7}" height="${barH}" rx="4" fill="${fill}" opacity="0.9"/>
-      ${v > 0 ? `<text x="${x + barW*0.35}" y="${y-4}" text-anchor="middle" font-size="9" fill="#5f7487">${v}%</text>` : ""}
-      <text x="${x + barW*0.35}" y="${H-6}" text-anchor="middle" font-size="9" fill="#8aabb8">${labels[i]}</text>
-    `;
-  }).join("");
-
-  // Baseline
-  const baseline = `<line x1="${PAD}" y1="${H-20}" x2="${W-PAD}" y2="${H-20}" stroke="#d0e4f0" stroke-width="1"/>`;
-
-  return `<svg viewBox="0 0 ${W} ${H}" class="dash-chart-svg" aria-label="7-day accuracy chart">${baseline}${bars}</svg>`;
-}
-
-function buildTopicChart(sorted) {
-  const W = 280, H = 160, PAD = 14;
-  const topTopics = sorted.slice(0, 8); // top 8 topics by strength
-  const barH = (H - PAD*2) / Math.max(topTopics.length, 1);
-
-  const bars = topTopics.map(([topic, data], i) => {
-    const total = (data.correct || 0) + (data.wrong || 0);
-    const pct   = total > 0 ? Math.round((data.correct/total)*100) : 0;
-    const barW  = pct > 0 ? Math.max(4, (pct/100)*(W - PAD*2 - 80)) : 0;
-    const y     = PAD + i * barH + 2;
-    const fill  = pct >= 80 ? "#4fd6a8" : pct >= 60 ? "#ffd45a" : pct > 0 ? "#ff9060" : "#e0eaf0";
-    const label = topicLabel(topic).slice(0, 14);
-    return `
-      <text x="${PAD}" y="${y + barH*0.65}" font-size="9" fill="#5f7487" font-family="Trebuchet MS,sans-serif">${label}</text>
-      <rect x="${PAD + 80}" y="${y}" width="${barW}" height="${barH - 4}" rx="3" fill="${fill}" opacity="0.85"/>
-      ${pct > 0 ? `<text x="${PAD + 80 + barW + 4}" y="${y + barH*0.65}" font-size="9" fill="#5f7487">${pct}%</text>` : ""}
-    `;
-  }).join("");
-
-  return `<svg viewBox="0 0 ${W} ${H}" class="dash-chart-svg" aria-label="Topic performance chart">${bars}</svg>`;
-}
-
-// ─── Credits Modal ────────────────────────────────────────────────────────────
-function showCreditsModal() {
-  const isRu = currentLang === "ru";
-  const modal = $("creditsModal");
-  if (!modal) return;
-  modal.querySelector(".credits-content").innerHTML = `
-    <h2>🦭 Sausage the Seal</h2>
-    <p class="credits-sub">Arctic Math Adventure</p>
-    <p class="credits-version">Version ${VERSION}</p>
-    <div class="credits-divider"></div>
-    <p><strong>${isRu ? "Разработка и дизайн" : "Development & Design"}</strong></p>
-    <p>Built with ❤️ for young Arctic explorers</p>
-    <div class="credits-divider"></div>
-    <p><strong>${isRu ? "Персонажи" : "Characters"}</strong></p>
-    <p>Sausage the Seal · Pip the Penguin<br>Nova the Arctic Fox · Miska the Polar Bear</p>
-    <div class="credits-divider"></div>
-    <p><strong>${isRu ? "Звук" : "Audio"}</strong></p>
-    <p>${isRu ? "Синтезированный звук — Web Audio API" : "Synthesised audio via Web Audio API"}</p>
-    <div class="credits-divider"></div>
-    <p class="credits-footer">${isRu ? "Прогресс сохраняется только на этом устройстве." : "Progress is saved on this device only."}</p>
-    <p class="credits-footer">${isRu ? "Не требует интернета после загрузки." : "Works offline after first load."}</p>
-    <button class="primary credits-close-btn" id="creditsCloseBtn">${isRu ? "Закрыть" : "Close"}</button>
-  `;
-  modal.hidden = false;
-  modal.querySelector("#creditsCloseBtn").addEventListener("click", () => modal.hidden = true);
-}
-
-// ─── Privacy Modal ────────────────────────────────────────────────────────────
-function showPrivacyModal() {
-  const isRu = currentLang === "ru";
-  const modal = $("privacyModal");
-  if (!modal) return;
-  modal.querySelector(".privacy-content").innerHTML = `
-    <h2>🔒 ${isRu ? "Конфиденциальность" : "Privacy Policy"}</h2>
-    <div class="privacy-section">
-      <h3>${isRu ? "Данные детей" : "Children's Data"}</h3>
-      <p>${isRu
-        ? "Эта игра не собирает, не передаёт и не хранит личные данные. Весь прогресс сохраняется только на вашем устройстве."
-        : "This game does not collect, transmit, or store any personal data. All progress is saved locally on your device only."}</p>
-    </div>
-    <div class="privacy-section">
-      <h3>${isRu ? "Что сохраняется" : "What is Saved"}</h3>
-      <p>${isRu
-        ? "Игровой прогресс, имена профилей и настройки сохраняются в localStorage браузера на вашем устройстве."
-        : "Game progress, profile names, and settings are saved in your browser's localStorage on your device."}</p>
-    </div>
-    <div class="privacy-section">
-      <h3>${isRu ? "Интернет" : "Internet"}</h3>
-      <p>${isRu
-        ? "Игра не делает сетевых запросов. Никакие данные не отправляются на внешние серверы."
-        : "The game makes no network requests. No data is sent to any external server."}</p>
-    </div>
-    <div class="privacy-section">
-      <h3>${isRu ? "Реклама" : "Advertising"}</h3>
-      <p>${isRu
-        ? "Реклама отсутствует. Игра не содержит рекламных трекеров и аналитических SDK."
-        : "There are no advertisements. The game contains no ad trackers or analytics SDKs."}</p>
-    </div>
-    <div class="privacy-section">
-      <h3>${isRu ? "Удаление данных" : "Data Deletion"}</h3>
-      <p>${isRu
-        ? "Для удаления всех данных используйте кнопку «Сбросить всё» в панели родителя или очистите данные браузера."
-        : "To delete all data, use 'Reset Everything' in the Parent Dashboard, or clear your browser's local storage."}</p>
-    </div>
-    <button class="primary privacy-close-btn" id="privacyCloseBtn">${isRu ? "Понятно" : "Got it"}</button>
-  `;
-  modal.hidden = false;
-  modal.querySelector("#privacyCloseBtn").addEventListener("click", () => modal.hidden = true);
-}
-
-// ─── S2: Mini-games (5 distinct games) ───────────────────────────────────────
+// ─── S2: Mini-games (6 distinct games) ───────────────────────────────────────
 function startMiniGame() {
   $("miniGame").hidden  = false;
   $("challenge").hidden = true;
@@ -2695,128 +2190,50 @@ function startMiniGame() {
   const gameIndex = state.miniGamesPlayed % 6;
   if      (gameIndex === 0) startCatchFish();
   else if (gameIndex === 1) startTreasureHunt();
-  else if (gameIndex === 2) startNumberBubblePop();
+  else if (gameIndex === 2) startFindPenguin();
   else if (gameIndex === 3) startIceSlide();
   else if (gameIndex === 4) startSnowballCatch();
   else                       startMatchPairs();
 }
 
-// Mini-game 1: Catch Fish — SVG fish swim with varied speed and trajectories
+// Mini-game 1: Catch Fish — fish swim across, tap to catch
 function startCatchFish() {
-  const isRu = currentLang === "ru";
-  $("miniTitle").textContent = isRu ? "Лови рыбку!" : "Catch Fish!";
+  $("miniTitle").textContent = "Catch Fish!";
+  $("miniText").textContent  = "Tap the swimming fish before they escape! Catch 5 to win.";
   const stage = $("miniStage");
   stage.innerHTML = "";
   stage.className = "mini-stage mini-catchfish";
   let caught = 0;
-  const TOTAL = 10;
+  const TOTAL = 9;
 
-  // Speed selector
-  let speedMode = 1; // 0=slow 1=normal 2=fast
-  const speedLabels = isRu
-    ? ["🐢 Медленно","🐟 Обычно","⚡ Быстро"]
-    : ["🐢 Slow","🐟 Normal","⚡ Fast"];
-  const speedMultipliers = [1.8, 1.0, 0.55]; // multiplied onto base speed
+  // Use actual stage dimensions so fish are visible on any screen size
+  const stageW = stage.offsetWidth  || 360;
+  const stageH = stage.offsetHeight || 280;
+  const safeH  = Math.max(40, stageH - 60);
 
-  const controlBar = document.createElement("div");
-  controlBar.className = "catchfish-controls";
-  controlBar.innerHTML = speedLabels.map((lbl, i) =>
-    `<button class="catchfish-speed-btn ${i===1?"active":""}" data-speed="${i}">${lbl}</button>`
-  ).join("");
-  stage.appendChild(controlBar);
-  controlBar.querySelectorAll(".catchfish-speed-btn").forEach(btn => {
-    btn.addEventListener("click", () => {
-      speedMode = Number(btn.dataset.speed);
-      controlBar.querySelectorAll(".catchfish-speed-btn").forEach(b => b.classList.remove("active"));
-      btn.classList.add("active");
-    });
-  });
-
-  $("miniText").textContent = isRu
-    ? "Тапни рыбок до того, как они уплывут! Поймай 5 штук."
-    : "Tap the swimming fish before they escape! Catch 5 to win.";
-
-  const fishColors = ["#ffd45a","#ff7b7b","#27c7de","#4fd6a8","#856de8","#ffb847","#ff6b9d","#7dd8ff"];
-
-  for (let i = 0; i < TOTAL; i++) {
+  for (let i=0; i<TOTAL; i++) {
     const fish = document.createElement("button");
-    fish.className = "mini-target mini-fish-svg";
-    const col    = fishColors[i % fishColors.length];
-    const size   = 48 + Math.random() * 28;        // 48–76px, bigger
-    const baseSpeed = 3.2 + Math.random() * 2.0;   // 3.2–5.2s at normal
-    const topPct = 10 + Math.random() * 72;
-    const bobbing = Math.random() > 0.45;
-
-    // Fish swims LEFT→RIGHT, so it needs to face right (default SVG faces right already)
-    fish.style.cssText = `
-      position:absolute;
-      left:-${size + 20}px;
-      top:${topPct}%;
-      width:${size}px;
-      height:${size * 0.62}px;
-      background:transparent;
-      border:0; padding:0; cursor:pointer;
-      animation: fish-swim-across calc(${baseSpeed}s * var(--fish-speed-mul, 1)) linear ${i * 0.42}s forwards
-                 ${bobbing ? ", fish-wave 1.1s ease-in-out infinite" : ""};
-    `;
-    // SVG: body points LEFT (ellipse body cx=34), tail on RIGHT side (path from cx=54)
-    // eye at LEFT side (cx=14) — fish faces LEFT which is direction of swim ✓
-    fish.innerHTML = `<svg viewBox="0 0 70 44" style="width:100%;height:100%;display:block" aria-hidden="true">
-      <!-- tail left side (behind direction) -->
-      <path d="M54 22 Q66 10 68 22 Q66 34 54 22Z" fill="${col}"/>
-      <!-- body -->
-      <ellipse cx="30" cy="22" rx="28" ry="17" fill="${col}"/>
-      <!-- belly highlight -->
-      <ellipse cx="28" cy="22" rx="18" ry="10" fill="${col}" opacity="0.45"/>
-      <!-- top fin -->
-      <path d="M20 5 Q28 1 36 5" fill="none" stroke="${col}" stroke-width="3" opacity="0.7"/>
-      <path d="M20 5 Q28 14 36 5" fill="${col}" opacity="0.5"/>
-      <!-- bottom fin -->
-      <path d="M20 39 Q28 43 36 39" fill="${col}" opacity="0.5"/>
-      <!-- eye — faces LEFT (direction of travel) -->
-      <circle cx="10" cy="17" r="4.5" fill="#1a2030"/>
-      <circle cx="11" cy="16" r="1.8" fill="#fff" opacity="0.9"/>
-      <!-- scales hint -->
-      <path d="M32 14 Q38 18 32 22" fill="none" stroke="rgba(0,0,0,.12)" stroke-width="1.5"/>
-      <path d="M24 14 Q30 18 24 22" fill="none" stroke="rgba(0,0,0,.12)" stroke-width="1.5"/>
-    </svg>`;
-    fish.setAttribute("aria-label", isRu ? "Поймай эту рыбку" : "Catch this fish");
-
+    fish.className = "mini-target";
+    fish.style.left = `${-70 - i * 80}px`;
+    fish.style.top  = `${20 + Math.random() * safeH}px`;
+    fish.style.animationDelay = `${i * 0.22}s`;
+    // Override swim distance to match actual stage width
+    fish.style.setProperty("--swim-dist", `${stageW + 120}px`);
+    fish.setAttribute("aria-label","Catch this fish");
     fish.addEventListener("click", () => {
       if (fish.dataset.caught) return;
       fish.dataset.caught = "1";
       caught++;
-      fish.style.animation = "none";
-      fish.style.transform = "scale(1.5) rotate(-10deg)";
-      fish.style.opacity   = "0";
-      fish.style.transition = "all .28s ease";
+      fish.style.opacity = "0";
       state.fish += 2;
       playSound("coin");
-      toast(isRu ? `+2 рыбки! (${caught}/5)` : `+2 fish! (${caught}/5)`);
+      toast(`+2 fish! (${caught}/5)`);
       renderHeader();
-      if (caught >= 5) {
-        if (miniGameTimer) clearTimeout(miniGameTimer);
-        finishMiniGame(caught, "catchfish");
-      }
+      if (caught >= 5) finishMiniGame(caught, "catchfish");
     });
     stage.appendChild(fish);
   }
-
-  // Update speed CSS variable when speed mode changes
-  function updateSpeed() {
-    stage.style.setProperty("--fish-speed-mul", speedMultipliers[speedMode]);
-    miniGameTimer = setTimeout(() => finishMiniGame(caught, "catchfish"),
-      (3.2 + TOTAL * 0.42) * 1000 * speedMultipliers[speedMode] + 1500);
-  }
-  // Re-read speed every 500ms to apply it to the CSS variable dynamically
-  const speedInterval = setInterval(() => {
-    stage.style.setProperty("--fish-speed-mul", speedMultipliers[speedMode]);
-  }, 300);
-  // Clean up interval when mini-game ends
-  const origFinish = finishMiniGame;
-  stage.dataset.speedInterval = speedInterval;
-
-  updateSpeed();
+  miniGameTimer = setTimeout(() => finishMiniGame(caught, "catchfish"), 7000);
 }
 
 // Mini-game 2: Treasure Hunt — tap the right shell to find coins
@@ -2880,213 +2297,71 @@ function startTreasureHunt() {
   miniGameTimer = setTimeout(() => { if (!done) finishMiniGame(0, "treasure"); }, 18000);
 }
 
-// Mini-game 3: Number Bubble Pop — tap the bubble with the correct answer
-function startNumberBubblePop() {
-  const isRu = currentLang === "ru";
-  $("miniTitle").textContent = isRu ? "Лопни пузырь!" : "Bubble Pop!";
-  $("miniText").textContent  = isRu ? "Найди правильный ответ и лопни его!" : "Find the correct answer and pop it!";
+// Mini-game 3: Find Hidden Penguin — spot penguin hidden behind icebergs
+function startFindPenguin() {
+  $("miniTitle").textContent = "Find the Penguin!";
+  $("miniText").textContent  = "Pebble is hiding! Tap the right iceberg to find the penguin.";
   const stage = $("miniStage");
   stage.innerHTML = "";
-  stage.className = "mini-stage mini-bubbles";
+  stage.className = "mini-stage mini-penguin";
 
-  let score  = 0;
-  let round  = 0;
-  const ROUNDS = 7;
-  const level  = Math.min(state.level, 10);
-  let active = true;
+  const ICEBERGS = 5;
+  const secretIdx = Math.floor(Math.random()*ICEBERGS);
+  let done = false;
+  let round = 0;
 
-  const scoreEl = document.createElement("div");
-  scoreEl.className = "bubble-scorebar";
-  scoreEl.textContent = isRu ? `Правильно: 0/${ROUNDS}` : `Correct: 0/${ROUNDS}`;
-  stage.appendChild(scoreEl);
-
-  // Fixed question display in centre
-  const qEl = document.createElement("div");
-  qEl.className = "bubble-question";
-  stage.appendChild(qEl);
-
-  function makeQuestion() {
-    if (!active || round >= ROUNDS) { endBubbles(); return; }
-    round++;
-
-    // Generate problem scaled to level
-    let a, b, answer, questionText;
-    const roll = Math.random();
-    if (level <= 3 || roll < 0.4) {
-      a = Math.floor(Math.random() * (level < 3 ? 8 : 15)) + 2;
-      b = Math.floor(Math.random() * (level < 3 ? 6 : 12)) + 1;
-      answer = a + b;
-      questionText = `${a} + ${b} = ?`;
-    } else if (roll < 0.7) {
-      a = Math.floor(Math.random() * 15) + 5;
-      b = Math.floor(Math.random() * (a - 1)) + 1;
-      answer = a - b;
-      questionText = `${a} − ${b} = ?`;
-    } else {
-      a = Math.floor(Math.random() * 6) + 2;
-      b = Math.floor(Math.random() * 6) + 2;
-      answer = a * b;
-      questionText = `${a} × ${b} = ?`;
-    }
-
-    qEl.textContent = questionText;
-    qEl.style.animation = "none";
-    void qEl.offsetWidth;
-    qEl.style.animation = "";
-
-    // Wrong answers
-    const spread = Math.max(2, Math.floor(answer * 0.35));
-    const wrongs = new Set();
-    let tries = 0;
-    while (wrongs.size < 3 && tries < 40) {
-      tries++;
-      const v = answer + (Math.floor(Math.random() * spread * 2 + 1) * (Math.random() > 0.5 ? 1 : -1));
-      if (v !== answer && v >= 0) wrongs.add(v);
-    }
-    const choices = shuffle([answer, ...[...wrongs].slice(0, 3)]);
-
-    // Place bubbles in 4 zones: top-left, top-right, bottom-left, bottom-right
-    const positions = [
-      { left:"8%",  top:"14%" },
-      { left:"56%", top:"10%" },
-      { left:"4%",  top:"58%" },
-      { left:"58%", top:"55%" },
-    ];
-    const colors = [
-      "rgba(39,199,222,.82)",
-      "rgba(79,214,168,.82)",
-      "rgba(255,212,90,.88)",
-      "rgba(133,109,232,.82)",
-    ];
-    let answered = false;
-
-    // Remove old bubbles
-    stage.querySelectorAll(".bubble-btn").forEach(b => b.remove());
-
-    choices.forEach((val, i) => {
-      const bub = document.createElement("button");
-      bub.className = "bubble-btn";
-      bub.textContent = val;
-      bub.style.left = positions[i].left;
-      bub.style.top  = positions[i].top;
-      bub.style.background = colors[i];
-      bub.style.animationDelay = `${i * 0.12}s`;
-      bub.style.animationDuration = `${1.8 + i * 0.3}s`;
-
-      bub.addEventListener("click", () => {
-        if (answered) return;
-        answered = true;
-        if (val === answer) {
-          bub.classList.add("bubble-pop");
-          score++;
-          state.fish += 2;
-          playSound("bubblePop");
-          react("happy");
-          scoreEl.textContent = isRu ? `Правильно: ${score}/${ROUNDS}` : `Correct: ${score}/${ROUNDS}`;
-          renderHeader();
-        } else {
-          bub.classList.add("bubble-wrong");
-          stage.querySelectorAll(".bubble-btn").forEach(b => {
-            if (Number(b.textContent) === answer) b.classList.add("bubble-pop");
-          });
-          playSound("wrong");
-        }
-        setTimeout(() => {
-          stage.querySelectorAll(".bubble-btn").forEach(b => b.remove());
-          setTimeout(makeQuestion, 350);
-        }, 650);
-      });
-      stage.appendChild(bub);
+  const colors = ["#e0f7ff","#c8f0ff","#b0e8ff","#d8f4ff","#f0fbff"];
+  for (let i=0; i<ICEBERGS; i++) {
+    const berg = document.createElement("button");
+    berg.className = "iceberg-btn";
+    berg.setAttribute("aria-label",`Iceberg ${i+1}`);
+    berg.style.left   = `${8+(i*18)}%`;
+    berg.style.bottom = `${25+Math.random()*15}%`;
+    berg.innerHTML = `<svg viewBox="0 0 90 80" aria-hidden="true">
+      <ellipse cx="45" cy="68" rx="40" ry="14" fill="${colors[i]}"/>
+      <path d="M12 65 Q25 20 45 15 Q65 20 78 65z" fill="white"/>
+      <path d="M20 65 Q32 35 45 28 Q58 35 70 65z" fill="${colors[i]}"/>
+    </svg>`;
+    berg.addEventListener("click", () => {
+      if (done) return;
+      round++;
+      if (i === secretIdx) {
+        done = true;
+        berg.innerHTML += `<div class="penguin-found">${animalSvg(1)}</div>`;
+        const bonus = Math.max(3, 10-round);
+        state.coins += bonus; state.fish += bonus;
+        playSound("coin");
+        react("excited");
+        toast(`Found Pebble! +${bonus} fish & coins 🐧`);
+        renderHeader();
+        if (miniGameTimer) clearTimeout(miniGameTimer);
+        miniGameTimer = setTimeout(() => finishMiniGame(5, "penguin"), 1400);
+      } else {
+        berg.style.opacity = ".45";
+        berg.disabled = true;
+        playSound("wrong");
+      }
     });
+    stage.appendChild(berg);
   }
-
-  function endBubbles() {
-    active = false;
-    const won = score >= Math.ceil(ROUNDS * 0.6);
-    if (won) {
-      state.coins += 5; state.stars += 2;
-      playSound("level"); confetti();
-      toast(isRu ? `Лопни пузырь! ${score}/${ROUNDS} правильно! +5 монет ⭐` : `Bubble Pop! ${score}/${ROUNDS} correct! +5 coins ⭐`);
-    } else {
-      toast(isRu ? `${score}/${ROUNDS} правильно. Ещё потренируемся!` : `${score}/${ROUNDS} correct. Keep practising!`);
-    }
-    if (miniGameTimer) clearTimeout(miniGameTimer);
-    miniGameTimer = setTimeout(() => finishMiniGame(won ? 5 : 2, "bubbles"), 900);
-  }
-
-  makeQuestion();
-  miniGameTimer = setTimeout(() => { if (active) endBubbles(); }, 45000);
+  miniGameTimer = setTimeout(() => { if (!done) finishMiniGame(0,"penguin"); }, 20000);
 }
 
 function finishMiniGame(caught, type) {
   if ($("miniGame").hidden) return;
   if (miniGameTimer) { clearTimeout(miniGameTimer); miniGameTimer = null; }
-
-  // Clear any speed intervals from Catch Fish
-  const stage = $("miniStage");
-  if (stage && stage.dataset.speedInterval) {
-    clearInterval(Number(stage.dataset.speedInterval));
-    delete stage.dataset.speedInterval;
-  }
-
   state.miniGamesPlayed++;
-  const isRu = currentLang === "ru";
-  const won  = caught >= 5;
-
-  if (won) {
-    state.coins += Math.min(caught, 5);
+  state.coins += Math.min(caught, 5);
+  if (caught >= 5) {
     state.stars += 2;
     react("victory");
-    playSound("perfect");
-    confetti();
+    toast("Mini-game win! +2 stars ⭐");
+    playSound("level");
   } else {
-    state.coins += Math.min(caught, 2);
+    toast("Good effort! Keep practising.");
   }
   save();
-
-  // Show result screen inside mini-game section
-  const miniGame = $("miniGame");
-  const titleEl  = $("miniTitle");
-  const textEl   = $("miniText");
-  if (stage) stage.innerHTML = "";
-
-  if (titleEl) titleEl.textContent = won
-    ? (isRu ? "🎉 Отлично!" : "🎉 Well done!")
-    : (isRu ? "💪 Хорошая попытка!" : "💪 Good try!");
-
-  if (textEl) textEl.textContent = won
-    ? (isRu ? `+${Math.min(caught,5)} монет, +2 звезды заработано!` : `+${Math.min(caught,5)} coins and +2 stars earned!`)
-    : (isRu ? "Продолжай практиковаться — с каждым разом лучше!" : "Keep practising — you'll get it next time!");
-
-  // Result buttons inside the stage area
-  if (stage) {
-    stage.className = "mini-stage mini-result";
-    stage.innerHTML = `
-      <div class="mini-result-icon">${won ? "⭐" : "🧊"}</div>
-      <div class="mini-result-rewards">${won
-        ? `<span class="rescue-cel-chip">+${Math.min(caught,5)} 🪙</span><span class="rescue-cel-chip">+2 ⭐</span>`
-        : `<span class="rescue-cel-chip" style="background:rgba(200,220,230,.4)">+${Math.min(caught,2)} 🪙</span>`
-      }</div>
-      <div class="mini-result-btns">
-        <button class="primary" id="miniPlayAgainBtn">${isRu ? "Ещё раз 🎮" : "Play Again 🎮"}</button>
-        <button class="secondary" id="miniResultCloseBtn">${isRu ? "На карту 🗺️" : "Return to Map 🗺️"}</button>
-      </div>`;
-
-    $("miniPlayAgainBtn")?.addEventListener("click", () => {
-      // Re-play the same game type based on current index
-      const idx = (state.miniGamesPlayed - 1) % 6;
-      if      (idx === 0) startCatchFish();
-      else if (idx === 1) startTreasureHunt();
-      else if (idx === 2) startNumberBubblePop();
-      else if (idx === 3) startIceSlide();
-      else if (idx === 4) startSnowballCatch();
-      else                 startMatchPairs();
-    });
-    $("miniResultCloseBtn")?.addEventListener("click", () => {
-      $("miniGame").hidden = true;
-      renderAll();
-    });
-  }
+  renderAll();
 }
 
 // ─── S2: Mini-game 4 — Ice Slide: tap LEFT/RIGHT to dodge rocks ──────────────
@@ -3288,85 +2563,85 @@ function startSnowballCatch() {
   miniGameTimer = setTimeout(() => { if (active) endSnow(); }, 24000);
 }
 
-// ─── Mini-game 6: Match Pairs — flip cards to find 6 emoji pairs ──────────────
+// ─── S6: Mini-game 6 — Match Pairs: flip cards to find emoji pairs ────────────
 function startMatchPairs() {
-  const isRu = currentLang === "ru";
-  $("miniTitle").textContent = isRu ? "Найди пару!" : "Match Pairs!";
-  $("miniText").textContent  = isRu ? "Открывай карточки и находи совпадающие пары!" : "Flip cards and find matching pairs!";
+  $("miniTitle").textContent = t("matchPairs_title") || "Match Pairs!";
+  $("miniText").textContent  = t("matchPairs_text")  || "Flip cards and find matching pairs!";
   const stage = $("miniStage");
   stage.innerHTML = "";
-  // 3 columns → bigger cards, 6 pairs = 12 cards
-  stage.className = "mini-stage mini-pairs mini-pairs-3col";
+  stage.className = "mini-stage mini-pairs";
 
-  const EMOJIS = ["🐧","🐟","🐻","🦊","🐳","🦭"];
-  const deck = shuffle([...EMOJIS, ...EMOJIS]);
+  const EMOJIS = ["🐧","🐟","🐻","🦊","🐳","🦭","🌟","❄"];
+  const GRID_SIZE = EMOJIS.length;  // 8 pairs = 16 cards
+  const deck = [...EMOJIS, ...EMOJIS].sort(() => Math.random()-.5);
 
-  let flipped  = [];
-  let matched  = 0;
-  let moves    = 0;
-  let locked   = false;
-  const cards  = [];
+  let flipped   = [];   // indices of currently face-up (unmatched) cards
+  let matched   = 0;
+  let moves     = 0;
+  let locked    = false;
+  const cards   = [];
 
   const infoEl = document.createElement("p");
   infoEl.className = "pairs-info";
-  infoEl.textContent = isRu ? "Ходов: 0" : "Moves: 0";
-  stage.insertAdjacentElement("beforebegin", infoEl);
+  infoEl.textContent = `${t("matchPairs_moves") || "moves"}: 0`;
+  stage.before(infoEl);    // insert before the stage grid
 
   deck.forEach((emoji, idx) => {
     const card = document.createElement("button");
     card.className = "pairs-card";
     card.dataset.emoji = emoji;
+    card.dataset.idx   = idx;
+    card.setAttribute("aria-label", `Card ${idx+1}`);
     card.textContent   = emoji;
-    card.setAttribute("aria-label", isRu ? `Карточка ${idx+1}` : `Card ${idx+1}`);
 
     card.addEventListener("click", () => {
       if (locked || card.classList.contains("matched") || card.classList.contains("flipped")) return;
+
       card.classList.add("flipped");
-      playSound("flip");
       flipped.push(idx);
 
       if (flipped.length === 2) {
         moves++;
-        infoEl.textContent = isRu ? `Ходов: ${moves}` : `Moves: ${moves}`;
+        infoEl.textContent = `${t("matchPairs_moves") || "moves"}: ${moves}`;
         locked = true;
-        const [a, b] = flipped;
 
+        const [a, b] = flipped;
         if (cards[a].dataset.emoji === cards[b].dataset.emoji) {
+          // Match!
           cards[a].classList.add("matched");
           cards[b].classList.add("matched");
           matched++;
           flipped = [];
           locked  = false;
-          playSound("matchFound");
-          state.fish++;
+          playSound("coin");
+          state.fish += 2;
           renderHeader();
-
-          if (matched >= EMOJIS.length) {
-            const bonus = Math.max(5, 18 - Math.floor(moves * 0.5));
-            state.coins += bonus; state.stars += 2;
-            playSound("level"); confetti();
-            const msg = isRu
-              ? `Все пары найдены за ${moves} ходов! +${bonus} монет ⭐`
-              : `All pairs matched in ${moves} moves! +${bonus} coins ⭐`;
-            toast(msg);
+          if (matched >= GRID_SIZE) {
+            // All matched — win!
+            const bonus = Math.max(5, 20 - Math.floor(moves * 0.3));
+            state.coins += bonus;
+            state.stars += 2;
+            playSound("level");
+            confetti();
+            toast(`${t("matchPairs_win") || "All pairs matched!"} +${bonus} coins ⭐`);
             save();
             if (miniGameTimer) clearTimeout(miniGameTimer);
             miniGameTimer = setTimeout(() => finishMiniGame(5, "pairs"), 900);
           }
         } else {
+          // No match — flip back after 900ms
           setTimeout(() => {
             cards[a].classList.remove("flipped");
             cards[b].classList.remove("flipped");
             cards[a].classList.add("wrong");
             cards[b].classList.add("wrong");
-            playSound("wrong");
             setTimeout(() => {
               cards[a].classList.remove("wrong");
               cards[b].classList.remove("wrong");
-            }, 420);
+            }, 400);
             flipped = [];
             locked  = false;
-          }, 850);
+          }, 900);
         }
       }
     });
@@ -3375,7 +2650,7 @@ function startMatchPairs() {
     stage.appendChild(card);
   });
 
-  miniGameTimer = setTimeout(() => finishMiniGame(matched >= 3 ? 3 : 0, "pairs"), 90000);
+  miniGameTimer = setTimeout(() => finishMiniGame(matched >= 4 ? 3 : 0, "pairs"), 60000);
 }
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -3411,13 +2686,11 @@ function topicLabelLearn(topic) {
 }
 
 function speak(kind) {
-  const isRu  = currentLang === "ru";
-  const ruKey = kind + "Ru";
-  const lines = (isRu && dialogueBank[ruKey]) ? dialogueBank[ruKey] : (dialogueBank[kind] || dialogueBank.before);
+  const lines = dialogueBank[kind] || dialogueBank.before;
   const world = worlds[selectedWorld] || worlds[0];
   const recent = state.dialogueHistory || [];
   const options = lines.filter(l => !recent.slice(-3).includes(l));
-  const line = (options.length ? options : lines)[Math.floor(Math.random() * (options.length ? options.length : lines.length))];
+  const line = (options.length?options:lines)[Math.floor(Math.random()*(options.length?options.length:lines.length))];
   state.dialogueHistory = [...recent.slice(-8), line];
   if ($("dialogBox")) $("dialogBox").textContent = `${world.character}: ${line}`;
 }
@@ -3473,75 +2746,44 @@ function initAudio() {
 
 function playIslandSound() {
   if (!audioReady || state.muted) return;
-  // Each island gets its own tonal character: major chord arpeggio
-  const roots = [523,466,392,587,330,698,587,784]; // C5,Bb4,G4,D5,E4,F5,D5,G5
-  const root  = roots[selectedWorld] || 523;
-  // Play root → major third → fifth → octave
-  [root, root*1.26, root*1.5, root*2].forEach((f,i) =>
-    setTimeout(() => tone(f, 0.09, "sine"), i * 70)
-  );
+  const base = [520,460,390,610,330,700,570,780][selectedWorld];
+  [base, base*1.25, base*1.5].forEach((f,i) => setTimeout(()=>tone(f,.07,"sine"),i*80));
 }
 
-// S7: upgraded sounds — richer chords, gentler wrong, new event sounds
+// P7: varied sounds
 function playSound(type) {
   if (state.muted || !audioReady) return;
-
-  // Each entry: array of chord sequences, each sequence is [freq, freq, …]
   const variants = {
-    // Correct: bright ascending chords, 3 variations
     correct: [
-      [523, 659, 784],          // C-E-G major
-      [587, 740, 880, 1047],    // D-F#-A-C
-      [659, 830, 988, 1175]     // E-G#-B-D#  (rich)
+      [660,880],
+      [740,960,1100],
+      [520,700,880,1050]
     ],
-    // Wrong: muted soft descend — triangle wave, low volume
-    wrong:       [[220, 196]],
-    // Coin: bright ping chord
-    coin:        [[880, 1047], [784, 988]],
-    // Achievement: triumphant four-note chord
-    achievement: [[523, 659, 784, 1047]],
-    // Build: solid square wave power chord
-    build:       [[261, 329, 392, 523]],
-    // Level up: two-octave climb
-    level:       [[440, 554, 659, 880, 1109, 1318]],
-    // Perfect mission fanfare: full major arpeggio up
-    perfect:     [[392, 494, 587, 784, 988, 1175, 1568]],
-    // New S7 events:
-    flip:        [[523, 659]],          // card flip — soft two-tone
-    matchFound:  [[659, 784, 1047]],    // pair matched — short chime
-    rescue:      [[523, 659, 784, 1047, 784, 1047, 1318]], // rescue fanfare
-    onboard:     [[392, 523, 659]],     // onboarding open
-    bubblePop:   [[880, 1047], [988, 1175]],  // bubble pop
+    wrong:       [[180,120]],
+    coin:        [[760,1040]],
+    achievement: [[520,780,1040]],
+    build:       [[320,520,720,900]],
+    level:       [[440,660,880,1180]],
+    // P7: perfect mission fanfare
+    perfect:     [[440,550,660,880,1100,1320]]
   };
-
   const pool  = variants[type] || [[440]];
-  const notes = pool[Math.floor(Math.random() * pool.length)];
-
-  // Wave type per category
-  let wave = "sine";
-  if (type === "wrong")  wave = "triangle";  // soft, not harsh
-  if (type === "build")  wave = "square";
-  if (type === "flip")   wave = "triangle";
-
-  // Volume scaling
-  const vol = (type === "wrong" || type === "flip") ? 0.08 : 0.16;
-
-  notes.forEach((freq, i) => setTimeout(() => tone(freq, 0.09 + i * 0.01, wave, vol), i * 80));
+  const notes = pool[Math.floor(Math.random()*pool.length)];
+  const wave  = type === "wrong" ? "sawtooth" : type === "build" ? "square" : "sine";
+  notes.forEach((freq,i) => setTimeout(()=>tone(freq,.08+i*.01,wave),i*90));
 }
 
-// S7: tone with configurable volume
-function tone(freq, len, wave = "sine", vol = 0.16) {
-  if (!audioCtx) return;
+function tone(freq, len, wave="sine") {
   const osc  = audioCtx.createOscillator();
   const gain = audioCtx.createGain();
   osc.type = wave;
   osc.frequency.value = freq;
-  gain.gain.setValueAtTime(0.0001, audioCtx.currentTime);
-  gain.gain.exponentialRampToValueAtTime(vol, audioCtx.currentTime + 0.02);
-  gain.gain.exponentialRampToValueAtTime(0.0001, audioCtx.currentTime + len);
+  gain.gain.setValueAtTime(.0001, audioCtx.currentTime);
+  gain.gain.exponentialRampToValueAtTime(.18, audioCtx.currentTime+.02);
+  gain.gain.exponentialRampToValueAtTime(.0001, audioCtx.currentTime+len);
   osc.connect(gain).connect(audioCtx.destination);
   osc.start();
-  osc.stop(audioCtx.currentTime + len + 0.04);
+  osc.stop(audioCtx.currentTime+len+.03);
 }
 
 function toast(message) {
@@ -3837,51 +3079,33 @@ function randomSurprise() {
   }, 24000+Math.random()*26000);
 }
 
+// ─── P3: Onboarding ───────────────────────────────────────────────────────────
+const onboardingSteps = [
+  {
+    title:"Welcome to Arctic Adventure! 🦭",
+    text:"Meet Sausage the Seal! A big storm has scattered all friends across the icy ocean. Can you bring them home?",
+    emoji:"🌊"
+  },
+  {
+    title:"Which year are you in?",
+    text:"",  // rendered as grade picker
+    emoji:"📚",
+    gradePickerStep: true
+  },
+  {
+    title:"Rescue Friends!",
+    text:"Sail to each island, answer maths questions, and bring your friends safely back home.",
+    emoji:"🐧"
+  },
+  {
+    title:"Earn Rewards!",
+    text:"Every correct answer earns fish 🐟, coins 💰, and stars ⭐. Use them to unlock costumes and build your Arctic Town!",
+    emoji:"🎁"
+  }
+];
+
 // Maps grade choice → starting island
 const GRADE_STARTS = { "1-2": 0, "3": 1, "4": 2, "5+": 4 };
-
-// ─── P3: Onboarding ───────────────────────────────────────────────────────────
-// Steps are functions so they resolve strings at render time (after lang is set)
-function getOnboardingSteps() {
-  const ch  = getActiveCharacter();
-  const isRu = currentLang === "ru";
-  return [
-    {
-      title: isRu ? `Добро пожаловать, ${ch.name}! ${ch.emoji}` : `Welcome, ${ch.name}! ${ch.emoji}`,
-      text:  isRu
-        ? `Это ${ch.name} ${ch.species === "Seal" ? "— тюлень" : ch.species === "Penguin" ? "— пингвин" : ch.species === "Arctic Fox" ? "— арктическая лиса" : "— полярный медведь"}! Буря в Арктике разогнала всех друзей по ледяному океану. Поможешь вернуть их домой?`
-        : `Meet ${ch.name} the ${ch.species}! A big storm has scattered all friends across the icy ocean. Can you bring them home?`,
-      emoji: ch.emoji
-    },
-    {
-      title: isRu ? "В каком ты классе?" : "Which year are you in?",
-      text:"",
-      emoji:"📚",
-      gradePickerStep: true
-    },
-    {
-      title: isRu ? "Спасай друзей!" : "Rescue Friends!",
-      text:  isRu
-        ? `Плыви к каждому острову, решай математические задачи и возвращай друзей домой. ${ch.name} ждёт тебя!`
-        : `Sail to each island, answer maths questions, and bring your friends safely back home. ${ch.name} is counting on you!`,
-      emoji:"🐾"
-    },
-    {
-      title: isRu ? "Собирай награды!" : "Earn Rewards!",
-      text:  isRu
-        ? "За каждый правильный ответ — рыбка 🐟, монетки 💰 и звёзды ⭐. Открывай костюмы и строй Арктический город!"
-        : "Every correct answer earns fish 🐟, coins 💰, and stars ⭐. Use them to unlock costumes and build your Arctic Town!",
-      emoji:"🎁"
-    },
-    {
-      title: isRu ? "Режим тренировки" : "Practice Mode",
-      text:  isRu
-        ? "Хочешь попрактиковаться без изменений прогресса? Нажми кнопку «Тренировка» на карте — все острова открыты!"
-        : "Want to practise without changing story progress? Tap 'Practice Mode' on the map — all islands are unlocked!",
-      emoji:"🎯"
-    }
-  ];
-}
 
 let onboardStep = 0;
 
@@ -3894,34 +3118,21 @@ function showOnboarding() {
 }
 
 function renderOnboardStep() {
-  const steps = getOnboardingSteps();
-  const step  = steps[onboardStep];
-  const total = steps.length;
+  const step  = onboardingSteps[onboardStep];
+  const total = onboardingSteps.length;
   const modal = $("onboardingModal");
   if (!modal) return;
-
-  // Show character on first step
-  const emojiEl = modal.querySelector(".onboard-emoji");
-  if (emojiEl) {
-    if (onboardStep === 0) {
-      const ch = getActiveCharacter();
-      emojiEl.innerHTML = `<svg viewBox="0 0 120 110" style="width:80px;height:auto">${characterSvgSmall(ch.id).replace(/<svg[^>]*>|<\/svg>/g,"")}</svg>`;
-    } else {
-      emojiEl.textContent = step.emoji;
-    }
-  }
-
+  modal.querySelector(".onboard-emoji").textContent = step.emoji;
   modal.querySelector(".onboard-title").textContent = step.title;
   const textEl = modal.querySelector(".onboard-text");
 
-  const isRu = currentLang === "ru";
   if (step.gradePickerStep) {
-    textEl.innerHTML = `<p style="margin:0 0 12px;color:var(--muted)">${isRu ? "Выбери класс, чтобы подобрать подходящие острова!" : "Pick your school year so we pick the right islands for you!"}</p>
+    textEl.innerHTML = `<p style="margin:0 0 12px;color:var(--muted)">Pick your school year so Sausage picks the right islands for you!</p>
       <div class="grade-grid">
-        <button class="grade-btn" data-grade="1-2">${isRu ? "1–2 класс" : "Year 1–2"}<small>${isRu ? "5–7 лет" : "Ages 5–7"}</small></button>
-        <button class="grade-btn" data-grade="3">${isRu ? "3 класс" : "Year 3"}<small>${isRu ? "8 лет" : "Age 8"}</small></button>
-        <button class="grade-btn selected" data-grade="4">${isRu ? "4 класс" : "Year 4"}<small>${isRu ? "9 лет ✓" : "Age 9 ✓"}</small></button>
-        <button class="grade-btn" data-grade="5+">${isRu ? "5+ класс" : "Year 5+"}<small>${isRu ? "10+ лет" : "Age 10+"}</small></button>
+        <button class="grade-btn" data-grade="1-2">Year 1–2<small>Ages 5–7</small></button>
+        <button class="grade-btn" data-grade="3">Year 3<small>Age 8</small></button>
+        <button class="grade-btn selected" data-grade="4">Year 4<small>Age 9 ✓</small></button>
+        <button class="grade-btn" data-grade="5+">Year 5+<small>Age 10+</small></button>
       </div>`;
     textEl.querySelectorAll(".grade-btn").forEach(btn => {
       btn.addEventListener("click", () => {
@@ -3934,21 +3145,18 @@ function renderOnboardStep() {
       });
     });
   } else {
-    textEl.innerHTML = step.text;
+    textEl.textContent = step.text;
+    textEl.innerHTML = step.text; // allow emoji
   }
 
-  modal.querySelector(".onboard-dots").innerHTML = steps.map((_,i)=>
+  modal.querySelector(".onboard-dots").innerHTML = onboardingSteps.map((_,i)=>
     `<span class="onboard-dot ${i===onboardStep?"active":""}"></span>`).join("");
   const nextBtn = modal.querySelector(".onboard-next");
-  const isLast  = onboardStep >= total - 1;
-  nextBtn.textContent = isLast
-    ? (isRu ? "Вперёд! 🚀" : "Start Adventure! 🚀")
-    : (isRu ? "Далее →" : "Next →");
+  nextBtn.textContent = onboardStep < total-1 ? "Next →" : "Start Adventure! 🚀";
 }
 
 function advanceOnboarding() {
-  const steps = getOnboardingSteps();
-  if (onboardStep < steps.length - 1) {
+  if (onboardStep < onboardingSteps.length-1) {
     onboardStep++;
     renderOnboardStep();
   } else {
@@ -4036,6 +3244,18 @@ const STRINGS = {
     keepExploring:"Keep Exploring",
     missionComplete:"Mission Complete!", rareTreasure:"Rare Treasure!",
     rescued:"Rescued!",
+    // Quest panel progress
+    islandProgress:"Island Progress",
+    missionsLabel:"missions — level",
+    // Island world names
+    world0:"Snow Beach", world1:"Fish Bay", world2:"Whale Coast",
+    world3:"Penguin Islands", world4:"Octopus Cave", world5:"Polar Academy",
+    world6:"Northern Kingdom", world7:"Arctic Champion",
+    // Parent dashboard labels
+    playerLabel:"Player", languageLabel:"Language",
+    // Match Pairs mini-game
+    matchPairs_title:"Match Pairs!", matchPairs_text:"Flip cards and find matching pairs!",
+    matchPairs_win:"All pairs matched! Great job!", matchPairs_moves:"moves",
   },
   ru: {
     // Nav
@@ -4115,6 +3335,18 @@ const STRINGS = {
     welcomeBack:"С возвращением!", continueAdventure:"Продолжаем приключение",
     // Briefing buttons
     skip:"Пропустить", next:"Далее →", letsGoBtn:"Поехали! 🦭",
+    // Quest panel progress (previously untranslated)
+    islandProgress:"Прогресс острова",
+    missionsLabel:"миссий — уровень",
+    // Island world names
+    world0:"Снежный пляж", world1:"Рыбная бухта", world2:"Китовый берег",
+    world3:"Острова пингвинов", world4:"Пещера осьминога", world5:"Полярная академия",
+    world6:"Северное королевство", world7:"Арктический чемпион",
+    // Parent dashboard labels
+    playerLabel:"Игрок", languageLabel:"Язык",
+    // Match Pairs mini-game
+    matchPairs_title:"Найди пару!", matchPairs_text:"Открывай карточки и находи совпадающие пары!",
+    matchPairs_win:"Все пары найдены! Молодец!", matchPairs_moves:"ходов",
   }
 };
 
