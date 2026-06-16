@@ -337,6 +337,17 @@ const achievementNames = [
   "Costume Collector","Pet Pal","Coin Spender","Star Saver","Fish Feast","Level 5","Level 10",
   "No Mistake Run","Comeback Kid","Super Solver","Guardian Helper","Town Complete","Guardian of the Arctic"
 ];
+const achievementNamesRu = [
+  "Первая рыбка","Первый правильный ответ","10 верных ответов","25 верных ответов","50 верных ответов",
+  "100 верных ответов","Первое здание","Начало города","Активный строитель","Первое спасение","Пятеро друзей",
+  "Герой зверей","Первая звезда","Коллекционер монет","Хранитель сокровищ","Любитель подсказок","Смелый игрок",
+  "Разведчик пляжа","Моряк залива","Чудо берега китов","Друг пингвинов","Мыслитель пещеры",
+  "Ученик академии","Рыцарь королевства","Чемпион Арктики","Мастер сложения",
+  "Мастер вычитания","Мастер умножения","Мастер деления","Искатель закономерностей","Решатель уравнений",
+  "Волшебник задач","Идеальная миссия","Быстрый игрок","Ежедневный гость","Серия 3 дня","Серия 7 дней",
+  "Коллекционер костюмов","Друг питомцев","Транжира монет","Копилка звёзд","Рыбный пир","Уровень 5","Уровень 10",
+  "Безошибочный заход","Возвращение","Суперрешатель","Помощник стража","Город построен","Страж Арктики"
+];
 
 // ─── Daily special names ─────────────────────────────────────────────────────
 const dailySpecialNames = [
@@ -733,7 +744,12 @@ function renderBriefingSlide() {
   ).join("");
   // next button label
   const nextBtn = $("briefingNext");
-  if (nextBtn) nextBtn.textContent = _briefingSlide < total-1 ? "Next →" : "Let's go! 🦭";
+  if (nextBtn) {
+    const _isRuB = currentLang === "ru";
+    nextBtn.textContent = _briefingSlide < total-1
+      ? (_isRuB ? "Далее →" : "Next →")
+      : (_isRuB ? "Поехали! 🦭" : "Let's go! 🦭");
+  }
 }
 
 function briefingNext() {
@@ -999,7 +1015,8 @@ function openProfileEdit(id) {
   let chosenEmoji = existing?.emoji || "🦭";
   let chosenChar  = existing?.character || "seal";
 
-  title.textContent     = existing ? "Edit Player" : "New Player";
+  { const _isRuP = currentLang === "ru";
+  title.textContent = existing ? (_isRuP ? "Редактировать игрока" : "Edit Player") : (_isRuP ? "Новый игрок" : "New Player"); }
   nameInp.value         = existing?.name || "";
 
   // Character picker (shown for new profiles)
@@ -1152,6 +1169,18 @@ function showWelcomeBack() {
 // ─── Events ──────────────────────────────────────────────────────────────────
 function attachEvents() {
   $("startChallengeBtn").addEventListener("click", () => startMission(false));
+
+  // S8: Mobile quest panel expand/collapse
+  const questPanel = $("questPanel");
+  if (questPanel) {
+    // Tap the "drag handle" area (first 72px) to expand/collapse
+    questPanel.addEventListener("click", e => {
+      if (window.innerWidth > 560) return;
+      // Only toggle if clicking the handle area (not a button inside)
+      if (e.target.closest("button")) return;
+      questPanel.classList.toggle("expanded");
+    });
+  }
   $("dailyBtn").addEventListener("click",          () => startMission(true));
   $("miniGameBtn").addEventListener("click",       startMiniGame);
   $("closeMiniBtn").addEventListener("click",      () => { $("miniGame").hidden = true; if (miniGameTimer) { clearTimeout(miniGameTimer); miniGameTimer = null; } });
@@ -1270,7 +1299,7 @@ function renderMap() {
     const locked = world.id > state.unlockedWorld;
     const done   = completedMissions(world.id);
     return `<button class="island island-${world.id} ${locked?"locked":""} ${world.id===selectedWorld?"selected":""}" data-world="${world.id}" aria-label="${world.name}, ${done} of 5 missions complete${locked?" - locked":""}">
-      ${islandSvg(world,locked)}<span>${world.id+1}. ${world.name}<small>${done}/5 missions - level ${recommendedLevels[world.id]}</small></span>
+      ${islandSvg(world,locked)}<span>${world.id+1}. ${world.name}<small>${done}/5 missions · lv.${recommendedLevels[world.id]}</small></span>
     </button>`;
   }).join("");
   document.querySelectorAll(".island").forEach(btn => btn.addEventListener("click", () => chooseIsland(Number(btn.dataset.world))));
@@ -1280,9 +1309,12 @@ function renderMap() {
 function chooseIsland(id) {
   const world = worlds[id];
   if (id > state.unlockedWorld) {
-    // S5: warning instead of hard lock — allow entry
+    // S8: show toast warning and allow entry — no blocking confirm dialog
     const rec = recommendedLevels[id];
-    if (!confirm(`${world.name} is recommended for level ${rec}. You are level ${state.level}.\n\nThis island may be tricky — explore anyway?`)) return;
+    const isRu = currentLang === "ru";
+    toast(isRu
+      ? `${world.name}: рекомендован уровень ${rec}. Смелые исследователи могут зайти! 🌟`
+      : `${world.name} is level ${rec} — but brave explorers are welcome! 🌟`);
   }
   selectedWorld = id;
   react("swim");
@@ -1290,6 +1322,9 @@ function chooseIsland(id) {
   renderQuest();
   speak("before");
   playIslandSound();
+  // S9: auto-expand quest panel on mobile whenever island is selected
+  const qp = document.querySelector(".quest-panel");
+  if (qp && window.innerWidth <= 560) qp.classList.add("expanded");
   // S5: show island briefing on first visit
   if (!state.missions[`brief_${id}`]) {
     showIslandBriefing(id);
@@ -1298,7 +1333,7 @@ function chooseIsland(id) {
 
 function moveTravelSeal() {
   const pos = [[7,62],[26,57],[49,61],[72,54],[14,30],[36,24],[60,27],[80,31]][selectedWorld] || [8,62];
-  $("travelSeal").style.left = `${pos[0]}%`;
+  $("travelSeal").style.left = `${Math.min(pos[0], 85)}%`;
   $("travelSeal").style.top  = `${pos[1]}%`;
 }
 
@@ -1439,6 +1474,9 @@ function startPracticeMission() {
 // Override completeMission for practice mode (no progression saved)
 const _origCompleteMission = null; // we handle inline
 function startMission(daily) {
+  // S8: collapse quest panel on mobile before showing challenge
+  const qp = document.querySelector(".quest-panel");
+  if (qp && window.innerWidth <= 560) qp.classList.remove("expanded");
   if (miniGameTimer) { clearTimeout(miniGameTimer); miniGameTimer = null; }
   switchView("adventure");
   const mission = daily ? 0 : nextMission();
@@ -1652,7 +1690,7 @@ function generateProblem(topic) {
       const ooForms = [
         () => { const p=rand(9)+1,q=rand(9)+1,r=rand(10); return { text:`${p} × ${q} + ${r} = ?`, answer:p*q+r, hint:"Multiply first, then add." }; },
         () => { const p=rand(9)+1,q=rand(9)+1,r=rand(Math.min(p*q-1,20)); return { text:`${p} × ${q} - ${r} = ?`, answer:p*q-r, hint:"Multiply first, then subtract." }; },
-        () => { const r=rand(6)+2; const ans=rand(10); return { text:`${r*ans} ÷ ${r} + ${rand(10)} = ?`, answer:r*ans/r+0, hint:"Divide first, then add." }; }, // simplified
+        () => { const r=rand(6)+2; const ans=rand(10); const c=rand(8); return { text:`${r*ans} ÷ ${r} + ${c} = ?`, answer:ans+c, hint:"Divide first, then add." }; },
         () => { const p=rand(8)+1,q=rand(8)+1,r=rand(9)+1,s=rand(9)+1; return { text:`${p} + ${q} × ${r} = ?`, answer:p+q*r, hint:"Multiply first, then add the rest." }; }
       ];
       let oof = null;
@@ -2012,7 +2050,7 @@ function gainRewards() {
     state.xp -= 100;
     state.level++;
     playSound("level");
-    toast(`Level ${state.level}! 🎉`);
+    toast(currentLang === "ru" ? `Уровень ${state.level}! 🎉` : `Level ${state.level}! 🎉`);
   }
 }
 
@@ -2067,7 +2105,7 @@ function completeMission() {
     } else {
       // P8: tell player how many stars they still need
       const next = buildings.find(b => !state.buildings.includes(b.id));
-      if (next) toast(`Need ${Math.max(0, next.cost - state.stars)} more stars to build ${next.name}!`);
+      if (next) toast(currentLang === "ru" ? `Нужно ещё ${Math.max(0, next.cost - state.stars)} звёзд для ${next.name}!` : `Need ${Math.max(0, next.cost - state.stars)} more stars to build ${next.name}!`);
     }
   }
   if (newDone >= 4 && Math.random() < .35) {
@@ -2105,7 +2143,12 @@ function completeMission() {
   save(true);
   renderMap();
   renderAll();
-  if (!trip.daily && newDone < 5 && newDone % 2 === 0) setTimeout(() => toast("Bonus game unlocked between missions!"), 900);
+  if (!trip.daily && newDone < 5 && newDone % 2 === 0) setTimeout(() => toast(currentLang === "ru" ? "Бонусная игра разблокирована между миссиями!" : "Bonus game unlocked between missions!"), 900);
+  // S8: re-expand quest panel on mobile after mission complete
+  setTimeout(() => {
+    const qp = document.querySelector(".quest-panel");
+    if (qp && window.innerWidth <= 560) qp.classList.add("expanded");
+  }, 400);
 }
 
 // P8: Building celebration modal moment
@@ -2272,7 +2315,12 @@ function playRescueAnimation(animal, onDone) {
 // ─── Reward modal ─────────────────────────────────────────────────────────────
 function showReward(animal, building, rare) {
   const openModal = () => {
-    $("rewardTitle").textContent = animal ? `${animal.name} Rescued!` : (rare ? "Rare Treasure!" : "Mission Complete!");
+    { const _isRu2 = currentLang === "ru";
+  $("rewardTitle").textContent = animal
+    ? (_isRu2 ? `${animal.name} спасён!` : `${animal.name} Rescued!`)
+    : (rare
+      ? (_isRu2 ? "Редкое сокровище!" : "Rare Treasure!")
+      : (_isRu2 ? "Миссия выполнена!" : "Mission Complete!")); }
     const bits = [`+${trip.needed*4} fish`, `+${trip.needed*2} coins`, `+${trip.needed} stars`];
     if (animal)   bits.push(`rescued ${animal.name}`);
     if (building) bits.push(`built ${building.name}`);
@@ -2326,7 +2374,12 @@ function renderTown() {
     const built = state.buildings.includes(b.id);
     const starsNeeded = Math.max(0, b.cost - state.stars);
     return `<article class="item-card ${built?"":"locked"}">${buildingSvg(b.id)}<h3>${b.name}</h3>
-      <p>${built ? "Open, animated, and part of Arctic Town." : starsNeeded > 0 ? `Need ${starsNeeded} more stars and mission progress.` : "Keep completing missions to unlock."}</p></article>`;
+      <p>${built
+        ? (currentLang === "ru" ? "Открыто и активно в Арктическом городе." : "Open, animated, and part of Arctic Town.")
+        : starsNeeded > 0
+          ? (currentLang === "ru" ? `Нужно ещё ${starsNeeded} звёзд.` : `Need ${starsNeeded} more stars and mission progress.`)
+          : (currentLang === "ru" ? "Выполни миссии, чтобы открыть." : "Keep completing missions to unlock.")
+      }</p></article>`;
   }).join("");
 }
 
@@ -2334,7 +2387,10 @@ function renderAlbum() {
   $("albumGrid").innerHTML = animals.map(a => {
     const rescued = state.animals.includes(a.id);
     return `<article class="item-card ${rescued?"":"locked"}">${animalSvg(a.id)}<h3>${rescued?a.name:"Hidden Friend"}</h3>
-      <p>${rescued?`${a.species}: ${a.fact}`:"Complete story missions to discover this friend."}</p></article>`;
+      <p>${rescued
+        ? `${a.species}: ${a.fact}`
+        : (currentLang === "ru" ? "Выполни миссии, чтобы найти этого друга." : "Complete story missions to discover this friend.")
+      }</p></article>`;
   }).join("");
 }
 
@@ -2405,12 +2461,19 @@ function renderCloset() {
 
 function renderAchievements() {
   const unlocked = new Set(state.achievements);
-  $("achievementProgress").textContent = `${unlocked.size} of ${achievementNames.length} unlocked`;
-  $("achievementGrid").innerHTML = achievementNames.map((name,i) =>
-    `<article class="item-card achievement ${unlocked.has(i)?"unlocked":"locked"}">
-      <h3>${name}</h3><p>${unlocked.has(i)?"Unlocked! ⭐":"Keep adventuring to discover this badge."}</p>
-    </article>`
-  ).join("");
+  const isRuAch = currentLang === "ru";
+  $("achievementProgress").textContent = isRuAch
+    ? `${unlocked.size} из ${achievementNames.length} получено`
+    : `${unlocked.size} of ${achievementNames.length} unlocked`;
+  $("achievementGrid").innerHTML = achievementNames.map((name,i) => {
+    const dispName  = isRuAch ? (achievementNamesRu[i] || name) : name;
+    const statusTxt = unlocked.has(i)
+      ? (isRuAch ? "Получено! ⭐" : "Unlocked! ⭐")
+      : (isRuAch ? "Продолжай играть, чтобы открыть." : "Keep adventuring to discover this badge.");
+    return `<article class="item-card achievement ${unlocked.has(i)?"unlocked":"locked"}">
+      <h3>${dispName}</h3><p>${statusTxt}</p>
+    </article>`;
+  }).join("");
 }
 
 // ─── P9: Daily Challenge with narrative ──────────────────────────────────────
@@ -2431,7 +2494,10 @@ function renderDaily() {
   $("dailyText").textContent = state.daily.claimed
     ? t("dailyClaimed")
     : narrativeText + ` ${moreToGo}`;
-  $("dailyBonus").textContent = `Today's treasure: ${state.dailySpecial}. Streak bonus: +${Math.min(20, state.streak.count*3)} fish and coins.`;
+  { const _isRuD = currentLang === "ru";
+  $("dailyBonus").textContent = _isRuD
+    ? `Сегодня: ${state.dailySpecial}. Бонус серии: +${Math.min(20, state.streak.count*3)} рыб и монет.`
+    : `Today's treasure: ${state.dailySpecial}. Streak bonus: +${Math.min(20, state.streak.count*3)} fish and coins.`; }
   $("dailyBtn").disabled      = state.daily.claimed;
 
   // P9: show collected daily specials if any
@@ -2456,8 +2522,9 @@ function renderDashboard() {
   const prof      = getActiveProfile();
   const accuracy  = state.solved ? Math.round((state.correct/state.solved)*100) : 0;
   const sorted    = Object.entries(state.topics).sort((a,b) => weakness(a[0]) - weakness(b[0]));
-  const strong    = sorted.slice(0,3).map(([t]) => topicLabel(t)).join(", ") || "Play to discover";
-  const weak      = sorted.slice(-3).reverse().map(([t]) => topicLabel(t)).join(", ") || "Play to discover";
+  const _isRuS = currentLang === "ru";
+  const strong    = sorted.slice(0,3).map(([t]) => topicLabel(t)).join(", ") || (_isRuS ? "Продолжай играть" : "Play to discover");
+  const weak      = sorted.slice(-3).reverse().map(([t]) => topicLabel(t)).join(", ") || (_isRuS ? "Продолжай играть" : "Play to discover");
   const minutes   = Math.round((state.timePlayed+(Date.now()-state.startedAt)/1000)/60);
   const missionTotal= Object.values(state.missions).reduce((a,b)=>a+b,0);
   const langDisplay = currentLang === "learn" ? "📖 Learning" : currentLang === "ru" ? "🇷🇺 Russian" : "🇺🇸 English";
@@ -2738,16 +2805,20 @@ function startCatchFish() {
 
   const fishColors = ["#ffd45a","#ff7b7b","#27c7de","#4fd6a8","#856de8","#ffb847","#ff6b9d","#7dd8ff"];
 
+  // Set speed variable BEFORE creating fish so first frame is correct
+  stage.style.setProperty("--fish-speed-mul", speedMultipliers[speedMode]);
+
+  let escaped = 0; // track fish that swam off screen
+
   for (let i = 0; i < TOTAL; i++) {
     const fish = document.createElement("button");
     fish.className = "mini-target mini-fish-svg";
     const col    = fishColors[i % fishColors.length];
-    const size   = 48 + Math.random() * 28;        // 48–76px, bigger
-    const baseSpeed = 3.2 + Math.random() * 2.0;   // 3.2–5.2s at normal
+    const size   = 48 + Math.random() * 28;
+    const baseSpeed = 3.2 + Math.random() * 1.8;
     const topPct = 10 + Math.random() * 72;
     const bobbing = Math.random() > 0.45;
 
-    // Fish swims LEFT→RIGHT, so it needs to face right (default SVG faces right already)
     fish.style.cssText = `
       position:absolute;
       left:-${size + 20}px;
@@ -2783,7 +2854,7 @@ function startCatchFish() {
     fish.setAttribute("aria-label", isRu ? "Поймай эту рыбку" : "Catch this fish");
 
     fish.addEventListener("click", () => {
-      if (fish.dataset.caught) return;
+      if (fish.dataset.caught || fish.dataset.escaped) return;
       fish.dataset.caught = "1";
       caught++;
       fish.style.animation = "none";
@@ -2799,30 +2870,45 @@ function startCatchFish() {
         finishMiniGame(caught, "catchfish");
       }
     });
+
+    // Track escaped fish to end game when all fish are resolved
+    fish.addEventListener("animationend", () => {
+      if (fish.dataset.caught) return; // already caught
+      fish.dataset.escaped = "1";
+      escaped++;
+      if (escaped + caught >= TOTAL) {
+        if (miniGameTimer) clearTimeout(miniGameTimer);
+        finishMiniGame(caught, "catchfish");
+      }
+    });
+
     stage.appendChild(fish);
   }
 
-  // Update speed CSS variable when speed mode changes
+  // Update CSS speed variable whenever speed button is pressed
   function updateSpeed() {
     stage.style.setProperty("--fish-speed-mul", speedMultipliers[speedMode]);
-    miniGameTimer = setTimeout(() => finishMiniGame(caught, "catchfish"),
-      (3.2 + TOTAL * 0.42) * 1000 * speedMultipliers[speedMode] + 1500);
   }
-  // Re-read speed every 500ms to apply it to the CSS variable dynamically
+  // Also update on speed button clicks (wire up after controlBar created)
+  controlBar.querySelectorAll(".catchfish-speed-btn").forEach(btn => {
+    btn.addEventListener("click", updateSpeed);
+  });
+  // Fallback timeout — generous buffer for slow mode
+  const slowestBase = (3.2 + 1.8) * speedMultipliers[0]; // ~9s per fish
+  miniGameTimer = setTimeout(() => finishMiniGame(caught, "catchfish"),
+    (slowestBase + TOTAL * 0.42 * speedMultipliers[0]) * 1000 + 3000);
+  // Interval to keep CSS var in sync (handles mid-game speed change)
   const speedInterval = setInterval(() => {
     stage.style.setProperty("--fish-speed-mul", speedMultipliers[speedMode]);
-  }, 300);
-  // Clean up interval when mini-game ends
-  const origFinish = finishMiniGame;
+  }, 200);
   stage.dataset.speedInterval = speedInterval;
-
-  updateSpeed();
 }
 
 // Mini-game 2: Treasure Hunt — tap the right shell to find coins
 function startTreasureHunt() {
-  $("miniTitle").textContent = "Treasure Hunt!";
-  $("miniText").textContent  = "One shell hides a treasure chest. Find it!";
+  { const _isRu = currentLang === "ru";
+  $("miniTitle").textContent = _isRu ? "Охота за сокровищем!" : "Treasure Hunt!";
+  $("miniText").textContent  = _isRu ? "Одна ракушка скрывает сундук! Найди его." : "One shell hides a treasure chest. Find it!"; }
   const stage = $("miniStage");
   stage.innerHTML = "";
   stage.className = "mini-stage mini-treasure";
@@ -2848,7 +2934,7 @@ function startTreasureHunt() {
         const bonus = Math.max(5, 15-attempts*2);
         state.coins += bonus;
         playSound("coin");
-        toast(`Treasure! +${bonus} coins 🎁`);
+        toast(currentLang === "ru" ? `Сокровище! +${bonus} монет 🎁` : `Treasure! +${bonus} coins 🎁`);
         renderHeader();
         if (miniGameTimer) clearTimeout(miniGameTimer);
         miniGameTimer = setTimeout(() => finishMiniGame(5, "treasure"), 1200);
@@ -2868,7 +2954,7 @@ function startTreasureHunt() {
           const bonus = 3;
           state.coins += bonus;
           playSound("coin");
-          toast(`Found it! +${bonus} coins 🎁`);
+          toast(currentLang === "ru" ? `Нашёл! +${bonus} монет 🎁` : `Found it! +${bonus} coins 🎁`);
           renderHeader();
           if (miniGameTimer) clearTimeout(miniGameTimer);
           miniGameTimer = setTimeout(() => finishMiniGame(3, "treasure"), 1400);
@@ -2934,14 +3020,23 @@ function startNumberBubblePop() {
     void qEl.offsetWidth;
     qEl.style.animation = "";
 
-    // Wrong answers
-    const spread = Math.max(2, Math.floor(answer * 0.35));
+    // Wrong answers — guaranteed 3 distinct distractors
+    const spread = Math.max(3, Math.floor(answer * 0.4));
     const wrongs = new Set();
     let tries = 0;
-    while (wrongs.size < 3 && tries < 40) {
+    while (wrongs.size < 3 && tries < 60) {
       tries++;
-      const v = answer + (Math.floor(Math.random() * spread * 2 + 1) * (Math.random() > 0.5 ? 1 : -1));
-      if (v !== answer && v >= 0) wrongs.add(v);
+      const sign = Math.random() > 0.5 ? 1 : -1;
+      const delta = Math.floor(Math.random() * spread) + 1;
+      const v = Math.max(0, answer + sign * delta);
+      if (v !== answer && !wrongs.has(v)) wrongs.add(v);
+    }
+    // Fallback: fill missing distractors with guaranteed unique offsets
+    let fallbackOffset = 1;
+    while (wrongs.size < 3) {
+      const v = answer + fallbackOffset;
+      if (v !== answer && !wrongs.has(v)) wrongs.add(v);
+      fallbackOffset++;
     }
     const choices = shuffle([answer, ...[...wrongs].slice(0, 3)]);
 
@@ -2964,6 +3059,7 @@ function startNumberBubblePop() {
     stage.querySelectorAll(".bubble-btn").forEach(b => b.remove());
 
     choices.forEach((val, i) => {
+      if (val === undefined || val === null) return; // safety guard
       const bub = document.createElement("button");
       bub.className = "bubble-btn";
       bub.textContent = val;
@@ -3068,10 +3164,15 @@ function finishMiniGame(caught, type) {
         : `<span class="rescue-cel-chip" style="background:rgba(200,220,230,.4)">+${Math.min(caught,2)} 🪙</span>`
       }</div>
       <div class="mini-result-btns">
-        <button class="primary" id="miniPlayAgainBtn">${isRu ? "Ещё раз 🎮" : "Play Again 🎮"}</button>
+        <button class="primary" id="miniNextMissionBtn">${isRu ? "Следующая миссия ▶" : "Next Mission ▶"}</button>
+        <button class="secondary" id="miniPlayAgainBtn">${isRu ? "Ещё раз 🎮" : "Play Again 🎮"}</button>
         <button class="secondary" id="miniResultCloseBtn">${isRu ? "На карту 🗺️" : "Return to Map 🗺️"}</button>
       </div>`;
 
+    $("miniNextMissionBtn")?.addEventListener("click", () => {
+      $("miniGame").hidden = true;
+      startMission(false);
+    });
     $("miniPlayAgainBtn")?.addEventListener("click", () => {
       // Re-play the same game type based on current index
       const idx = (state.miniGamesPlayed - 1) % 6;
@@ -3114,7 +3215,7 @@ function startIceSlide() {
   // Score display
   const scoreEl = document.createElement("div");
   scoreEl.className = "slide-score";
-  scoreEl.textContent = "Dodge: 0";
+  scoreEl.textContent = currentLang === "ru" ? "Уклонений: 0" : "Dodge: 0";
   stage.appendChild(scoreEl);
 
   // Left / Right buttons
@@ -3160,7 +3261,7 @@ function startIceSlide() {
         setTimeout(() => sealEl.classList.remove("slide-ouch"), 400);
       } else {
         score++;
-        scoreEl.textContent = `Dodge: ${score}`;
+        scoreEl.textContent = currentLang === "ru" ? `Уклонений: ${score}` : `Dodge: ${score}`;
         state.fish++;
         renderHeader();
       }
@@ -3179,9 +3280,9 @@ function startIceSlide() {
     const won = score >= 6;
     if (won) {
       state.coins += 4; state.stars++;
-      toast(`Ice Slide! Dodged ${score} rocks! +4 coins ⭐`);
+      toast(currentLang === "ru" ? `Ледяная горка! Уклонился ${score} раз! +4 монеты ⭐` : `Ice Slide! Dodged ${score} rocks! +4 coins ⭐`);
     } else {
-      toast(`Dodged ${score} rocks. Nice try! 🧊`);
+      toast(currentLang === "ru" ? `Уклонился ${score} раз. Молодец! 🧊` : `Dodged ${score} rocks. Nice try! 🧊`);
     }
     if (miniGameTimer) clearTimeout(miniGameTimer);
     miniGameTimer = setTimeout(() => finishMiniGame(won ? 5 : 2, "slide"), 1000);
@@ -3215,7 +3316,7 @@ function startSnowballCatch() {
   // Score
   const scoreEl = document.createElement("div");
   scoreEl.className = "slide-score";
-  scoreEl.textContent = `Caught: 0/${Math.ceil(TOTAL*0.6)}`;
+  scoreEl.textContent = currentLang === "ru" ? `Поймал: 0/${Math.ceil(TOTAL*0.6)}` : `Caught: 0/${Math.ceil(TOTAL*0.6)}`;
   stage.appendChild(scoreEl);
 
   // Drag / click to move bucket
@@ -3254,7 +3355,7 @@ function startSnowballCatch() {
         state.fish++;
         playSound("coin");
         ball.classList.add("ball-caught");
-        scoreEl.textContent = `Caught: ${caught}/${Math.ceil(TOTAL*0.6)}`;
+        scoreEl.textContent = currentLang === "ru" ? `Поймал: ${caught}/${Math.ceil(TOTAL*0.6)}` : `Caught: ${caught}/${Math.ceil(TOTAL*0.6)}`;
         renderHeader();
       } else {
         missed++;
@@ -3276,9 +3377,9 @@ function startSnowballCatch() {
     const won = caught >= Math.ceil(TOTAL*0.6);
     if (won) {
       state.coins += 3; state.stars++;
-      toast(`Snowball catch! ${caught} caught! +3 coins ❄️`);
+      toast(currentLang === "ru" ? `Лови снежки! Поймал ${caught}! +3 монеты ❄️` : `Snowball catch! ${caught} caught! +3 coins ❄️`);
     } else {
-      toast(`Caught ${caught}. Slippery flakes! ❄️`);
+      toast(currentLang === "ru" ? `Поймал ${caught}. Скользкие снежинки! ❄️` : `Caught ${caught}. Slippery flakes! ❄️`);
     }
     if (miniGameTimer) clearTimeout(miniGameTimer);
     miniGameTimer = setTimeout(() => finishMiniGame(won ? 5 : 1, "snowball"), 900);
@@ -3445,7 +3546,8 @@ function checkAchievements() {
     if (ok && !state.achievements.includes(i)) {
       state.achievements.push(i);
       playSound("achievement");
-      toast(`Achievement: ${achievementNames[i]} 🏆`);
+      const achName = currentLang === "ru" ? (achievementNamesRu[i] || achievementNames[i]) : achievementNames[i];
+      toast(currentLang === "ru" ? `Достижение: ${achName} 🏆` : `Achievement: ${achName} 🏆`);
     }
   });
 }
@@ -3827,11 +3929,12 @@ function resetEverything() {
 function randomSurprise() {
   setTimeout(() => {
     const roll = Math.random();
-    if      (roll < .18) { state.doubleRewardsUntil = Date.now()+120000; toast("Double Rewards! The next 2 minutes sparkle. ✨"); react("surprised"); }
-    else if (roll < .34) { state.coins+=18; state.rareTreasures++; toast("Mystery treasure chest! +18 coins 🎁"); confetti(); }
-    else if (roll < .50) { state.fish+=8; toast("Lost fish found their way home! +8 fish 🐟"); }
-    else if (roll < .62) { state.mysteryVisits++; toast("Mystery visitor waved from the snow! 👋"); speak("town"); }
-    else if (roll < .72) { state.stars+=2; toast("Bonus whale splash! +2 stars 🐋"); }
+    const _sr = currentLang === "ru";
+    if      (roll < .18) { state.doubleRewardsUntil = Date.now()+120000; toast(_sr ? "Двойные награды! Следующие 2 минуты особые ✨" : "Double Rewards! The next 2 minutes sparkle. ✨"); react("surprised"); }
+    else if (roll < .34) { state.coins+=18; state.rareTreasures++; toast(_sr ? "Таинственный сундук! +18 монет 🎁" : "Mystery treasure chest! +18 coins 🎁"); confetti(); }
+    else if (roll < .50) { state.fish+=8; toast(_sr ? "Потерявшиеся рыбки вернулись домой! +8 рыб 🐟" : "Lost fish found their way home! +8 fish 🐟"); }
+    else if (roll < .62) { state.mysteryVisits++; toast(_sr ? "Таинственный гость помахал из снега! 👋" : "Mystery visitor waved from the snow! 👋"); speak("town"); }
+    else if (roll < .72) { state.stars+=2; toast(_sr ? "Кит выпрыгнул из воды! +2 звезды 🐋" : "Bonus whale splash! +2 stars 🐋"); }
     if (roll < .72) { save(); renderAll(); }
     randomSurprise();
   }, 24000+Math.random()*26000);
@@ -4029,13 +4132,16 @@ const STRINGS = {
     // Levels
     level:"Level",
     // Misc
-    islandComplete:"Island complete", missionOf:"Mission",
+    islandComplete:"Island complete", missionOf:"Mission", islandProgress:"Island",
     objective:"Objective", rewardLabel:"Reward",
     recommendedLevel:"Recommended level",
     stormCovers:"Storm clouds still cover that island.",
     keepExploring:"Keep Exploring",
     missionComplete:"Mission Complete!", rareTreasure:"Rare Treasure!",
     rescued:"Rescued!",
+    // World names
+    world0:"Snow Beach", world1:"Fish Bay", world2:"Whale Coast", world3:"Penguin Islands",
+    world4:"Octopus Cave", world5:"Polar Academy", world6:"Northern Kingdom", world7:"Arctic Champion",
   },
   ru: {
     // Nav
@@ -4095,13 +4201,16 @@ const STRINGS = {
     // Levels
     level:"Уровень",
     // Misc
-    islandComplete:"Остров пройден", missionOf:"Миссия",
+    islandComplete:"Остров пройден", missionOf:"Миссия", islandProgress:"Остров",
     objective:"Задание", rewardLabel:"Награда",
     recommendedLevel:"Рекомендуемый уровень",
     stormCovers:"Этот остров ещё закрыт бурей.",
     keepExploring:"Продолжить!",
     missionComplete:"Миссия выполнена!", rareTreasure:"Редкое сокровище!",
     rescued:"Спасён!",
+    // World names
+    world0:"Снежный пляж", world1:"Рыбная бухта", world2:"Берег китов", world3:"Острова пингвинов",
+    world4:"Пещера осьминога", world5:"Полярная академия", world6:"Северное королевство", world7:"Чемпион Арктики",
     // Island names (used in map)
     islandLocked:"Закрыто", missionsCount:"миссий",
     // Achievement descriptions shown in UI
