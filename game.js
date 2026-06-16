@@ -1332,8 +1332,15 @@ function chooseIsland(id) {
 }
 
 function moveTravelSeal() {
-  const pos = [[7,62],[26,57],[49,61],[72,54],[14,30],[36,24],[60,27],[80,31]][selectedWorld] || [8,62];
-  $("travelSeal").style.left = `${Math.min(pos[0], 85)}%`;
+  // S9: positions tuned for compact 420px mobile map
+  // On desktop the map is tall so we use JS to detect and adjust
+  const isMobileMap = window.innerWidth <= 560;
+  const desktopPos = [[7,62],[26,57],[49,61],[72,54],[14,30],[36,24],[60,27],[80,31]];
+  const mobilePos  = [[8,48],[23,44],[47,48],[68,44],[8,74],[23,70],[47,74],[68,70]];
+  const posArr = isMobileMap ? mobilePos : desktopPos;
+  const pos = posArr[selectedWorld] || posArr[0];
+  const sealMaxLeft = window.innerWidth <= 560 ? 78 : 85;
+  $("travelSeal").style.left = `${Math.min(pos[0], sealMaxLeft)}%`;
   $("travelSeal").style.top  = `${pos[1]}%`;
 }
 
