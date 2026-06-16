@@ -170,6 +170,7 @@ button { font: inherit; color: inherit; }
   filter: drop-shadow(0 10px 10px rgba(18, 70, 98, .24));
   transition: left .9s cubic-bezier(.2,.8,.25,1), top .9s cubic-bezier(.2,.8,.25,1);
   z-index: 2;
+  transform: translateX(-50%);
 }
 .travel-seal svg { width: 100%; animation: swimAcross 1.2s ease-in-out infinite; }
 @keyframes swimAcross { 50% { transform: translateY(-7px) rotate(5deg); } }
@@ -360,13 +361,13 @@ button { font: inherit; color: inherit; }
 .mini-game { margin-top: 16px; }
 .mini-stage {
   position: relative;
-  min-height: 330px;
+  min-height: 280px;
   overflow: hidden;
   border: 4px solid #fff;
   border-radius: 24px;
   background: linear-gradient(#9befff 0 42%, #18a9ce 42% 100%);
   box-shadow: var(--shadow);
-  margin-bottom: 14px;
+  margin-bottom: 10px;
 }
 .mini-target {
   position: absolute;
@@ -647,13 +648,13 @@ button { font: inherit; color: inherit; }
   .quest-panel { order: -1; }
 }
 @media (max-width: 560px) {
-  #app { padding: 8px; }
-  .brand-mark { width: 44px; height: 44px; }
-  .brand p { font-size: .9rem; }
+  #app { padding: 0; }
+  .brand-mark { width: 40px; height: 40px; }
+  .brand p { font-size: .85rem; }
   .tabs {
     max-height: 0;
     overflow: hidden;
-    margin: 8px 0;
+    margin: 6px 0;
     padding-bottom: 0;
     display: grid;
     grid-template-columns: repeat(2, 1fr);
@@ -661,12 +662,106 @@ button { font: inherit; color: inherit; }
   }
   .tabs.open { max-height: 360px; padding-bottom: 4px; }
   .tab { min-width: 0; padding: 0 8px; }
-  .resources span { flex: 1; text-align: center; padding: 8px 6px; }
-  .map-panel, .map { min-height: 720px; }
-  .map { gap: 8px; padding: 12px; }
-  .answers { grid-template-columns: 1fr; }
+  .resources span { flex: 1; text-align: center; padding: 6px 4px; }
+
+  /* ── Mobile 2-screen layout ── */
+  .hero {
+    display: block;
+    position: relative;
+  }
+  /* Map screen occupies full viewport height */
+  .map-panel {
+    min-height: 0;
+    height: calc(100svh - 120px);
+    border-radius: 16px;
+    border-width: 2px;
+  }
+  .map {
+    min-height: 0;
+    height: 100%;
+    grid-template-columns: repeat(4, 1fr);
+    grid-template-rows: repeat(2, 1fr);
+    gap: 6px;
+    padding: 10px 8px;
+  }
+  /* Island buttons — compact for mobile grid */
+  .island { width: auto !important; max-width: none !important; }
+  .island span { font-size: .65rem; }
+  .island span small { font-size: .58rem; display: block; }
+
+  /* Floating quest panel slides up from bottom */
+  .quest-panel {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    z-index: 10;
+    border-radius: 20px 20px 0 0;
+    padding: 12px 16px 20px;
+    gap: 10px;
+    background: #fff;
+    box-shadow: 0 -6px 32px rgba(0,0,0,.18);
+    transform: translateY(calc(100% - 72px));
+    transition: transform .35s cubic-bezier(.2,.8,.25,1);
+    max-height: 92svh;
+    overflow-y: auto;
+    order: unset !important;
+  }
+  /* Collapsed: only start button + mission info visible */
+  .quest-panel::before {
+    content: "";
+    display: block;
+    width: 40px;
+    height: 4px;
+    background: #d0e8f0;
+    border-radius: 99px;
+    margin: 0 auto 8px;
+  }
+  .quest-panel.expanded {
+    transform: translateY(0);
+  }
+  /* Always-visible strip at bottom of collapsed panel */
+  .quest-panel .primary {
+    position: sticky;
+    bottom: 0;
+    z-index: 1;
+  }
+  /* Compact seal card on mobile */
+  .seal-card { flex-direction: row; gap: 10px; }
+  .seal-svg-wrap { width: 56px; flex-shrink: 0; }
+  .seal-svg { width: 56px; height: auto; }
+  .seal-card h2 { font-size: 1rem; }
+  .seal-card p { font-size: .85rem; }
+  .dialog { font-size: .82rem; padding: 8px 10px; }
+  .progress-stack { gap: 4px; }
+  .level-meter { margin-top: 0; }
+
+  /* Challenge screen — fullscreen */
+  #challenge {
+    position: fixed !important;
+    inset: 0;
+    z-index: 20;
+    background: linear-gradient(160deg, #e8f8ff 0%, #d0f0ff 100%);
+    overflow-y: auto;
+    border-radius: 0;
+    padding: 16px 14px 24px;
+    display: flex !important;
+    flex-direction: column;
+    gap: 12px;
+  }
+  #challenge[hidden] { display: none !important; }
+  .challenge-scene { min-height: 90px; }
+  .problem-box { flex: 1; }
+  #problemText { font-size: 1.4rem; }
+  .answers { grid-template-columns: 1fr 1fr; gap: 8px; }
+  .answer { padding: 14px 8px; font-size: 1rem; }
+
+  /* Practice mode button smaller */
+  .practice-mode-btn { padding: 8px 12px; font-size: .82rem; }
+
+  /* Other screens */
   .streak { grid-template-columns: repeat(2, 1fr); }
-  .day { min-height: 110px; }
+  .day { min-height: 100px; }
 }
 
 /* ═══════════════════════════════════════════════════════
@@ -2043,27 +2138,29 @@ body.learning-mode .problem-box h2 {
 .mini-stage.mini-pairs {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
-  gap: 8px;
-  padding: 12px;
+  gap: 6px;
+  padding: 10px;
   align-content: start;
+  max-height: 340px;
 }
 
 .pairs-card {
   aspect-ratio: 1;
-  border-radius: 14px;
-  border: 3px solid rgba(39,199,222,.35);
+  border-radius: 12px;
+  border: 2px solid rgba(39,199,222,.35);
   background: linear-gradient(135deg, #c9f5ff, #d8f8ff);
   cursor: pointer;
-  font-size: clamp(1.5rem, 5vw, 2rem);
+  font-size: clamp(1.1rem, 4vw, 1.6rem);
   display: flex;
   align-items: center;
   justify-content: center;
   transition: transform .15s ease, background .2s;
-  box-shadow: 0 4px 10px rgba(24,84,125,.1);
+  box-shadow: 0 3px 8px rgba(24,84,125,.1);
   user-select: none;
   position: relative;
   overflow: hidden;
   font: inherit;
+  max-height: 80px;
 }
 .pairs-card::before {
   content: "❄";
@@ -2072,7 +2169,7 @@ body.learning-mode .problem-box h2 {
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: clamp(1.3rem, 4vw, 1.7rem);
+  font-size: clamp(1rem, 3.5vw, 1.4rem);
   background: linear-gradient(135deg, #e0f7ff, #c8f0ff);
   transition: opacity .18s;
 }
@@ -2144,16 +2241,18 @@ body.learning-mode .problem-box h2 {
    ═══════════════════════════════════════════════════════ */
 
 .mini-pairs-3col {
-  grid-template-columns: repeat(3, 1fr) !important;
-  gap: 10px !important;
-  padding: 14px !important;
+  grid-template-columns: repeat(4, 1fr) !important;
+  gap: 6px !important;
+  padding: 10px !important;
+  max-height: 320px !important;
 }
 .mini-pairs-3col .pairs-card {
-  font-size: clamp(2rem, 8vw, 3rem) !important;
-  border-radius: 18px;
+  font-size: clamp(1.2rem, 4.5vw, 1.8rem) !important;
+  border-radius: 12px;
+  max-height: 76px;
 }
 .mini-pairs-3col .pairs-card::before {
-  font-size: clamp(1.6rem, 6vw, 2.4rem) !important;
+  font-size: clamp(1rem, 3.5vw, 1.5rem) !important;
 }
 
 /* ═══════════════════════════════════════════════════════
