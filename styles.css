@@ -137,11 +137,11 @@ button { font: inherit; color: inherit; }
 @keyframes waves { to { background-position: 260px 0, 180px 0; } }
 .cloud {
   position: absolute;
-  width: 120px;
-  height: 38px;
+  width: 100px;
+  height: 32px;
   background: #fff;
   border-radius: 999px;
-  opacity: .9;
+  opacity: .88;
   animation: drift 16s linear infinite;
 }
 .cloud:before, .cloud:after { content: ""; position: absolute; background: #fff; border-radius: 50%; }
@@ -669,25 +669,36 @@ button { font: inherit; color: inherit; }
     display: block;
     position: relative;
   }
-  /* Map screen occupies full viewport height */
+  /* Map screen — compact fixed height, no wasted space */
   .map-panel {
     min-height: 0;
-    height: calc(100svh - 120px);
+    height: 420px;
     border-radius: 16px;
     border-width: 2px;
+    /* Push ocean to 72% so bottom row stays in sky */
+    background: linear-gradient(#a8edff 0%, #d8f8ff 72%, #77d5ec 73%, #3bb9d9 100%);
   }
+  .map-panel .ocean { top: 72%; }
   .map {
-    min-height: 0;
+    position: absolute;
+    inset: 0;
     height: 100%;
     grid-template-columns: repeat(4, 1fr);
-    grid-template-rows: repeat(2, 1fr);
+    grid-template-rows: repeat(2, auto);
     gap: 6px;
     padding: 10px 8px;
+    align-content: space-between;
+    align-items: center;
   }
   /* Island buttons — compact for mobile grid */
   .island { width: auto !important; max-width: none !important; }
-  .island span { font-size: .65rem; }
-  .island span small { font-size: .58rem; display: block; }
+  .island span {
+    font-size: .6rem;
+    padding: 3px 5px;
+    background: rgba(255,255,255,.95);
+    line-height: 1.3;
+  }
+  .island span small { font-size: .53rem; display: block; opacity: .85; }
 
   /* Floating quest panel slides up from bottom */
   .quest-panel {
@@ -701,11 +712,12 @@ button { font: inherit; color: inherit; }
     gap: 10px;
     background: #fff;
     box-shadow: 0 -6px 32px rgba(0,0,0,.18);
-    transform: translateY(calc(100% - 72px));
+    transform: translateY(calc(100% - 76px));
     transition: transform .35s cubic-bezier(.2,.8,.25,1);
-    max-height: 92svh;
+    max-height: 90svh;
     overflow-y: auto;
     order: unset !important;
+    padding-bottom: max(20px, env(safe-area-inset-bottom, 20px));
   }
   /* Collapsed: only start button + mission info visible */
   .quest-panel::before {
@@ -726,6 +738,13 @@ button { font: inherit; color: inherit; }
     bottom: 0;
     z-index: 1;
   }
+  /* Travel seal on mobile — stay within 420px map, no clipping */
+  .travel-seal {
+    width: 72px;
+    transform: none;
+    max-left: calc(100% - 80px);
+  }
+
   /* Compact seal card on mobile */
   .seal-card { flex-direction: row; gap: 10px; }
   .seal-svg-wrap { width: 56px; flex-shrink: 0; }
@@ -758,6 +777,11 @@ button { font: inherit; color: inherit; }
 
   /* Practice mode button smaller */
   .practice-mode-btn { padding: 8px 12px; font-size: .82rem; }
+
+  /* Smaller clouds on mobile */
+  .cloud { width: 70px; height: 22px; }
+  .cloud:before { width: 32px; height: 32px; left: 14px; top: -16px; }
+  .cloud:after { width: 28px; height: 28px; right: 12px; top: -12px; }
 
   /* Other screens */
   .streak { grid-template-columns: repeat(2, 1fr); }
