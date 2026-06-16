@@ -2,25 +2,10 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Sausage the Seal: Arctic Math Adventure</title>
-
-  <!-- PWA manifest -->
-  <link rel="manifest" href="manifest.json">
-
-  <!-- iOS PWA support -->
-  <meta name="apple-mobile-web-app-capable" content="yes">
-  <meta name="apple-mobile-web-app-status-bar-style" content="default">
-  <meta name="apple-mobile-web-app-title" content="Sausage Seal">
-  <link rel="apple-touch-icon" href="icon-192.png">
-
-  <!-- Theme color (Android status bar) -->
-  <meta name="theme-color" content="#27c7de">
-
-  <!-- Description for stores -->
-  <meta name="description" content="Help Sausage the Seal rescue friends by solving maths problems across the Arctic!">
-
   <link rel="stylesheet" href="styles.css">
+  <link rel="stylesheet" href="styles-mobile.css">
   <style>
     /* Fallback: ensure profile screen is usable even if styles.css fails to load */
     body { margin:0; font-family:"Trebuchet MS",Arial,sans-serif; }
@@ -69,7 +54,6 @@
         </div>
         <h1 id="profileScreenTitle">Sausage the Seal</h1>
         <p class="profile-screen-sub">Arctic Math Adventure</p>
-        <span class="profile-version-tag">v1.0.0</span>
       </div>
       <h2 class="profile-choose-label">Choose Player</h2>
       <div class="profile-list" id="profileList"></div>
@@ -175,7 +159,6 @@
             </div>
             <button class="primary" id="startChallengeBtn">Start Mission</button>
             <button class="secondary" id="miniGameBtn">Play Bonus Game</button>
-            <button class="secondary practice-mode-btn" id="practiceModeBtn">🎯 Practice Mode</button>
           </aside>
         </div>
 
@@ -378,25 +361,6 @@
       </div>
     </div>
   </div>
-
-  <!-- PRACTICE MODE MODAL -->
-  <div class="practice-modal-overlay" id="practiceModeModal" hidden role="dialog" aria-label="Practice Mode">
-  </div>
-
-  <!-- CREDITS MODAL -->
-  <div class="info-modal-overlay" id="creditsModal" hidden role="dialog" aria-labelledby="creditsTitle">
-    <div class="info-modal-box credits-content">
-    </div>
-  </div>
-
-  <!-- PRIVACY MODAL -->
-  <div class="info-modal-overlay" id="privacyModal" hidden role="dialog" aria-label="Privacy Policy">
-    <div class="info-modal-box privacy-content">
-    </div>
-  </div>
-
-  <!-- RESCUE ANIMATION OVERLAY -->
-  <div class="rescue-anim-overlay" id="rescueAnimOverlay" hidden aria-hidden="true"></div>
 
   <svg width="0" height="0" style="position:absolute;width:0;height:0;overflow:hidden" aria-hidden="true">
     <!-- Seal face icon for brand mark -->
@@ -638,215 +602,6 @@
       <circle cx="197" cy="160" r="1" fill="#fff"/>
       <!-- mouth -->
       <path d="M190 165 Q192 168 194 165" fill="none" stroke="#c07020" stroke-width="1" stroke-linecap="round"/>
-    </symbol>
-
-    <!-- ═══════════════════════════════════════════════════
-         CHARACTER SYMBOLS — 4 starter characters
-         All share viewBox 260×220 for consistent sizing
-         ═══════════════════════════════════════════════════ -->
-
-    <!-- SAUSAGE THE SEAL — idle (reuses existing sausage-body) -->
-    <symbol id="char-seal-idle" viewBox="0 0 260 220">
-      <use href="#sausage-body"/>
-    </symbol>
-
-    <!-- SAUSAGE — happy (slight bounce, raised head) -->
-    <symbol id="char-seal-happy" viewBox="0 0 260 220">
-      <!-- shadow -->
-      <ellipse cx="124" cy="212" rx="90" ry="8" fill="rgba(100,160,200,.12)"/>
-      <!-- body shifted up slightly -->
-      <path d="M54 52 Q32 56 22 76 Q10 98 16 124 Q22 150 44 166 Q68 182 102 186 Q136 190 166 182 Q196 172 210 152 Q224 130 218 108 Q212 86 194 74 Q172 60 144 56 Q120 38 90 40 Q66 40 54 52Z" fill="#EEF4F8" stroke="#3A2E28" stroke-width="6" stroke-linejoin="round"/>
-      <ellipse cx="118" cy="128" rx="66" ry="44" fill="#FAFCFF" opacity=".7"/>
-      <path d="M42 144 Q20 154 16 172 Q32 178 46 166 Q56 156 54 142Z" fill="#EEF4F8" stroke="#3A2E28" stroke-width="5" stroke-linejoin="round"/>
-      <path d="M168 166 Q182 174 184 190 Q170 192 160 182 Q156 174 160 164Z" fill="#E4EEF4" stroke="#3A2E28" stroke-width="4.5" stroke-linejoin="round"/>
-      <path d="M196 122 Q224 106 238 92 Q228 108 214 120 Q206 128 198 128Z" fill="#EEF4F8" stroke="#3A2E28" stroke-width="5" stroke-linejoin="round"/>
-      <!-- head (raised) -->
-      <circle cx="90" cy="82" r="72" fill="#EEF4F8" stroke="#3A2E28" stroke-width="6"/>
-      <ellipse cx="76" cy="50" rx="36" ry="26" fill="#F8FBFF" opacity=".6"/>
-      <ellipse cx="88" cy="108" rx="30" ry="22" fill="#E8F2F8" stroke="#3A2E28" stroke-width="4.5"/>
-      <ellipse cx="84" cy="102" rx="16" ry="9" fill="#F8FBFF" opacity=".5"/>
-      <ellipse cx="88" cy="100" rx="10" ry="7.5" fill="#3A2E28"/>
-      <!-- smile wider for happy -->
-      <path d="M70 120 Q88 136 106 120" fill="none" stroke="#3A2E28" stroke-width="4" stroke-linecap="round"/>
-      <!-- eyes with happy squint -->
-      <path d="M46 72 Q62 62 78 72" fill="none" stroke="#1E1A16" stroke-width="6" stroke-linecap="round"/>
-      <path d="M96 68 Q112 58 126 68" fill="none" stroke="#1E1A16" stroke-width="6" stroke-linecap="round"/>
-      <!-- cheeks brighter -->
-      <ellipse cx="46"  cy="96" rx="16" ry="11" fill="#F4A8B8" opacity=".8"/>
-      <ellipse cx="128" cy="92" rx="16" ry="11" fill="#F4A8B8" opacity=".8"/>
-      <!-- whiskers -->
-      <line x1="26" y1="108" x2="56" y2="112" stroke="#3A2E28" stroke-width="2.5" stroke-linecap="round"/>
-      <line x1="24" y1="118" x2="56" y2="118" stroke="#3A2E28" stroke-width="2.5" stroke-linecap="round"/>
-      <line x1="120" y1="108" x2="150" y2="104" stroke="#3A2E28" stroke-width="2.5" stroke-linecap="round"/>
-      <line x1="120" y1="118" x2="152" y2="116" stroke="#3A2E28" stroke-width="2.5" stroke-linecap="round"/>
-    </symbol>
-
-    <!-- SAUSAGE — victory (flippers raised) -->
-    <symbol id="char-seal-victory" viewBox="0 0 260 220">
-      <use href="#sausage-body"/>
-      <!-- victory stars -->
-      <text x="28" y="50" font-size="22" opacity="0.9">⭐</text>
-      <text x="192" y="45" font-size="18" opacity="0.8">✨</text>
-      <text x="150" y="30" font-size="14" opacity="0.7">🌟</text>
-    </symbol>
-
-    <!-- ═══ PIP THE PENGUIN CHARACTERS ═══ -->
-    <!-- PIP — idle -->
-    <symbol id="char-penguin-idle" viewBox="0 0 260 220">
-      <!-- shadow -->
-      <ellipse cx="130" cy="210" rx="70" ry="8" fill="rgba(40,60,100,.14)"/>
-      <!-- body -->
-      <ellipse cx="130" cy="140" rx="52" ry="64" fill="#1a2030"/>
-      <!-- belly -->
-      <ellipse cx="130" cy="148" rx="32" ry="48" fill="#f0f4f8"/>
-      <!-- head -->
-      <ellipse cx="130" cy="72" rx="44" ry="40" fill="#1a2030"/>
-      <!-- face -->
-      <ellipse cx="130" cy="74" rx="28" ry="26" fill="#f0c060"/>
-      <!-- eyes -->
-      <ellipse cx="116" cy="66" rx="9" ry="10" fill="#f0f4f8"/>
-      <ellipse cx="144" cy="66" rx="9" ry="10" fill="#f0f4f8"/>
-      <circle cx="118" cy="65" r="5" fill="#1a2030"/>
-      <circle cx="146" cy="65" r="5" fill="#1a2030"/>
-      <circle cx="120" cy="63" r="2" fill="#fff"/>
-      <circle cx="148" cy="63" r="2" fill="#fff"/>
-      <!-- beak -->
-      <ellipse cx="130" cy="82" rx="12" ry="8" fill="#ff9820"/>
-      <path d="M118 82 Q130 88 142 82" fill="none" stroke="#c07010" stroke-width="1.5"/>
-      <!-- left wing -->
-      <path d="M78 120 Q58 136 62 170 Q76 168 82 152 Q84 136 80 118Z" fill="#1a2030"/>
-      <!-- right wing -->
-      <path d="M182 120 Q202 136 198 170 Q184 168 178 152 Q176 136 180 118Z" fill="#1a2030"/>
-      <!-- feet -->
-      <ellipse cx="112" cy="204" rx="20" ry="8" fill="#ff9820" transform="rotate(-10 112 204)"/>
-      <ellipse cx="148" cy="204" rx="20" ry="8" fill="#ff9820" transform="rotate(10 148 204)"/>
-    </symbol>
-
-    <!-- PIP — happy -->
-    <symbol id="char-penguin-happy" viewBox="0 0 260 220">
-      <use href="#char-penguin-idle"/>
-      <!-- raised wings -->
-      <path d="M78 110 Q48 90 50 120 Q62 130 78 124Z" fill="#1a2030"/>
-      <path d="M182 110 Q212 90 210 120 Q198 130 182 124Z" fill="#1a2030"/>
-      <!-- happy squint eyes -->
-      <path d="M108 64 Q116 58 124 64" fill="none" stroke="#1a2030" stroke-width="4" stroke-linecap="round"/>
-      <path d="M136 64 Q144 58 152 64" fill="none" stroke="#1a2030" stroke-width="4" stroke-linecap="round"/>
-      <text x="96" y="50" font-size="18">✨</text>
-      <text x="154" y="46" font-size="14">⭐</text>
-    </symbol>
-
-    <!-- PIP — victory -->
-    <symbol id="char-penguin-victory" viewBox="0 0 260 220">
-      <use href="#char-penguin-idle"/>
-      <text x="70" y="52" font-size="22" opacity="0.9">🎉</text>
-      <text x="170" y="48" font-size="18" opacity="0.8">⭐</text>
-    </symbol>
-
-    <!-- ═══ NOVA THE ARCTIC FOX CHARACTERS ═══ -->
-    <!-- NOVA — idle -->
-    <symbol id="char-fox-idle" viewBox="0 0 260 220">
-      <!-- shadow -->
-      <ellipse cx="130" cy="210" rx="78" ry="8" fill="rgba(100,80,40,.12)"/>
-      <!-- bushy tail -->
-      <path d="M176 148 Q216 138 220 116 Q218 96 200 90 Q182 90 174 108 Q168 128 172 148Z" fill="#f0ece0"/>
-      <path d="M178 144 Q210 134 212 114 Q210 98 196 94 Q180 96 176 112 Q172 130 176 144Z" fill="#e0dcd0"/>
-      <!-- tail tip white -->
-      <ellipse cx="210" cy="108" rx="12" ry="16" fill="#fff" opacity="0.9"/>
-      <!-- body -->
-      <ellipse cx="124" cy="154" rx="54" ry="48" fill="#f0ece0"/>
-      <!-- chest lighter -->
-      <ellipse cx="124" cy="162" rx="32" ry="34" fill="#faf8f4"/>
-      <!-- head -->
-      <ellipse cx="124" cy="90" rx="48" ry="42" fill="#f0ece0"/>
-      <!-- ears -->
-      <path d="M90 58 Q80 28 100 34 Q110 48 106 62Z" fill="#f0ece0" stroke="#3a2a18" stroke-width="2"/>
-      <path d="M158 58 Q168 28 148 34 Q138 48 142 62Z" fill="#f0ece0" stroke="#3a2a18" stroke-width="2"/>
-      <!-- inner ear pink -->
-      <path d="M92 58 Q84 34 100 38 Q108 48 104 60Z" fill="#f08080" opacity="0.6"/>
-      <path d="M156 58 Q164 34 148 38 Q140 48 144 60Z" fill="#f08080" opacity="0.6"/>
-      <!-- eyes -->
-      <ellipse cx="108" cy="88" rx="10" ry="11" fill="#1a2030"/>
-      <ellipse cx="140" cy="88" rx="10" ry="11" fill="#1a2030"/>
-      <circle cx="112" cy="84" r="3.5" fill="#fff"/>
-      <circle cx="144" cy="84" r="3.5" fill="#fff"/>
-      <!-- muzzle -->
-      <ellipse cx="124" cy="104" rx="18" ry="13" fill="#e8dcc8"/>
-      <!-- nose -->
-      <ellipse cx="124" cy="98" rx="7" ry="5" fill="#3a2a18"/>
-      <ellipse cx="122" cy="96" rx="2.5" ry="1.8" fill="#fff" opacity="0.4"/>
-      <!-- smile -->
-      <path d="M114 108 Q124 116 134 108" fill="none" stroke="#3a2a18" stroke-width="3" stroke-linecap="round"/>
-      <!-- legs/paws -->
-      <ellipse cx="100" cy="198" rx="18" ry="10" fill="#f0ece0" stroke="#3a2a18" stroke-width="2"/>
-      <ellipse cx="148" cy="198" rx="18" ry="10" fill="#f0ece0" stroke="#3a2a18" stroke-width="2"/>
-    </symbol>
-
-    <!-- NOVA — happy -->
-    <symbol id="char-fox-happy" viewBox="0 0 260 220">
-      <use href="#char-fox-idle"/>
-      <text x="58" y="55" font-size="18">✨</text>
-      <text x="172" y="50" font-size="16">⭐</text>
-    </symbol>
-
-    <!-- NOVA — victory -->
-    <symbol id="char-fox-victory" viewBox="0 0 260 220">
-      <use href="#char-fox-idle"/>
-      <text x="58" y="48" font-size="22">🎉</text>
-      <text x="172" y="44" font-size="18">🌟</text>
-    </symbol>
-
-    <!-- ═══ MISKA THE POLAR BEAR CHARACTERS ═══ -->
-    <!-- MISKA — idle -->
-    <symbol id="char-bear-idle" viewBox="0 0 260 220">
-      <!-- shadow -->
-      <ellipse cx="128" cy="212" rx="88" ry="8" fill="rgba(80,120,100,.14)"/>
-      <!-- body -->
-      <ellipse cx="128" cy="152" rx="68" ry="58" fill="#f4f0e8"/>
-      <!-- legs -->
-      <path d="M72 196 Q52 200 50 212 Q72 218 80 208 Q82 202 78 196Z" fill="#ece8e0"/>
-      <path d="M184 196 Q204 200 206 212 Q184 218 176 208 Q174 202 178 196Z" fill="#ece8e0"/>
-      <!-- arms -->
-      <path d="M62 148 Q34 144 28 158 Q32 176 52 172 Q62 166 64 152Z" fill="#ece8e0"/>
-      <path d="M194 148 Q222 144 228 158 Q224 176 204 172 Q194 166 192 152Z" fill="#ece8e0"/>
-      <!-- head -->
-      <ellipse cx="128" cy="86" rx="56" ry="50" fill="#f4f0e8"/>
-      <!-- ears (round) -->
-      <ellipse cx="80" cy="44" rx="18" ry="17" fill="#f4f0e8" stroke="#3a3028" stroke-width="2.5"/>
-      <ellipse cx="176" cy="44" rx="18" ry="17" fill="#f4f0e8" stroke="#3a3028" stroke-width="2.5"/>
-      <ellipse cx="80" cy="44" rx="10" ry="10" fill="#e0c8b8"/>
-      <ellipse cx="176" cy="44" rx="10" ry="10" fill="#e0c8b8"/>
-      <!-- face -->
-      <ellipse cx="128" cy="100" rx="24" ry="18" fill="#e8dcc8"/>
-      <!-- nose -->
-      <ellipse cx="128" cy="94" rx="12" ry="9" fill="#3a3028"/>
-      <ellipse cx="125" cy="91" rx="4" ry="3" fill="#fff" opacity="0.35"/>
-      <!-- eyes -->
-      <ellipse cx="108" cy="82" rx="10" ry="12" fill="#1a1a28"/>
-      <ellipse cx="148" cy="82" rx="10" ry="12" fill="#1a1a28"/>
-      <circle cx="112" cy="78" r="4" fill="#fff"/>
-      <circle cx="152" cy="78" r="4" fill="#fff"/>
-      <!-- smile -->
-      <path d="M114 108 Q128 120 142 108" fill="none" stroke="#3a3028" stroke-width="4" stroke-linecap="round"/>
-      <!-- cheeks -->
-      <ellipse cx="90"  cy="100" rx="14" ry="9" fill="#f4b8b0" opacity=".55"/>
-      <ellipse cx="166" cy="100" rx="14" ry="9" fill="#f4b8b0" opacity=".55"/>
-    </symbol>
-
-    <!-- MISKA — happy -->
-    <symbol id="char-bear-happy" viewBox="0 0 260 220">
-      <use href="#char-bear-idle"/>
-      <!-- arms raised -->
-      <path d="M60 130 Q32 110 30 128 Q34 148 56 148 Q66 142 64 132Z" fill="#ece8e0"/>
-      <path d="M196 130 Q224 110 226 128 Q222 148 200 148 Q190 142 192 132Z" fill="#ece8e0"/>
-      <text x="46" y="58" font-size="18">✨</text>
-      <text x="184" y="52" font-size="16">⭐</text>
-    </symbol>
-
-    <!-- MISKA — victory -->
-    <symbol id="char-bear-victory" viewBox="0 0 260 220">
-      <use href="#char-bear-idle"/>
-      <text x="46" y="48" font-size="22">🏆</text>
-      <text x="182" y="44" font-size="20">🌟</text>
     </symbol>
 
     <!-- sausage-full alias -->
