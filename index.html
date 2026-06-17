@@ -3,6 +3,9 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#27c7de">
+  <meta name="description" content="Help Sausage the Seal rescue friends by solving math problems! Educational game for ages 6–11.">
+  <link rel="manifest" href="manifest.json">
   <title>Sausage the Seal: Arctic Math Adventure</title>
   <link rel="stylesheet" href="styles.css">
   <link rel="stylesheet" href="styles-mobile.css">
@@ -103,6 +106,9 @@
       </div>
       <button class="icon-btn sound" id="muteBtn" aria-label="Toggle sound" title="Sound on">
         <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 9v6h4l5 4V5L7 9H3zm14.5 3a4.5 4.5 0 0 0-2.1-3.8v7.6A4.5 4.5 0 0 0 17.5 12z"/></svg>
+      </button>
+      <button class="icon-btn" id="aboutBtn" aria-label="About" title="About" onclick="showAboutModal()">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-6h2v6zm0-8h-2V7h2v2z"/></svg>
       </button>
     </header>
 
@@ -271,8 +277,8 @@
 
         <!-- S2: Save Code section -->
         <div class="save-code-section">
-          <h3 id="saveCodeLabel">Save Code</h3>
-          <p id="saveCodeDesc">Write down this 8-character code to restore progress on any device.</p>
+          <h3 id="saveCodeLabel">Quick Code (partial)</h3>
+          <p id="saveCodeDesc">This short code only restores your level and fish count — not your full progress. For a complete backup, use "Export &amp; Copy" above and save the text somewhere safe.</p>
           <div class="save-code-row">
             <input type="text" id="saveCodeBox" class="save-code-input" maxlength="8" placeholder="ABCD1234" aria-label="Save code" autocomplete="off" autocapitalize="characters" spellcheck="false"/>
             <button class="secondary" id="saveCodeBtn">Copy Code</button>
@@ -359,6 +365,43 @@
         <button class="onboard-skip" onclick="closeOnboarding()">Skip</button>
         <button class="onboard-next primary" onclick="advanceOnboarding()">Next →</button>
       </div>
+    </div>
+  </div>
+
+  <!-- ═══ ABOUT / PRIVACY / CREDITS MODAL ═══ -->
+  <div id="aboutModal" class="profile-modal-overlay" hidden role="dialog" aria-labelledby="aboutModalTitle">
+    <div class="profile-modal-box" style="max-width:420px;text-align:left;">
+      <h2 id="aboutModalTitle" class="profile-modal-title" style="text-align:center">🦭 Sausage the Seal</h2>
+      <p style="color:var(--muted);font-size:.9rem;text-align:center;margin:0 0 16px">Arctic Math Adventure · v<span id="aboutVersion">1.0.0</span></p>
+
+      <div id="aboutTabs" style="display:flex;gap:6px;margin-bottom:14px">
+        <button class="about-tab-btn active" data-tab="about" onclick="switchAboutTab('about')">About</button>
+        <button class="about-tab-btn" data-tab="privacy" onclick="switchAboutTab('privacy')">Privacy</button>
+        <button class="about-tab-btn" data-tab="credits" onclick="switchAboutTab('credits')">Credits</button>
+      </div>
+
+      <div id="aboutTabAbout" class="about-tab-panel">
+        <p>An educational math game for children aged 6–11. Help Sausage the Seal rescue friends across the Arctic Ocean by solving math problems.</p>
+        <p>🐟 <b>Free to play.</b> No ads. No in-app purchases. All data stays on your device.</p>
+        <p style="color:var(--muted);font-size:.85rem">For feedback: <b>sausagetheseal@gmail.com</b></p>
+      </div>
+
+      <div id="aboutTabPrivacy" class="about-tab-panel" hidden>
+        <p><b>Privacy Policy</b></p>
+        <p>This app does <b>not</b> collect, store, or share any personal data. All game progress is saved locally on your device only.</p>
+        <p>We do not use analytics, advertising networks, or third-party SDKs that collect data.</p>
+        <p>This app is designed for children. No account registration is required. No data leaves your device.</p>
+        <p style="color:var(--muted);font-size:.82rem">Last updated: June 2026</p>
+      </div>
+
+      <div id="aboutTabCredits" class="about-tab-panel" hidden>
+        <p><b>Game Design &amp; Development</b><br>Stanislav (indie developer)</p>
+        <p><b>Art &amp; Characters</b><br>SVG illustrations created for this project</p>
+        <p><b>Sound</b><br>Web Audio API · No third-party assets</p>
+        <p style="color:var(--muted);font-size:.85rem">Built with vanilla JavaScript, HTML &amp; CSS. No frameworks. 🧊</p>
+      </div>
+
+      <button class="primary" onclick="$(\"aboutModal\").hidden=true" style="width:100%;margin-top:14px;min-height:46px;border:0;border-radius:14px;background:linear-gradient(180deg,#4fd6a8,#2ab890);color:#fff;font:inherit;font-size:1rem;font-weight:900;cursor:pointer">Close</button>
     </div>
   </div>
 

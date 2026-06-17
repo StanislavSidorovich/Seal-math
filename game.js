@@ -9,6 +9,8 @@ const MAX_PROFILES    = 20;
 const PROFILE_EMOJIS  = ["🦭","🐧","🐻","🦊","🐳","🦁","🐼","🦋","🐸","🦄",
                           "🐨","🐯","🦀","🦆","🐬","🦭","🐺","🦝","🦥","🐙"];
 
+const GAME_VERSION = "1.0.0";
+
 // ─── Learning Mode (lang = "learn") ─────────────────────────────────────────
 // Shows English + Russian translation below every string.
 // Stored per-profile in profile.lang.
@@ -231,15 +233,15 @@ function loadProfiles() {
 }
 
 function saveProfiles(profiles) {
-  localStorage.setItem(PROFILES_KEY, JSON.stringify(profiles));
+  try { localStorage.setItem(PROFILES_KEY, JSON.stringify(profiles)); } catch {}
 }
 
 function getActiveProfileId() {
-  return localStorage.getItem(ACTIVE_KEY) || null;
+  try { return localStorage.getItem(ACTIVE_KEY) || null; } catch { return null; }
 }
 
 function setActiveProfileId(id) {
-  localStorage.setItem(ACTIVE_KEY, id);
+  try { localStorage.setItem(ACTIVE_KEY, id); } catch {}
 }
 
 function createProfile(name, emoji) {
@@ -363,7 +365,7 @@ function defaultState() {
     hintsUsed:0, perfectTrips:0, missions:{}, equipped:{ costume:null, accessory:null, pet:null },
     miniGamesPlayed:0, rareTreasures:0, visitors:[], specialCosmetics:[],
     dialogueHistory:[], dailySpecial:"", doubleRewardsUntil:0, mysteryVisits:0,
-    onboarded: false
+    onboarded: false, gameVersion: GAME_VERSION
   };
 }
 
@@ -639,6 +641,13 @@ function launchGame() {
   if (app) app.hidden = false;
   const ps = $("profileScreen");
   if (ps) ps.style.display = "none";
+  // Disable snow animation on low-end devices or if user prefers reduced motion
+  const prefersReduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  const lowEnd = navigator.hardwareConcurrency !== undefined && navigator.hardwareConcurrency <= 2;
+  if (prefersReduced || lowEnd) {
+    const snowEl = document.querySelector(".snow");
+    if (snowEl) snowEl.remove();
+  }
   renderMap();
   renderAll();
   attachEvents();
@@ -823,6 +832,25 @@ function updateProfileTopbar() {
   if (nameEl)  nameEl.textContent  = prof?.name  || "Player";
 }
 
+
+// ── About / Privacy / Credits modal ──────────────────────────────────────────
+function showAboutModal() {
+  const modal = $("aboutModal");
+  if (!modal) return;
+  const vEl = $("aboutVersion");
+  if (vEl) vEl.textContent = GAME_VERSION;
+  switchAboutTab("about");
+  modal.hidden = false;
+}
+
+function switchAboutTab(tab) {
+  ["about","privacy","credits"].forEach(t => {
+    const panel = $("aboutTab" + t.charAt(0).toUpperCase() + t.slice(1));
+    if (panel) panel.hidden = (t !== tab);
+    const btn = document.querySelector(`.about-tab-btn[data-tab="${t}"]`);
+    if (btn) btn.classList.toggle("active", t === tab);
+  });
+}
 
 function showWelcomeBack() {
   const overlay = $("welcomeBackOverlay");
@@ -1069,7 +1097,7 @@ function startMission(daily) {
   trip = { active:true, world:selectedWorld, mission, solved:0, needed:5+(mission>2?2:0), correct:0, daily, mistakes:0 };
   $("challenge").hidden = false;
   $("miniGame").hidden  = true;
-  // Back-to-map button — recreate fresh each time
+  // Back-to-map button — recreate fresh each time, overlay on the scene
   const old = $("backToMapBtn");
   if (old) old.remove();
   const backBtn = document.createElement("button");
@@ -1077,7 +1105,9 @@ function startMission(daily) {
   backBtn.className = "back-to-map-btn";
   backBtn.innerHTML = "← Map";
   backBtn.addEventListener("click", exitMission);
-  $("challenge").prepend(backBtn);
+  const sceneEl = document.querySelector(".challenge-scene");
+  if (sceneEl) sceneEl.prepend(backBtn);
+  else $("challenge").prepend(backBtn);
   // P6: apply island palette to challenge scene
   const w = worlds[trip.world];
   const scene = document.querySelector(".challenge-scene");
@@ -3250,7 +3280,7 @@ const STRINGS = {
     parentDashboard:"Parent Dashboard", parentDesc:"Progress is saved on this device only.",
     exportCopy:"Export & Copy", importProgress:"Import Progress",
     resetStats:"Reset Statistics", newAdventure:"New Adventure", resetAll:"Reset Everything",
-    saveCodeLabel:"Save Code", saveCodeDesc:"Write down this 8-character code to restore progress on any device.",
+    saveCodeLabel:"Quick Code (partial)", saveCodeDesc:"This short code only restores your level and fish count — not your full progress. For a complete backup, use \"Export & Copy\" above.",
     saveCodePlaceholder:"Enter 8-character code to restore...",
     restoreBtn:"Restore",
     exportedBox:"Exported progress appears here. Paste progress here to import.",
@@ -3269,7 +3299,7 @@ const STRINGS = {
     progressExportedFallback:"Progress exported into the box.",
     // Save code
     saveCodeCopied:"Save code copied!",
-    saveCodeRestored:"Progress restored from save code!",
+    saveCodeRestored:"Level and fish restored (partial)!",
     saveCodeInvalid:"Invalid save code. Check all 8 characters.",
     // Levels
     level:"Level",
@@ -3328,7 +3358,7 @@ const STRINGS = {
     parentDashboard:"Панель родителя", parentDesc:"Прогресс сохраняется только на этом устройстве.",
     exportCopy:"Экспорт", importProgress:"Импорт",
     resetStats:"Сбросить статистику", newAdventure:"Новое приключение", resetAll:"Сбросить всё",
-    saveCodeLabel:"Код сохранения", saveCodeDesc:"Запиши этот код для восстановления прогресса на другом устройстве.",
+    saveCodeLabel:"Быстрый код (частично)", saveCodeDesc:"Этот короткий код восстанавливает только уровень и рыбу — не весь прогресс. Для полного резервного копирования используй кнопку «Экспорт и копия» выше.",
     saveCodePlaceholder:"Введи код для восстановления...",
     restoreBtn:"Восстановить",
     exportedBox:"Сюда экспортируется прогресс. Вставь код сюда для импорта.",
@@ -3347,7 +3377,7 @@ const STRINGS = {
     progressExportedFallback:"Прогресс экспортирован в поле ниже.",
     // Save code
     saveCodeCopied:"Код сохранения скопирован!",
-    saveCodeRestored:"Прогресс восстановлен из кода!",
+    saveCodeRestored:"Уровень и рыба восстановлены (частично)!",
     saveCodeInvalid:"Неверный код. Проверь все 8 символов.",
     // Levels
     level:"Уровень",

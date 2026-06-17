@@ -10,18 +10,19 @@
 
   .topbar {
     display: grid;
-    grid-template-columns: auto auto auto 1fr auto;
+    grid-template-columns: auto auto auto 1fr auto auto;
     grid-template-rows: auto auto;
-    gap: 6px;
-    padding: 10px;
+    gap: 4px;
+    padding: 8px;
     border-radius: 16px;
   }
-  /* Row 1: profile | lang | menu | resources | mute */
+  /* Row 1: profile | lang | menu | resources | mute | about */
   #profileTopbarBtn { grid-column: 1; grid-row: 1; }
   #langBtn          { grid-column: 2; grid-row: 1; }
   #menuBtn          { grid-column: 3; grid-row: 1; }
-  .resources        { grid-column: 4; grid-row: 1; justify-content: flex-start; flex-wrap: nowrap; gap: 4px; }
+  .resources        { grid-column: 4; grid-row: 1; justify-content: flex-start; flex-wrap: nowrap; gap: 3px; overflow: hidden; }
   #muteBtn          { grid-column: 5; grid-row: 1; }
+  #aboutBtn         { grid-column: 6; grid-row: 1; }
   /* Row 2: brand full width */
   .brand            { grid-column: 1 / -1; grid-row: 2; gap: 8px; }
 
@@ -109,24 +110,7 @@
   .tab  { scroll-snap-align: start; }
 }
 
-/* ── Back-to-map button (all screens) ───────────────── */
-.back-to-map-btn {
-  display: inline-flex;
-  align-items: center;
-  gap: 5px;
-  border: 0;
-  background: rgba(255,255,255,0.88);
-  color: #17446a;
-  font: inherit;
-  font-size: .88rem;
-  font-weight: 900;
-  padding: 7px 14px;
-  border-radius: 12px;
-  cursor: pointer;
-  box-shadow: 0 3px 10px rgba(24,84,125,.14);
-  margin-bottom: 10px;
-}
-.back-to-map-btn:active { opacity: .75; transform: translateY(1px); }
+/* Back-to-map button base style now lives in styles.css (applies to all screens) */
 
 /* ── Mini-game result overlay ───────────────────────── */
 .mini-result {
@@ -174,3 +158,28 @@
   white-space: nowrap;
 }
 .speed-btn.active { border-color: #27c7de; background: #d0f5ff; }
+
+/* ── About modal tabs ───────────────────────────────────── */
+.about-tab-btn {
+  flex: 1;
+  border: 2px solid #d8f0ff;
+  border-radius: 10px;
+  background: #f4f8fc;
+  color: var(--deep, #17446a);
+  font: inherit;
+  font-size: .82rem;
+  font-weight: 900;
+  padding: 7px 4px;
+  cursor: pointer;
+}
+.about-tab-btn.active {
+  background: #27c7de;
+  border-color: #27c7de;
+  color: #fff;
+}
+.about-tab-panel p {
+  margin: 0 0 10px;
+  font-size: .88rem;
+  line-height: 1.5;
+  color: #16334f;
+}
