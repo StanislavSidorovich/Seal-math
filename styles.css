@@ -422,10 +422,17 @@ button { font: inherit; color: inherit; }
 
 .section-head { padding: 18px; margin-bottom: 14px; }
 .section-head.compact { margin-top: 16px; }
-.town-grid, .album-grid, .shop-grid, .achievement-grid, .dashboard, .closet-grid {
+.town-grid, .album-grid, .shop-grid, .achievement-grid, .closet-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
   gap: 12px;
+}
+/* Dashboard stacks its chart panels and the Overview section vertically;
+   it must NOT share the auto-fit item-grid above (that was putting each
+   chart card, the "Overview" title, and the stat-card block into separate
+   side-by-side grid columns on wide screens). */
+.dashboard {
+  display: block;
 }
 .town-scene {
   position: relative;

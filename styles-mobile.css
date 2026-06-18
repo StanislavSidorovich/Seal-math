@@ -60,7 +60,7 @@
 
   /* ── Grids ────────────────────────────────────────── */
   .town-grid, .album-grid, .shop-grid,
-  .achievement-grid, .dashboard, .closet-grid {
+  .achievement-grid, .closet-grid {
     grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
     gap: 10px;
   }
@@ -96,7 +96,7 @@
   .mini-stage.mini-pairs { grid-template-columns: repeat(3, 1fr); gap: 5px; padding: 8px; }
   .pairs-card { font-size: 1.3rem; }
   .town-grid, .album-grid, .shop-grid,
-  .achievement-grid, .dashboard, .closet-grid { grid-template-columns: repeat(2, 1fr); }
+  .achievement-grid, .closet-grid { grid-template-columns: repeat(2, 1fr); }
 }
 
 /* ── Touch improvements ─────────────────────────────── */

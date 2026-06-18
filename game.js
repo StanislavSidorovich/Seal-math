@@ -3070,8 +3070,48 @@ function animalSvgLarge(i, species) {
 }
 
 function costumeSvg(i) {
-  const color = ["#26364a","#bdefff","#ffd45a","#ff7b7b","#4fd6a8","#856de8","#27c7de","#ffb847"][i];
-  return `<svg viewBox="0 0 120 110" aria-hidden="true"><ellipse cx="60" cy="64" rx="40" ry="28" fill="#f8fcff"/><circle cx="48" cy="57" r="5" fill="#26364a"/><circle cx="72" cy="57" r="5" fill="#26364a"/><path d="M54 68c4 4 8 4 12 0" fill="none" stroke="#7890a4" stroke-width="4" stroke-linecap="round"/><path d="M33 34h54l-8 22H41z" fill="${color}"/><circle cx="60" cy="30" r="10" fill="${color}"/><ellipse cx="60" cy="96" rx="44" ry="7" fill="#bcecf8"/></svg>`;
+  const item = shop[i];
+  const cls  = item ? item.className : null;
+
+  // Shared seal-face base (head, eyes, mouth, body shadow)
+  const face = `<ellipse cx="60" cy="64" rx="40" ry="28" fill="#f8fcff"/><circle cx="48" cy="57" r="5" fill="#26364a"/><circle cx="72" cy="57" r="5" fill="#26364a"/><path d="M54 68c4 4 8 4 12 0" fill="none" stroke="#7890a4" stroke-width="4" stroke-linecap="round"/>`;
+  const body = `<ellipse cx="60" cy="96" rx="44" ry="7" fill="#bcecf8"/>`;
+
+  // Item-specific overlay, drawn to match the shape of its real in-game costume/accessory/pet
+  let overlay = "";
+  switch (cls) {
+    case "pirate": // black tricorn hat + skull badge
+      overlay = `<path d="M28 38h64l-9 19H38z" fill="#18182a"/><ellipse cx="60" cy="38" rx="34" ry="6" fill="#18182a"/><circle cx="60" cy="27" r="7" fill="#f0ede0"/><circle cx="57" cy="25" r="1.6" fill="#18182a"/><circle cx="63" cy="25" r="1.6" fill="#18182a"/><path d="M56 30h8" stroke="#18182a" stroke-width="1.3" stroke-linecap="round"/>`;
+      break;
+    case "astronaut": // helmet ring + control buttons
+      overlay = `<ellipse cx="60" cy="58" rx="46" ry="38" fill="none" stroke="#d0eeff" stroke-width="6" opacity="0.85"/><ellipse cx="60" cy="58" rx="40" ry="32" fill="rgba(160,220,255,0.18)"/><rect x="98" y="48" width="11" height="8" rx="3" fill="#ff7b7b"/><rect x="98" y="60" width="11" height="8" rx="3" fill="#4fd6a8"/><rect x="11" y="48" width="11" height="8" rx="3" fill="#ffd45a"/>`;
+      break;
+    case "king": // crown with gems
+      overlay = `<rect x="40" y="29" width="40" height="7" rx="2" fill="#e8a820" stroke="#c88010" stroke-width="1"/><polygon points="40,29 46,17 52,29" fill="#ffd45a" stroke="#c88010" stroke-width="1"/><polygon points="54,29 60,15 66,29" fill="#ffd45a" stroke="#c88010" stroke-width="1"/><polygon points="68,29 74,17 80,29" fill="#ffd45a" stroke="#c88010" stroke-width="1"/><circle cx="60" cy="18" r="3" fill="#ff6080"/><circle cx="46" cy="19" r="2" fill="#60c8ff"/><circle cx="74" cy="19" r="2" fill="#80e860"/>`;
+      break;
+    case "superhero": // cape (drawn behind face) + S badge on chest
+      overlay = { before: `<path d="M38 72 Q21 96 25 116 Q46 105 60 109 Q74 105 95 116 Q99 96 82 72 Q71 84 60 86 Q49 84 38 72Z" fill="#e02020"/>`,
+                  after:  `<circle cx="60" cy="90" r="9" fill="#ffd45a" stroke="#c8a020" stroke-width="1.4"/><text x="60" y="94" text-anchor="middle" font-size="10" font-weight="900" fill="#c01010">S</text>` };
+      break;
+    case "sunny": // wide-brim sun hat
+      overlay = `<ellipse cx="60" cy="37" rx="34" ry="6" fill="#ffd45a"/><path d="M46 37 Q47 25 60 23 Q73 25 74 37Z" fill="#ffd45a"/><path d="M48 35 Q49 27 60 26 Q71 27 72 35Z" fill="#ffb820"/><path d="M48 37 Q60 34 72 37" fill="none" stroke="#e84040" stroke-width="2" stroke-linecap="round"/>`;
+      break;
+    case "scarf": // star scarf around the neck
+      overlay = `<path d="M37 85 Q60 79 83 85 Q84 93 83 96 Q60 91 37 96 Q36 93 37 85Z" fill="#7858d8"/><path d="M37 85 Q29 99 34 114" fill="none" stroke="#7858d8" stroke-width="6" stroke-linecap="round"/><text x="50" y="92" font-size="8" fill="#ffd45a">★</text><text x="59" y="89" font-size="7" fill="#ffd45a">★</text><text x="67" y="92" font-size="6" fill="#ffd45a">★</text>`;
+      break;
+    case "goggles": // snow goggles over the eyes
+      overlay = `<path d="M40 53 Q33 49 28 52" fill="none" stroke="#444" stroke-width="2" stroke-linecap="round"/><path d="M80 53 Q87 49 92 52" fill="none" stroke="#444" stroke-width="2" stroke-linecap="round"/><rect x="39" y="49" width="19" height="14" rx="6" fill="#00b8d8" opacity="0.8"/><rect x="62" y="49" width="19" height="14" rx="6" fill="#00b8d8" opacity="0.8"/><rect x="57" y="53" width="6" height="5" rx="2" fill="#335"/>`;
+      break;
+    case "pet": // tiny fish swimming alongside
+      overlay = `<ellipse cx="97" cy="92" rx="14" ry="9" fill="#ffb840"/><path d="M111 92 Q120 86 120 92 Q120 98 111 92Z" fill="#ffb840"/><circle cx="89" cy="89" r="2" fill="#1a1a2e"/><path d="M93 95 Q96 98 99 95" fill="none" stroke="#c07020" stroke-width="1" stroke-linecap="round"/>`;
+      break;
+    default:
+      overlay = `<ellipse cx="60" cy="30" r="10" fill="#27c7de"/>`;
+  }
+
+  const before = typeof overlay === "object" ? overlay.before : "";
+  const after  = typeof overlay === "object" ? overlay.after  : overlay;
+  return `<svg viewBox="0 0 120 110" aria-hidden="true">${before}${face}${after}${body}</svg>`;
 }
 
 // ─── Parent tools ─────────────────────────────────────────────────────────────
@@ -3149,24 +3189,24 @@ function randomSurprise() {
 // ─── P3: Onboarding ───────────────────────────────────────────────────────────
 const onboardingSteps = [
   {
-    title:"Welcome to Arctic Adventure! 🦭",
-    text:"Meet Sausage the Seal! A big storm has scattered all friends across the icy ocean. Can you bring them home?",
+    titleKey:"onboard1_title",
+    textKey:"onboard1_text",
     emoji:"🌊"
   },
   {
-    title:"Which year are you in?",
+    titleKey:"onboard2_title",
     text:"",  // rendered as grade picker
     emoji:"📚",
     gradePickerStep: true
   },
   {
-    title:"Rescue Friends!",
-    text:"Sail to each island, answer maths questions, and bring your friends safely back home.",
+    titleKey:"onboard3_title",
+    textKey:"onboard3_text",
     emoji:"🐧"
   },
   {
-    title:"Earn Rewards!",
-    text:"Every correct answer earns fish 🐟, coins 💰, and stars ⭐. Use them to unlock costumes and build your Arctic Town!",
+    titleKey:"onboard4_title",
+    textKey:"onboard4_text",
     emoji:"🎁"
   }
 ];
@@ -3190,16 +3230,16 @@ function renderOnboardStep() {
   const modal = $("onboardingModal");
   if (!modal) return;
   modal.querySelector(".onboard-emoji").textContent = step.emoji;
-  modal.querySelector(".onboard-title").textContent = step.title;
+  modal.querySelector(".onboard-title").textContent = t(step.titleKey);
   const textEl = modal.querySelector(".onboard-text");
 
   if (step.gradePickerStep) {
-    textEl.innerHTML = `<p style="margin:0 0 12px;color:var(--muted)">Pick your school year so Sausage picks the right islands for you!</p>
+    textEl.innerHTML = `<p style="margin:0 0 12px;color:var(--muted)">${t("onboard2_intro")}</p>
       <div class="grade-grid">
-        <button class="grade-btn" data-grade="1-2">Year 1–2<small>Ages 5–7</small></button>
-        <button class="grade-btn" data-grade="3">Year 3<small>Age 8</small></button>
-        <button class="grade-btn selected" data-grade="4">Year 4<small>Age 9 ✓</small></button>
-        <button class="grade-btn" data-grade="5+">Year 5+<small>Age 10+</small></button>
+        <button class="grade-btn" data-grade="1-2">${t("grade1_2")}<small>${t("grade1_2_age")}</small></button>
+        <button class="grade-btn" data-grade="3">${t("grade3")}<small>${t("grade3_age")}</small></button>
+        <button class="grade-btn selected" data-grade="4">${t("grade4")}<small>${t("grade4_age")} ✓</small></button>
+        <button class="grade-btn" data-grade="5+">${t("grade5plus")}<small>${t("grade5plus_age")}</small></button>
       </div>`;
     textEl.querySelectorAll(".grade-btn").forEach(btn => {
       btn.addEventListener("click", () => {
@@ -3212,14 +3252,15 @@ function renderOnboardStep() {
       });
     });
   } else {
-    textEl.textContent = step.text;
-    textEl.innerHTML = step.text; // allow emoji
+    textEl.innerHTML = t(step.textKey); // allow emoji
   }
 
   modal.querySelector(".onboard-dots").innerHTML = onboardingSteps.map((_,i)=>
     `<span class="onboard-dot ${i===onboardStep?"active":""}"></span>`).join("");
   const nextBtn = modal.querySelector(".onboard-next");
-  nextBtn.textContent = onboardStep < total-1 ? "Next →" : "Start Adventure! 🚀";
+  nextBtn.textContent = onboardStep < total-1 ? t("onboardNext") : t("onboardStart");
+  const skipBtn = modal.querySelector(".onboard-skip");
+  if (skipBtn) skipBtn.textContent = t("onboardSkip");
 }
 
 function advanceOnboarding() {
@@ -3323,6 +3364,20 @@ const STRINGS = {
     // Match Pairs mini-game
     matchPairs_title:"Match Pairs!", matchPairs_text:"Flip cards and find matching pairs!",
     matchPairs_win:"All pairs matched! Great job!", matchPairs_moves:"moves",
+    // Onboarding
+    onboard1_title:"Welcome to Arctic Adventure! 🦭",
+    onboard1_text:"Meet Sausage the Seal! A big storm has scattered all friends across the icy ocean. Can you bring them home?",
+    onboard2_title:"Which year are you in?",
+    onboard2_intro:"Pick your school year so Sausage picks the right islands for you!",
+    grade1_2:"Year 1–2", grade1_2_age:"Ages 5–7",
+    grade3:"Year 3", grade3_age:"Age 8",
+    grade4:"Year 4", grade4_age:"Age 9",
+    grade5plus:"Year 5+", grade5plus_age:"Age 10+",
+    onboard3_title:"Rescue Friends!",
+    onboard3_text:"Sail to each island, answer maths questions, and bring your friends safely back home.",
+    onboard4_title:"Earn Rewards!",
+    onboard4_text:"Every correct answer earns fish 🐟, coins 💰, and stars ⭐. Use them to unlock costumes and build your Arctic Town!",
+    onboardNext:"Next →", onboardStart:"Start Adventure! 🚀", onboardSkip:"Skip",
   },
   ru: {
     // Nav
@@ -3414,6 +3469,20 @@ const STRINGS = {
     // Match Pairs mini-game
     matchPairs_title:"Найди пару!", matchPairs_text:"Открывай карточки и находи совпадающие пары!",
     matchPairs_win:"Все пары найдены! Молодец!", matchPairs_moves:"ходов",
+    // Onboarding
+    onboard1_title:"Добро пожаловать в Арктику! 🦭",
+    onboard1_text:"Познакомься с Сосиской Тюленем! Сильный шторм разбросал всех друзей по ледяному океану. Сможешь вернуть их домой?",
+    onboard2_title:"В каком ты классе?",
+    onboard2_intro:"Выбери свой класс, чтобы Сосиска подобрал подходящие острова!",
+    grade1_2:"1–2 класс", grade1_2_age:"5–7 лет",
+    grade3:"3 класс", grade3_age:"8 лет",
+    grade4:"4 класс", grade4_age:"9 лет",
+    grade5plus:"5+ класс", grade5plus_age:"10+ лет",
+    onboard3_title:"Спасай друзей!",
+    onboard3_text:"Плыви на каждый остров, решай задачки по математике и возвращай друзей домой в целости.",
+    onboard4_title:"Получай награды!",
+    onboard4_text:"За каждый правильный ответ — рыбки 🐟, монеты 💰 и звёзды ⭐. Используй их, чтобы открыть костюмы и построить свой Арктический Город!",
+    onboardNext:"Далее →", onboardStart:"Начать приключение! 🚀", onboardSkip:"Пропустить",
   }
 };
 
