@@ -437,6 +437,9 @@ button { font: inherit; color: inherit; }
   overflow: hidden;
   margin-bottom: 14px;
 }
+/* Base building look — full animation list lives here so later theme patches
+   (e.g. the Living Town glow below) only need to ADD a keyframe name to this
+   list instead of re-declaring `animation` and silently wiping these out. */
 .town-building {
   position: absolute;
   width: 130px;
@@ -444,51 +447,27 @@ button { font: inherit; color: inherit; }
   border: 0;
   background: transparent;
   cursor: pointer;
-  transition: transform .2s ease;
-  animation: townPop .5s ease both;
+  transition: transform .25s ease;
+  z-index: 3;
+  animation: townPop .5s ease both, buildingIdle 3.5s ease-in-out infinite, building-glow 4s ease-in-out infinite;
 }
-.town-building:hover { transform: translateY(-6px) scale(1.04); }
+.town-building:hover { transform: scale(1.08) translateY(-4px); }
 .town-building svg { width: 100%; filter: drop-shadow(0 15px 12px rgba(28,88,115,.2)); }
-.town-building { animation: townPop .5s ease both, buildingIdle 3.5s ease-in-out infinite; }
 @keyframes buildingIdle { 50% { translate: 0 -3px; } }
 .town-friend {
   position: absolute;
-  width: 58px;
-  animation: wander 4s ease-in-out infinite;
+  width: 52px;
+  z-index: 3;
+  animation: friend-waddle 3s ease-in-out infinite;
 }
 .town-critter, .town-fish, .town-splash {
   position: absolute;
   pointer-events: none;
 }
-.town-critter { width: 46px; animation: wander 5s ease-in-out infinite; }
-.town-fish {
-  width: 34px;
-  height: 17px;
-  border-radius: 50%;
-  background: #ffd45a;
-  animation: townSwim 6s linear infinite;
-}
-.town-fish:after {
-  content: "";
-  position: absolute;
-  right: -9px;
-  top: 4px;
-  border-left: 11px solid #ffd45a;
-  border-top: 5px solid transparent;
-  border-bottom: 5px solid transparent;
-}
-.town-splash {
-  width: 72px;
-  height: 32px;
-  border-radius: 50%;
-  border-top: 10px solid rgba(255,255,255,.9);
-  animation: splash 4.5s ease-in-out infinite;
-}
-@keyframes townSwim { to { transform: translateX(760px); } }
-@keyframes splash { 0%, 70%, 100% { opacity: 0; scale: .7; } 78% { opacity: 1; scale: 1.15; } }
+.town-critter { width: 46px; z-index: 3; animation: critter-walk 6s ease-in-out infinite; }
 @keyframes townPop { from { transform: translateY(18px) scale(.9); opacity: 0; } }
-@keyframes wander { 50% { transform: translateX(18px) translateY(-7px); } }
 .seal-room {
+
   display: grid;
   grid-template-columns: minmax(260px, .8fr) 1.2fr;
   gap: 16px;
@@ -1999,9 +1978,9 @@ body.learning-mode .problem-box h2 {
   opacity: 0;
   animation: aurora-wave 8s ease-in-out infinite;
 }
-.town-aurora-band:nth-child(1) { top: 8%;  height: 60px; background: linear-gradient(180deg, transparent, rgba(79,214,168,.35), transparent); animation-delay: 0s; }
-.town-aurora-band:nth-child(2) { top: 14%; height: 80px; background: linear-gradient(180deg, transparent, rgba(39,199,222,.28), transparent); animation-delay: 1.8s; animation-duration: 10s; }
-.town-aurora-band:nth-child(3) { top: 5%;  height: 45px; background: linear-gradient(180deg, transparent, rgba(133,109,232,.22), transparent); animation-delay: 3.4s; animation-duration: 12s; }
+.town-aurora-band:nth-child(1) { top: 8%;  height: 70px; background: linear-gradient(180deg, transparent, rgba(79,214,168,.55), transparent); animation-delay: 0s; }
+.town-aurora-band:nth-child(2) { top: 14%; height: 95px; background: linear-gradient(180deg, transparent, rgba(39,199,222,.45), transparent); animation-delay: 1.8s; animation-duration: 10s; }
+.town-aurora-band:nth-child(3) { top: 5%;  height: 55px; background: linear-gradient(180deg, transparent, rgba(133,109,232,.4), transparent); animation-delay: 3.4s; animation-duration: 12s; }
 @keyframes aurora-wave {
   0%,100% { opacity: 0; transform: translateX(-8%) scaleY(1); }
   30%     { opacity: 1; transform: translateX(4%)  scaleY(1.3); }
@@ -2050,43 +2029,20 @@ body.learning-mode .problem-box h2 {
   100% { opacity: 0; transform: translateY(260px) rotate(360deg); }
 }
 
-/* Building entrance glow when built */
-.town-building {
-  position: absolute;
-  background: transparent;
-  border: 0;
-  cursor: pointer;
-  transition: transform .25s ease;
-  z-index: 3;
-  filter: drop-shadow(0 0 8px rgba(255,220,80,.0));
-  animation: building-glow 4s ease-in-out infinite;
-}
-.town-building:hover { transform: scale(1.08) translateY(-4px); }
+/* Building glow keyframe — referenced by the consolidated .town-building rule above */
 @keyframes building-glow {
   0%,100% { filter: drop-shadow(0 0 4px rgba(255,220,80,.1)); }
   50%     { filter: drop-shadow(0 0 14px rgba(255,220,80,.45)); }
 }
 
-/* Town friend swimming animation */
-.town-friend {
-  position: absolute;
-  width: 52px;
-  z-index: 3;
-  animation: friend-waddle 3s ease-in-out infinite;
-}
+/* Town friend waddle keyframe — referenced by the consolidated .town-friend rule above */
 @keyframes friend-waddle {
   0%,100% { transform: translateY(0) rotate(0deg); }
   25%     { transform: translateY(-5px) rotate(-3deg); }
   75%     { transform: translateY(-3px) rotate(3deg); }
 }
 
-/* Walking critter */
-.town-critter {
-  position: absolute;
-  width: 46px;
-  z-index: 3;
-  animation: critter-walk 6s ease-in-out infinite;
-}
+/* Walking critter keyframe — referenced by the consolidated .town-critter rule above */
 @keyframes critter-walk {
   0%    { transform: translateX(0); }
   50%   { transform: translateX(28px) scaleX(-1); }
