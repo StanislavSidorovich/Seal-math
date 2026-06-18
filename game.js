@@ -2226,15 +2226,25 @@ function startMiniGame() {
   else                       startMatchPairs();
 }
 
-// Mini-game 1: Catch Fish — fish swim across, tap to catch
+// Simple fish icon used by the Catch Fish mini-game — body, tail fork, dorsal fin, eye
+const FISH_SVG = `<svg viewBox="0 0 64 34" aria-hidden="true">
+  <path d="M6 17 Q1 9 11 5 Q5 12 9 17 Q5 22 11 29 Q1 25 6 17Z" fill="#ff9d2e"/>
+  <ellipse cx="36" cy="17" rx="22" ry="12.5" fill="#ffc23c"/>
+  <path d="M30 5 Q37 -2 45 4 Q38 8 31 9Z" fill="#ff9d2e"/>
+  <path d="M22 25 Q28 31 34 26" fill="none" stroke="#e88018" stroke-width="2" stroke-linecap="round"/>
+  <path d="M30 17 h16" stroke="rgba(120,60,0,.18)" stroke-width="3" stroke-linecap="round"/>
+  <circle cx="50" cy="14" r="3.4" fill="#1c1c2e"/>
+  <circle cx="51" cy="13" r="1.1" fill="#fff"/>
+</svg>`;
+
+// Mini-game 1: Catch Fish — fish swim across; catch 5 before they all escape to win
 function startCatchFish() {
   $("miniTitle").textContent = "Catch Fish!";
-  $("miniText").textContent  = "Tap the swimming fish before they escape! Catch 5 to win.";
+  $("miniText").textContent  = "Tap the fish before they swim away! Catch 5 to win.";
   const stage = $("miniStage");
   stage.innerHTML = "";
   stage.className = "mini-stage mini-catchfish";
 
-  // Speed selector — default SLOW
   let fishSpeed = 9000; // ms to cross screen (slow)
   const speedBar = document.createElement("div");
   speedBar.className = "mini-speed-bar";
@@ -2243,19 +2253,24 @@ function startCatchFish() {
     <button class="speed-btn" data-speed="5500">🐟 Normal</button>
     <button class="speed-btn" data-speed="3000">⚡ Fast</button>`;
   stage.appendChild(speedBar);
-  speedBar.querySelectorAll(".speed-btn").forEach(btn => {
-    btn.addEventListener("click", () => {
-      speedBar.querySelectorAll(".speed-btn").forEach(b => b.classList.remove("active"));
-      btn.classList.add("active");
-      fishSpeed = Number(btn.dataset.speed);
-    });
-  });
 
-  let caught = 0;
   const TOTAL = 9;
+  let caught   = 0;
+  let resolved = 0;   // caught + escaped off-screen
+  let finished = false;
+  const fishEls = [];
 
-  // Wait one frame so stage has rendered and has real dimensions
-  requestAnimationFrame(() => {
+  function finish() {
+    if (finished) return;
+    finished = true;
+    finishMiniGame(caught, "catchfish");
+  }
+
+  function spawnAll(speed) {
+    fishEls.forEach(f => f.remove());
+    fishEls.length = 0;
+    caught = 0; resolved = 0; finished = false;
+
     const stageW = stage.offsetWidth  || 360;
     const stageH = stage.offsetHeight || 260;
     const safeH  = Math.max(30, stageH - 80);
@@ -2263,27 +2278,48 @@ function startCatchFish() {
     for (let i = 0; i < TOTAL; i++) {
       const fish = document.createElement("button");
       fish.className = "mini-target";
-      fish.style.left = `${-70 - i * 80}px`;
+      fish.innerHTML = FISH_SVG;
+      fish.style.left = `${-90 - i * 80}px`;
       fish.style.top  = `${30 + Math.random() * safeH}px`;
-      fish.style.setProperty("--swim-dist", `${stageW + 120}px`);
-      fish.style.setProperty("--swim-dur",  `${fishSpeed + i * 200}ms`);
+      fish.style.setProperty("--swim-dist", `${stageW + 140}px`);
+      fish.style.setProperty("--swim-dur",  `${speed + i * 200}ms`);
       fish.style.animationDelay = `${i * 0.3}s`;
       fish.setAttribute("aria-label", "Catch this fish");
+      // A fish that reaches the far edge without being caught "escapes"
+      fish.addEventListener("animationend", () => {
+        if (fish.dataset.resolved) return;
+        fish.dataset.resolved = "1";
+        resolved++;
+        if (resolved >= TOTAL) finish();
+      });
       fish.addEventListener("click", () => {
-        if (fish.dataset.caught) return;
-        fish.dataset.caught = "1";
-        caught++;
+        if (fish.dataset.resolved) return;
+        fish.dataset.resolved = "1";
+        caught++; resolved++;
         fish.style.opacity = "0";
+        fish.style.pointerEvents = "none";
         state.fish += 2;
         playSound("coin");
         toast(`+2 fish! (${caught}/5)`);
         renderHeader();
-        if (caught >= 5) finishMiniGame(caught, "catchfish");
+        if (caught >= 5 || resolved >= TOTAL) finish();
       });
       stage.appendChild(fish);
+      fishEls.push(fish);
     }
-    miniGameTimer = setTimeout(() => finishMiniGame(caught, "catchfish"), 18000);
+  }
+
+  speedBar.querySelectorAll(".speed-btn").forEach(btn => {
+    btn.addEventListener("click", () => {
+      speedBar.querySelectorAll(".speed-btn").forEach(b => b.classList.remove("active"));
+      btn.classList.add("active");
+      fishSpeed = Number(btn.dataset.speed);
+      spawnAll(fishSpeed); // changing speed restarts the round fresh
+    });
   });
+
+  // Wait one frame so the stage has real dimensions before placing fish
+  requestAnimationFrame(() => spawnAll(fishSpeed));
 }
 
 // Mini-game 2: Treasure Hunt — tap the right shell to find coins
@@ -2347,54 +2383,84 @@ function startTreasureHunt() {
   miniGameTimer = setTimeout(() => { if (!done) finishMiniGame(0, "treasure"); }, 18000);
 }
 
-// Mini-game 3: Find Hidden Penguin — spot penguin hidden behind icebergs
+// Mini-game 3: Find the Penguin — solve a problem, tap the iceberg with the right answer
 function startFindPenguin() {
   $("miniTitle").textContent = "Find the Penguin!";
-  $("miniText").textContent  = "Pebble is hiding! Tap the right iceberg to find the penguin.";
+  $("miniText").textContent  = "Solve it, then tap the iceberg with the right answer!";
   const stage = $("miniStage");
   stage.innerHTML = "";
   stage.className = "mini-stage mini-penguin";
 
-  const ICEBERGS = 5;
-  const secretIdx = Math.floor(Math.random()*ICEBERGS);
-  let done = false;
+  const topic   = chooseTopic(["add10","add20","sub20","multiply","divide"]);
+  const problem = generateProblem(topic);
+
+  // Build 4 distinct wrong numbers alongside the correct answer
+  let spread  = problem.answer < 10 ? 2 : problem.answer < 30 ? 4 : problem.answer < 100 ? 10 : 20;
+  const wrong = [...wrongAnswers(problem)];
+  let attempts = 0;
+  while (wrong.length < 4 && attempts < 80) {
+    attempts++;
+    if (attempts % 15 === 0) spread += 3; // widen the search if small numbers run out of room
+    const offset = Math.floor(Math.random()*(spread*2+1)) - spread || (Math.random()<.5?-1:1);
+    const v = Math.max(0, problem.answer + offset);
+    if (v !== problem.answer && !wrong.includes(v)) wrong.push(v);
+  }
+  const values    = shuffle([problem.answer, ...wrong.slice(0,4)]);
+  const secretIdx = values.indexOf(problem.answer);
+
+  const problemEl = document.createElement("div");
+  problemEl.className = "penguin-problem";
+  problemEl.textContent = problem.text;
+  stage.appendChild(problemEl);
+
+  let done  = false;
   let round = 0;
 
   const colors = ["#e0f7ff","#c8f0ff","#b0e8ff","#d8f4ff","#f0fbff"];
-  for (let i=0; i<ICEBERGS; i++) {
+  const finishWith = (berg, bonus, result) => {
+    berg.querySelector(".iceberg-number")?.remove();
+    berg.innerHTML += `<div class="penguin-found">${animalSvg(1)}</div>`;
+    state.coins += bonus; state.fish += bonus;
+    playSound("coin");
+    react("excited");
+    toast(`Found Pebble! +${bonus} fish & coins 🐧`);
+    renderHeader();
+    if (miniGameTimer) clearTimeout(miniGameTimer);
+    miniGameTimer = setTimeout(() => finishMiniGame(result, "penguin"), 1400);
+  };
+
+  values.forEach((val, i) => {
     const berg = document.createElement("button");
     berg.className = "iceberg-btn";
-    berg.setAttribute("aria-label",`Iceberg ${i+1}`);
+    berg.setAttribute("aria-label", `Iceberg showing ${val}`);
     berg.style.left   = `${8+(i*18)}%`;
     berg.style.bottom = `${25+Math.random()*15}%`;
     berg.innerHTML = `<svg viewBox="0 0 90 80" aria-hidden="true">
       <ellipse cx="45" cy="68" rx="40" ry="14" fill="${colors[i]}"/>
       <path d="M12 65 Q25 20 45 15 Q65 20 78 65z" fill="white"/>
       <path d="M20 65 Q32 35 45 28 Q58 35 70 65z" fill="${colors[i]}"/>
-    </svg>`;
+    </svg><span class="iceberg-number">${val}</span>`;
     berg.addEventListener("click", () => {
       if (done) return;
       round++;
       if (i === secretIdx) {
         done = true;
-        berg.innerHTML += `<div class="penguin-found">${animalSvg(1)}</div>`;
-        const bonus = Math.max(3, 10-round);
-        state.coins += bonus; state.fish += bonus;
-        playSound("coin");
-        react("excited");
-        toast(`Found Pebble! +${bonus} fish & coins 🐧`);
-        renderHeader();
-        if (miniGameTimer) clearTimeout(miniGameTimer);
-        miniGameTimer = setTimeout(() => finishMiniGame(5, "penguin"), 1400);
+        finishWith(berg, Math.max(3, 10-round), 5);
       } else {
         berg.style.opacity = ".45";
         berg.disabled = true;
         playSound("wrong");
+        const remaining = stage.querySelectorAll(".iceberg-btn:not(:disabled)");
+        if (remaining.length <= 1 && !done) {
+          done = true;
+          if (remaining[0]) finishWith(remaining[0], 3, 4);
+        }
       }
     });
     stage.appendChild(berg);
-  }
-  miniGameTimer = setTimeout(() => { if (!done) finishMiniGame(0,"penguin"); }, 20000);
+  });
+
+  miniGameTimer = setTimeout(() => { if (!done) finishMiniGame(0,"penguin"); }, 30000);
 }
 
 function finishMiniGame(caught, type) {
@@ -2417,10 +2483,18 @@ function finishMiniGame(caught, type) {
       <div class="mini-result-msg">${caught >= 5 ? "Well done!" : "Good effort!"}</div>
       <div class="mini-result-sub">+${Math.min(caught,5)} coins${caught >= 5 ? " and +2 stars earned!" : ""}</div>
       <div class="mini-result-btns">
+        <button class="secondary mini-retry-btn">🔁 Play Again</button>
         <button class="primary mini-play-again-btn">Next Mini-game 🎮</button>
         <button class="secondary mini-map-btn">Return to Map 🗺️</button>
       </div>
     </div>`;
+  stage.querySelector(".mini-retry-btn").addEventListener("click", () => {
+    const starters = {
+      catchfish: startCatchFish, treasure: startTreasureHunt, penguin: startFindPenguin,
+      slide: startIceSlide, snowball: startSnowballCatch, pairs: startMatchPairs
+    };
+    (starters[type] || startMiniGame)();
+  });
   stage.querySelector(".mini-play-again-btn").addEventListener("click", () => {
     startMiniGame();
   });
@@ -2482,19 +2556,25 @@ function startIceSlide() {
     const rock = document.createElement("div");
     rock.className = "slide-rock";
     const rockX = 10 + Math.random()*80;
+    const scale = 0.9 + Math.random()*0.45; // size variety: some rocks are noticeably bigger
+    rock.style.width  = Math.round(46*scale) + "px";
+    rock.style.height = Math.round(40*scale) + "px";
     rock.style.left = rockX+"%";
-    rock.style.top  = "-30px";
+    rock.style.top  = "-40px";
     stage.appendChild(rock);
     rocksDone++;
 
     const fall = rock.animate(
-      [{ top:"-30px" }, { top: stage.offsetHeight+"px" }],
+      [{ top:"-40px" }, { top: stage.offsetHeight+"px" }],
       { duration: 1600 - Math.min(score*40,800), easing:"linear" }
     );
     fall.onfinish = () => {
       if (!active) return;
-      const rockCenter = rockX;
-      if (Math.abs(rockCenter - pos) < 14) {
+      const rockCenter  = rockX;
+      const stageW       = stage.offsetWidth || 360;
+      const sealHalfPct  = (sealEl.offsetWidth/2  / stageW) * 100;
+      const rockHalfPct  = (rock.offsetWidth/2    / stageW) * 100;
+      if (Math.abs(rockCenter - pos) < sealHalfPct + rockHalfPct) {
         missed++;
         rock.classList.add("rock-hit");
         playSound("wrong");
@@ -2585,9 +2665,10 @@ function startSnowballCatch() {
     stage.appendChild(ball);
 
     const dur = 1200 - Math.min(caught*50, 600);
+    const landTop = stage.offsetHeight-30;
     const anim = ball.animate(
-      [{ top:"-20px" }, { top: (stage.offsetHeight-30)+"px" }],
-      { duration: dur, easing:"linear" }
+      [{ top:"-20px" }, { top: landTop+"px" }],
+      { duration: dur, easing:"linear", fill: "forwards" }
     );
     anim.onfinish = () => {
       if (!active) return;
@@ -2595,14 +2676,26 @@ function startSnowballCatch() {
         caught++;
         state.fish++;
         playSound("coin");
-        ball.classList.add("ball-caught");
         scoreEl.textContent = `Caught: ${caught}/${Math.ceil(TOTAL*0.6)}`;
         renderHeader();
+        // Drop the ball into the bucket so the catch is unmistakable
+        const bucketTop = stage.offsetHeight - 16 - 26;
+        ball.animate(
+          [
+            { left: ballX+"%", top: landTop+"px", opacity: 1 },
+            { left: bucketX+"%", top: bucketTop+"px", opacity: 0.6 }
+          ],
+          { duration: 160, easing: "ease-in", fill: "forwards" }
+        );
+        ball.classList.add("ball-caught");
+        bucket.classList.add("bucket-catch");
+        setTimeout(() => bucket.classList.remove("bucket-catch"), 220);
+        setTimeout(() => ball.remove(), 170);
       } else {
         missed++;
         ball.classList.add("ball-missed");
+        setTimeout(() => ball.remove(), 200);
       }
-      setTimeout(() => ball.remove(), 200);
       const remaining = TOTAL - spawned;
       const needed    = Math.ceil(TOTAL*0.6) - caught;
       if (remaining === 0 || (missed > TOTAL*0.5 && needed > remaining)) {

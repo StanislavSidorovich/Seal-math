@@ -93,8 +93,6 @@
   .island { width: min(100%, 120px); }
   .seal-svg { width: min(140px, 50%); }
   .mini-stage { min-height: 220px; }
-  .mini-stage.mini-pairs { grid-template-columns: repeat(3, 1fr); gap: 5px; padding: 8px; }
-  .pairs-card { font-size: 1.3rem; }
   .town-grid, .album-grid, .shop-grid,
   .achievement-grid, .closet-grid { grid-template-columns: repeat(2, 1fr); }
 }
@@ -127,6 +125,7 @@
 .mini-result-msg  { font-size: 1.4rem; font-weight: 900; color: #17446a; }
 .mini-result-sub  { font-size: 1rem; color: #5f7487; font-weight: 700; }
 .mini-result-btns { display: flex; gap: 10px; flex-wrap: wrap; justify-content: center; margin-top: 8px; }
+.mini-retry-btn       { min-width: 140px; }
 .mini-play-again-btn { min-width: 160px; }
 .mini-map-btn        { min-width: 140px; }
 
