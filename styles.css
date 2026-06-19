@@ -1158,12 +1158,7 @@ button { font: inherit; color: inherit; }
 .save-code-input:focus { outline: 3px solid var(--aqua); border-color: var(--aqua); }
 
 /* Topbar slight adjustment for lang button */
-.topbar { grid-template-columns: auto auto 1fr auto auto; }
-@media (max-width: 900px) {
-  .topbar { grid-template-columns: auto auto 1fr auto; }
-}
 @media (max-width: 560px) {
-  .topbar { grid-template-columns: auto auto 1fr auto; }
   .lang-btn { padding: 5px 7px; font-size: .8rem; min-width: 34px; }
 }
 
@@ -1233,18 +1228,6 @@ button { font: inherit; color: inherit; }
   color: #2e7d5a;
   font-weight: 700;
   line-height: 1.4;
-}
-
-/* Topbar: add column for lang button */
-.topbar {
-  grid-template-columns: auto auto 1fr auto auto !important;
-}
-@media (max-width: 900px) {
-  .topbar { grid-template-columns: auto auto 1fr auto auto !important; }
-  .resources { grid-column: 1 / -1; }
-}
-@media (max-width: 560px) {
-  .topbar { grid-template-columns: auto auto 1fr auto auto !important; }
 }
 
 /* Realistic seal: smooth blink via eye elements */
@@ -1670,7 +1653,7 @@ body.learning-mode .problem-box h2 {
   .resources { grid-column: 1 / -1; }
 }
 @media (max-width: 560px) {
-  .topbar { grid-template-columns: auto auto 1fr auto auto !important; }
+  .topbar { grid-template-columns: auto auto auto 1fr auto auto !important; }
   .profile-topbar-name { display: none; }
   .profile-topbar-btn  { padding: 6px 8px; }
 }
