@@ -1090,6 +1090,8 @@ function switchView(id) {
   document.querySelectorAll(".tab").forEach(t => t.classList.toggle("active", t.dataset.view === id));
   document.querySelectorAll(".view").forEach(v => v.classList.toggle("active", v.id === id));
   if (id === "town") speak("town");
+  if (id === "adventure") startWorldMusic(selectedWorld);
+  else stopWorldMusic();
   renderHeader();
   const renderer = SECTION_RENDERERS[id];
   if (renderer) renderer();
@@ -1153,6 +1155,7 @@ function chooseIsland(id) {
     save(true);
   }
   selectedWorld = id;
+  startWorldMusic(id);
   react("swim");
   renderMap();
   renderQuest();
@@ -3154,6 +3157,8 @@ function initAudio() {
   if (audioReady) return;
   audioCtx = new (window.AudioContext || window.webkitAudioContext)();
   audioReady = true;
+  const adventureView = document.getElementById("adventure");
+  if (adventureView && adventureView.classList.contains("active")) startWorldMusic(selectedWorld);
 }
 
 function playIslandSound() {
@@ -3185,13 +3190,49 @@ function playSound(type) {
   notes.forEach((freq,i) => setTimeout(()=>tone(freq,.08+i*.01,wave),i*90));
 }
 
-function tone(freq, len, wave="sine") {
+// S10: background music — eight short looping motifs, one per world, matching
+// the `music` mood label already sitting unused on each world object since
+// the game's early design (e.g. "bright bells", "royal horns"). Quiet,
+// procedural, no audio files — same philosophy as the SFX engine.
+const worldMelodies = [
+  { notes:[784,880,988,880],  wave:"sine",     tempo:480 }, // 0 Snow Beach — bright bells
+  { notes:[523,659,523,392],  wave:"triangle", tempo:300 }, // 1 Fish Bay — bouncy marimba
+  { notes:[440,523,392,349],  wave:"sine",     tempo:700 }, // 2 Whale Coast — slow ocean chimes
+  { notes:[330,330,440,330],  wave:"square",   tempo:260 }, // 3 Penguin Islands — tap-dance drums
+  { notes:[294,311,262,233],  wave:"sine",     tempo:520 }, // 4 Octopus Cave — mysterious bubbles
+  { notes:[659,784,880,1046], wave:"triangle", tempo:340 }, // 5 Polar Academy — sparkly classroom
+  { notes:[220,277,330,277],  wave:"square",   tempo:420 }, // 6 Northern Kingdom — royal horns
+  { notes:[523,659,784,1046], wave:"square",   tempo:300 }, // 7 Arctic Champion — victory fanfare
+];
+let musicTimer = null;
+let musicWorld = null;
+
+function startWorldMusic(worldId) {
+  if (musicWorld === worldId && musicTimer) return; // already playing this island's loop
+  stopWorldMusic();
+  musicWorld = worldId;
+  if (!audioReady) return;
+  const m = worldMelodies[worldId] || worldMelodies[0];
+  let step = 0;
+  musicTimer = setInterval(() => {
+    if (state.muted) return;
+    tone(m.notes[step % m.notes.length], (m.tempo/1000)*0.85, m.wave, .045);
+    step++;
+  }, m.tempo);
+}
+
+function stopWorldMusic() {
+  if (musicTimer) { clearInterval(musicTimer); musicTimer = null; }
+  musicWorld = null;
+}
+
+function tone(freq, len, wave="sine", vol=.18) {
   const osc  = audioCtx.createOscillator();
   const gain = audioCtx.createGain();
   osc.type = wave;
   osc.frequency.value = freq;
   gain.gain.setValueAtTime(.0001, audioCtx.currentTime);
-  gain.gain.exponentialRampToValueAtTime(.18, audioCtx.currentTime+.02);
+  gain.gain.exponentialRampToValueAtTime(vol, audioCtx.currentTime+.02);
   gain.gain.exponentialRampToValueAtTime(.0001, audioCtx.currentTime+len);
   osc.connect(gain).connect(audioCtx.destination);
   osc.start();
