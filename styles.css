@@ -308,6 +308,45 @@ button { font: inherit; color: inherit; }
   left: 22px;
   bottom: 56px;
 }
+/* S11: visible per-question progress inside the actual scene — was only a
+   text counter + a plain bar elsewhere on the page, nothing in the water
+   itself. Generic enough to reuse for any of the 5 mission types: the goal
+   icon changes per mission (set in JS), the marker/track stay the same. */
+.mission-trail {
+  position: absolute;
+  left: 8%;
+  right: 8%;
+  top: 22px;
+  height: 28px;
+  z-index: 2;
+}
+.mission-trail-track {
+  position: absolute;
+  left: 0; right: 0; top: 50%;
+  height: 3px;
+  border-radius: 3px;
+  background: repeating-linear-gradient(90deg, rgba(255,255,255,.75) 0 10px, transparent 10px 20px);
+  transform: translateY(-50%);
+}
+.mission-trail-start, .mission-trail-goal {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 1.3rem;
+  filter: drop-shadow(0 2px 3px rgba(0,40,60,.25));
+}
+.mission-trail-start { left: -6px; }
+.mission-trail-goal  { right: -6px; }
+.mission-trail-goal svg { width: 26px; display: block; }
+.mission-trail-marker {
+  position: absolute;
+  left: 0;
+  top: 50%;
+  font-size: 1.4rem;
+  transform: translate(-50%, -50%);
+  transition: left .6s cubic-bezier(.34,1.56,.64,1);
+  filter: drop-shadow(0 2px 4px rgba(0,40,60,.3));
+}
 .small-seal { position: absolute; width: 190px; right: 20px; bottom: 24px; animation: bob 2.6s ease-in-out infinite; }
 .fish {
   position: absolute;

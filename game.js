@@ -1251,24 +1251,30 @@ function renderQuest() {
 }
 
 function dialogFor(world, mission) {
+  // S12: was generic flavor text where the character narrated about "a
+  // friend" in third person while already chatting with you — confusing,
+  // since that same character IS the friend you rescue. Now it's a small
+  // arc: a faint distant voice, then them speaking for themselves while
+  // stranded, then a grateful companion — closing the loop with the
+  // "storm scattered everyone" premise from onboarding.
   const linesEn = [
-    `${world.character}: Sausage, the storm left clues in the snow. Let's start small and brave.`,
-    `${world.character}: I can see a friend nearby. Three good answers will move the rescue sled.`,
-    `${world.character}: The town needs a new helper. Let's earn supplies and make it shine.`,
-    `${world.character}: A treasure chest is frozen shut. Warm it up with clever thinking.`,
-    `${world.character}: This is the final gust. Then this island will sparkle again.`
+    `${world.character}: I hear something out there, Sausage — almost like a tiny cry on the wind. Let's follow the clues.`,
+    `${world.character}: Over here! I'm stuck and so cold... three good answers and that sled will reach me!`,
+    `${world.character}: Phew, thank you! Now let's build something warm for whoever the storm scattered next.`,
+    `${world.character}: I spotted something shiny while I was waiting to be found. Let's dig it out together!`,
+    `${world.character}: One more push, Sausage. After this, the storm that scattered us all will finally rest.`
   ];
   const linesRu = [
-    `${world.character}: Тюлень, буря оставила следы на снегу. Начнём с малого и смело.`,
-    `${world.character}: Я вижу друга совсем рядом. Три верных ответа — и спасательные нарты тронутся.`,
-    `${world.character}: Городу нужен новый помощник. Заработаем припасы и сделаем его краше.`,
-    `${world.character}: Сундук с сокровищем вмёрз в лёд. Растопи его умом.`,
-    `${world.character}: Это последний порыв бури. Потом остров снова засияет.`
+    `${world.character}: Я что-то слышу, Тюлень — будто тихий зов на ветру. Пойдём по следам.`,
+    `${world.character}: Я тут! Застрял и так замёрз... три верных ответа — и нарты доберутся до меня!`,
+    `${world.character}: Уф, спасибо! Теперь построим что-то тёплое для тех, кого буря разбросала вслед за мной.`,
+    `${world.character}: Я заметил что-то блестящее, пока ждал спасения. Давай выкопаем это вместе!`,
+    `${world.character}: Ещё немного, Тюлень. После этого буря, что разбросала всех нас, наконец утихнет.`
   ];
   const lines = currentLang === "ru" ? linesRu : linesEn;
   return lines[mission] || (currentLang === "ru"
-    ? `${world.character}: Этот остров безопасен. Хочешь сыграть ещё раз за дополнительное сокровище?`
-    : `${world.character}: This island is safe. Want to replay for extra treasure?`);
+    ? `${world.character}: Теперь этот остров в безопасности благодаря тебе. Хочешь исследовать его снова за дополнительное сокровище?`
+    : `${world.character}: This island is safe now, thanks to you. Want to explore it again for extra treasure?`);
 }
 
 // ─── Mission ─────────────────────────────────────────────────────────────────
@@ -1308,6 +1314,18 @@ function startMission(daily) {
   makeProblem();
 }
 
+// S11: goal icon for the mission trail — mission 1 (Rescue a Friend) shows
+// the actual friend waiting on this island; other mission types get a
+// generic icon matching their theme. Same trail/marker works for all of them.
+function missionGoalIcon(world, mission) {
+  if (mission === 1) return animalSvg(world.animal);
+  return ["🔍","🏗️","🎁","☀️"][mission] || "🏁";
+}
+
+function missionTrailPos(solved, needed) {
+  return 8 + Math.min(1, solved / needed) * 84; // % across the track, clear of start/goal icons
+}
+
 function makeProblem() {
   const world   = worlds[trip.world];
   const topic   = chooseTopic(world.topics);
@@ -1320,6 +1338,8 @@ function makeProblem() {
     : `${wName} - ${details.title}`;
   $("missionTitle").textContent  = trip.daily ? t("dailyRescue") : `${t("missionOf")} ${trip.mission+1}: ${details.title}`;
   $("questionsLeft").textContent = `${Math.max(0, trip.needed-trip.solved)} ${t("questionsLeft")}`;
+  $("missionTrailGoal").innerHTML = missionGoalIcon(world, trip.mission);
+  $("missionTrailMarker").style.left = `${missionTrailPos(trip.solved, trip.needed)}%`;
   $("problemText").textContent   = currentProblem.text;
   $("hintText").hidden           = true;
   $("hintText").textContent      = currentProblem.hint;
@@ -1751,6 +1771,7 @@ function answer(value, btn) {
     toast(encouragement());
     $("questionsLeft").textContent = `${Math.max(0, trip.needed-trip.solved)} ${t("questionsLeft")}`;
     $("missionMeter").style.width  = `${Math.round((trip.solved/trip.needed)*100)}%`;
+    $("missionTrailMarker").style.left = `${missionTrailPos(trip.solved, trip.needed)}%`;
     announceResult(true, currentProblem.answer, currentProblem.topic);
     setTimeout(() => trip.solved >= trip.needed ? completeMission() : makeProblem(), 860);
   } else {
