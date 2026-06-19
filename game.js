@@ -117,6 +117,77 @@ const dialogueBank = {
     "A reward well deserved. On to the next one!"
   ]
 };
+// S9: RU mirror of dialogueBank — same keys/order, picked via speak() below.
+const dialogueBankRu = {
+  before: [
+    "Я взял с собой смелость и закуски. Чаще закуски.",
+    "Этот остров сегодня кажется другим. Давай осмотримся.",
+    "Если ветер расшумится, мы ответим смелостью.",
+    "Даже маленькая подсказка — это подсказка. За мной!",
+    "Сегодня ветер пахнет приключениями.",
+    "Три вопроса — и мы герои.",
+    "Готов? Остров наблюдает.",
+    "Тюлень взволнованно ёрзает. Идём!",
+    "Я слышу, как где-то там зовёт друг.",
+    "Каждый верный ответ приближает спасательную лодку.",
+    "Глубокий вдох. Мы справимся вместе.",
+    "Буря оставила загадку — давай разгадаем её.",
+    "Тёплые ласты, тёплое сердце. Спасём кого-нибудь!",
+    "Сегодня похоже на день золотой звезды."
+  ],
+  correct: [
+    "От этого снег засверкал!",
+    "Тюлень радостно проскользил на животе!",
+    "Спасательные нарты рванули вперёд.",
+    "Отличная мысль. Остров заметил.",
+    "Лёд засветился — отличный ответ!",
+    "Рыбка подпрыгнула от радости!",
+    "Тюлень хлопнул ластом! Превосходно.",
+    "Вот это ответ. Идеально!",
+    "Спасательная лодка стала ближе. Продолжай!",
+    "Блестяще! Даже облака зааплодировали.",
+    "Этот ответ согрел весь айсберг.",
+    "Тюлень кружится от радости!",
+    "Ещё один шаг к тому, чтобы вернуть друга домой.",
+    "Звёзды засияли ярче. Потрясающе!"
+  ],
+  wrong: [
+    "Не переживай. Даже путешественники скользят на льду.",
+    "Попробуем другой путь. Я верю в нас.",
+    "Было близко. Подсказка может помочь.",
+    "Тюлень отряхивается и продолжает улыбаться.",
+    "Посмотри ещё раз — ответ прячется рядом.",
+    "Всё в порядке. Мы учимся каждый раз.",
+    "Ответ ближе, чем ты думаешь.",
+    "Каждый путешественник иногда сворачивает не туда. Попробуй снова!",
+    "Не совсем, но приключение продолжается!",
+    "Лёд бывает хитрым. Посмотри подсказку.",
+    "Тюлень кивает — это случается со всеми.",
+    "Подумай немного — ты сможешь разобраться.",
+    "Смелая попытка! Посмотри на правильный ответ.",
+    "Ошибки — это то, как мы учимся. У тебя получится."
+  ],
+  town: [
+    "Сегодня в городе слышно больше шума.",
+    "Кто-то заглянул на Рыбный рынок.",
+    "Я услышал всплеск возле гавани.",
+    "Спасённые друзья делают это место своим домом.",
+    "Смотри — Пип играет у маяка!",
+    "Сегодня утром Блюбелл заметили у гавани.",
+    "Новые друзья делают город живым.",
+    "На рынке пахнет свежей рыбой и приключениями."
+  ],
+  reward: [
+    "Сокровище приятнее, когда друзья в безопасности.",
+    "Этот сундук ждал умного путешественника.",
+    "Городу досталась новая искра!",
+    "Награды, заработанные доброй душой, — самые лучшие.",
+    "Тюлень заслужил это. Каждый ответ был важен.",
+    "Смотри, на что способны смелость и ум!",
+    "Арктика теперь стала чуточку светлее.",
+    "Заслуженная награда. Идём за следующей!"
+  ]
+};
 
 const rescueLines = [
   "Thank you, Sausage! I thought I would never get off that ice floe!",
@@ -1094,9 +1165,21 @@ function chooseIsland(id) {
 }
 
 function moveTravelSeal() {
-  const pos = [[7,62],[26,57],[49,61],[72,54],[14,30],[36,24],[60,27],[80,31]][selectedWorld] || [8,62];
-  $("travelSeal").style.left = `${pos[0]}%`;
-  $("travelSeal").style.top  = `${pos[1]}%`;
+  const seal = $("travelSeal");
+  const panel = document.querySelector(".map-panel");
+  const islandBtn = document.querySelector(`[data-world="${selectedWorld}"]`);
+  if (!seal || !panel) return;
+  if (!islandBtn) { seal.style.left = "8%"; seal.style.top = "62%"; return; }
+  // S9: was a hand-tuned percentage table from an older scattered island
+  // layout — never updated when islands moved into a CSS grid, so the seal
+  // drifted away from whichever island was actually selected. Now it reads
+  // the island's real rendered position, so it can't go stale again.
+  const panelRect  = panel.getBoundingClientRect();
+  const islandRect = islandBtn.getBoundingClientRect();
+  const left = ((islandRect.left + islandRect.width * 0.12 - panelRect.left) / panelRect.width) * 100;
+  const top  = ((islandRect.top  + islandRect.height * 0.78 - panelRect.top) / panelRect.height) * 100;
+  seal.style.left = `${left}%`;
+  seal.style.top  = `${top}%`;
 }
 
 function islandSvg(world, locked) {
@@ -1202,6 +1285,7 @@ function startMission(daily) {
   trip = { active:true, world:selectedWorld, mission, solved:0, needed:5+(mission>2?2:0), correct:0, daily, mistakes:0 };
   $("challenge").hidden = false;
   $("miniGame").hidden  = true;
+  $("challenge").scrollIntoView({ behavior: "smooth", block: "start" });
   // Back-to-map button — recreate fresh each time, overlay on the scene
   const old = $("backToMapBtn");
   if (old) old.remove();
@@ -2148,10 +2232,11 @@ function renderShop() {
   $("shopGrid").innerHTML = shop.map(s => {
     const owned    = state.shop.includes(s.id);
     const equipped = state.equipped[s.type] === s.id;
+    const statusText = owned ? (equipped ? t("equippedOnSausage") : t("ownedEquipInMySeal")) : t("visibleReward");
     return `<article class="item-card">${costumeSvg(s.id)}<h3>${s.name}</h3>
-      <p>${owned?(equipped?"Equipped on Sausage.":"Owned. Equip it in My Seal."):"A visible reward for Sausage."}</p>
+      <p>${statusText}</p>
       <div class="buy-row"><b>${s.cost} coins</b>
-        <button data-shop="${s.id}" ${owned||state.coins<s.cost?"disabled":""} aria-label="${owned?"Owned":("Buy "+s.name+" for "+s.cost+" coins")}">${owned?"Owned":"Buy"}</button>
+        <button data-shop="${s.id}" ${owned||state.coins<s.cost?"disabled":""} aria-label="${owned?t("owned"):(t("buy")+" "+s.name+" — "+s.cost)}">${owned?t("owned"):t("buy")}</button>
       </div></article>`;
   }).join("");
   const shopGrid = $("shopGrid");
@@ -2172,7 +2257,7 @@ function buyItem(id) {
     state.equipped[item.type] = item.id;
     playSound("coin");
     react("excited");
-    toast(`${item.name} unlocked and equipped!`);
+    toast(`${item.name} ${t("unlockedAndEquipped")}`);
     checkAchievements();
     save();
     renderAll();
@@ -2210,7 +2295,7 @@ function renderCloset() {
     const active = state.equipped[item.type] === item.id;
     return `<article class="item-card ${owned?"":"locked"}">${costumeSvg(item.id)}<h3>${item.name}</h3>
       <p>${owned?`Slot: ${item.type}`:`Buy in Rewards for ${item.cost} coins.`}</p>
-      <button class="equip-btn ${active?"active":""}" data-equip="${item.id}" ${owned?"":"disabled"} aria-label="${active?"Equipped":"Equip "+item.name}">${active?t("equipped"):t("equip")}</button></article>`;
+      <button class="equip-btn ${active?"active":""}" data-equip="${item.id}" ${owned?"":"disabled"} aria-label="${active?t("unequip"):"Equip "+item.name}">${active?t("unequip"):t("equip")}</button></article>`;
   }).join("");
   const closetGrid = $("closetGrid");
   if (closetGrid && !closetGrid.dataset.bound) {
@@ -2220,7 +2305,10 @@ function renderCloset() {
       if (!btn || btn.disabled) return;
       const item = shop[Number(btn.dataset.equip)];
       if (!item) return;
-      state.equipped[item.type] = item.id;
+      // S9: clicking an already-equipped item now unequips it (back to bare
+      // Sausage for that slot) instead of being a one-way-only action.
+      const isActive = state.equipped[item.type] === item.id;
+      state.equipped[item.type] = isActive ? null : item.id;
       react("excited");
       save();
       renderCloset();
@@ -2378,6 +2466,7 @@ function renderDashboard() {
 function startMiniGame() {
   $("miniGame").hidden  = false;
   $("challenge").hidden = true;
+  $("miniGame").scrollIntoView({ behavior: "smooth", block: "start" });
   if (miniGameTimer) { clearTimeout(miniGameTimer); miniGameTimer = null; }
   const gameIndex = state.miniGamesPlayed % 5;
   if      (gameIndex === 0) startCatchFish();
@@ -2434,14 +2523,15 @@ function startCatchFish() {
 
     const stageW = stage.offsetWidth  || 360;
     const stageH = stage.offsetHeight || 260;
-    const safeH  = Math.max(30, stageH - 80);
+    const topMin = 56; // clears the speed-bar (~8px top + its own height)
+    const safeH  = Math.max(30, stageH - topMin - 50);
 
     for (let i = 0; i < TOTAL; i++) {
       const fish = document.createElement("button");
       fish.className = "mini-target";
       fish.innerHTML = FISH_SVG;
       fish.style.left = `${-90 - i * 80}px`;
-      fish.style.top  = `${30 + Math.random() * safeH}px`;
+      fish.style.top  = `${topMin + Math.random() * safeH}px`;
       fish.style.setProperty("--swim-dist", `${stageW + 140}px`);
       fish.style.setProperty("--swim-dur",  `${speed + i * 200}ms`);
       fish.style.animationDelay = `${i * 0.3}s`;
@@ -3007,7 +3097,8 @@ function topicLabelLearn(topic) {
 }
 
 function speak(kind) {
-  const lines = dialogueBank[kind] || dialogueBank.before;
+  const bank = currentLang === "ru" ? dialogueBankRu : dialogueBank;
+  const lines = bank[kind] || bank.before;
   const world = worlds[selectedWorld] || worlds[0];
   const recent = state.dialogueHistory || [];
   const options = lines.filter(l => !recent.slice(-3).includes(l));
@@ -3563,6 +3654,9 @@ const STRINGS = {
     // Rewards / shop
     costumesAndPets:"Costumes and Pets", spendCoins:"Spend coins on playful looks for Sausage.",
     achievements:"Achievements", owned:"Owned", buy:"Buy", equip:"Equip", equipped:"Equipped",
+    unequip:"Unequip",
+    equippedOnSausage:"Equipped on Sausage.", ownedEquipInMySeal:"Owned. Equip it in My Seal.",
+    visibleReward:"A visible reward for Sausage.", unlockedAndEquipped:"unlocked and equipped!",
     // Town
     arcticTown:"Arctic Town", townDesc:"Buildings appear as Sausage earns stars and rescues friends.",
     // Album
@@ -3660,6 +3754,9 @@ const STRINGS = {
     // Rewards / shop
     costumesAndPets:"Костюмы и питомцы", spendCoins:"Трать монеты на образы для Сосиски.",
     achievements:"Достижения", owned:"Куплено", buy:"Купить", equip:"Надеть", equipped:"Надето",
+    unequip:"Снять",
+    equippedOnSausage:"Надето на Тюленя.", ownedEquipInMySeal:"Куплено. Надень в разделе «Мой Тюлень».",
+    visibleReward:"Заметная награда для Тюленя.", unlockedAndEquipped:"открыт и надет!",
     // Town
     arcticTown:"Арктический город", townDesc:"Здания появляются по мере зарабатывания звёзд и спасения друзей.",
     // Album

@@ -389,7 +389,7 @@ button { font: inherit; color: inherit; }
 .mini-game { margin-top: 16px; }
 .mini-stage {
   position: relative;
-  min-height: 330px;
+  min-height: clamp(300px, 56vh, 520px);
   overflow: hidden;
   border: 4px solid #fff;
   border-radius: 24px;

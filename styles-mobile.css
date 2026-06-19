@@ -92,7 +92,6 @@
   .tab { min-height: 38px; padding: 0 10px; font-size: .78rem; }
   .island { width: min(100%, 120px); }
   .seal-svg { width: min(140px, 50%); }
-  .mini-stage { min-height: 220px; }
   .town-grid, .album-grid, .shop-grid,
   .achievement-grid, .closet-grid { grid-template-columns: repeat(2, 1fr); }
 }
