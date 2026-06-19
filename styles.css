@@ -442,7 +442,7 @@ button { font: inherit; color: inherit; }
    list instead of re-declaring `animation` and silently wiping these out. */
 .town-building {
   position: absolute;
-  width: 130px;
+  width: clamp(78px, 15vw, 128px);
   min-height: 118px;
   border: 0;
   background: transparent;
@@ -454,6 +454,57 @@ button { font: inherit; color: inherit; }
 .town-building:hover { transform: scale(1.08) translateY(-4px); }
 .town-building svg { width: 100%; filter: drop-shadow(0 15px 12px rgba(28,88,115,.2)); }
 @keyframes buildingIdle { 50% { translate: 0 -3px; } }
+
+/* S7: Ice Castle is the priciest building (24 stars) — give it the
+   composition's focal role instead of being visually equal to a fish stall. */
+.town-building.is-finale {
+  width: clamp(112px, 22vw, 188px);
+  z-index: 4;
+}
+
+/* S7: translucent preview of the next building to unlock, sitting in its
+   real future spot on the scene so the town always promises what's coming. */
+.town-ghost-wrap {
+  position: absolute;
+  width: clamp(78px, 15vw, 128px);
+  z-index: 2;
+  pointer-events: none;
+}
+.town-ghost-wrap.is-finale { width: clamp(112px, 22vw, 188px); z-index: 3; }
+.town-building-ghost {
+  opacity: .3;
+  filter: grayscale(1) brightness(1.7);
+  animation: ghost-pulse 2.6s ease-in-out infinite;
+}
+.town-building-ghost svg { width: 100%; display: block; }
+@keyframes ghost-pulse { 0%, 100% { opacity: .2; } 50% { opacity: .42; } }
+.town-ghost-badge {
+  position: absolute;
+  left: 50%;
+  bottom: -20px;
+  transform: translateX(-50%);
+  background: rgba(23,68,106,.85);
+  color: #fff;
+  font-size: .68rem;
+  font-weight: 800;
+  padding: 3px 9px;
+  border-radius: 999px;
+  white-space: nowrap;
+}
+
+/* S7: faint dashed path across the ground band, ties the cluster into one
+   place instead of scattered icons (echoes the "footprints in the snow"
+   mission narrative). */
+.town-ground-snow::before {
+  content: "";
+  position: absolute;
+  left: 5%;
+  right: 5%;
+  top: 22%;
+  height: 3px;
+  background: repeating-linear-gradient(90deg, rgba(140,185,205,.55) 0 12px, transparent 12px 24px);
+  border-radius: 3px;
+}
 .town-friend {
   position: absolute;
   width: 52px;
@@ -2032,25 +2083,19 @@ body.learning-mode .problem-box h2 {
   100%  { transform: translateX(0); }
 }
 
-/* Animated fish swimming across scene */
+/* Animated fish swimming across scene — shape lives in the inline SVG from
+   townFishSvg(), this just positions/animates the wrapper. 18s default (was
+   7s — the cross-screen dash happens in the keyframes' first half, so 7s
+   meant darting across in ~3.5s). Each fish overrides animation-duration
+   inline for natural, non-synced variety. */
 .town-fish {
   position: absolute;
-  width: 32px;
-  height: 18px;
-  background: #ffd45a;
-  border-radius: 50% 50% 50% 50% / 60% 60% 40% 40%;
+  width: 38px;
+  height: 22px;
   z-index: 2;
-  animation: fish-swim 7s linear infinite;
+  animation: fish-swim 18s linear infinite;
 }
-.town-fish:before {
-  content: "";
-  position: absolute;
-  right: -10px;
-  top: 2px;
-  border-left: 12px solid #ffd45a;
-  border-top: 8px solid transparent;
-  border-bottom: 8px solid transparent;
-}
+.town-fish svg { width: 100%; height: 100%; display: block; }
 @keyframes fish-swim {
   0%   { transform: translateX(0); opacity: .9; }
   45%  { opacity: .9; }

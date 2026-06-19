@@ -18,17 +18,16 @@ const GAME_VERSION = "1.0.0";
 const todayKey = () => new Date().toISOString().slice(0, 10);
 
 const worlds = [
-  { name: "Snow Beach",      topics: ["add10","add20","sub20"],                          subtitle: "Find warm shells after the storm",        palette: ["#fff7cf","#9eeeff"],   character: "Pip",           animal: 1, music: "bright bells" },
-  { name: "Fish Bay",        topics: ["add100","sub100","carryBorrow"],                  subtitle: "Repair the fish docks",                  palette: ["#d8fff1","#24bdd2"],   character: "Nori",          animal: 0, music: "bouncy marimba" },
-  { name: "Whale Coast",     topics: ["multiply","divide","reverseMul"],                 subtitle: "Follow Bluebell's song",                 palette: ["#e3f0ff","#5ca6e8"],   character: "Bluebell",      animal: 5, music: "slow ocean chimes" },
-  { name: "Penguin Islands", topics: ["mixed","add3","twoStep"],                         subtitle: "Guide the penguin parade",               palette: ["#f7f7ff","#7c8fe8"],   character: "Pebble",        animal: 2, music: "tap-dance drums" },
-  { name: "Octopus Cave",    topics: ["missing","patterns","brackets","logic"],          subtitle: "Solve Professor Octo's riddles",         palette: ["#f4e8ff","#35c9c0"],   character: "Professor Octo",animal: 4, music: "mysterious bubbles" },
-  { name: "Polar Academy",   topics: ["equations","advEquations","orderOfOps"],          subtitle: "Train with Miska",                       palette: ["#ffffff","#8bd5ff"],   character: "Miska",         animal: 3, music: "sparkly classroom" },
-  { name: "Northern Kingdom",topics: ["word","fractions","fracCompare"],                 subtitle: "Carry supplies to the castle",           palette: ["#ffe5ee","#b78cff"],   character: "Nova",          animal: 6, music: "royal horns" },
-  { name: "Arctic Champion", topics: ["adaptive"],                                       subtitle: "Become Guardian of the Arctic",          palette: ["#fff8b8","#2dd6a6"],   character: "Tumble",        animal: 8, music: "victory fanfare" }
+  { name: "Snow Beach",      topics: ["add10","add20","sub20"],                          subtitle: "Find warm shells after the storm",        subtitleRu: "Найди тёплые ракушки после бури",         palette: ["#fff7cf","#9eeeff"],   character: "Pip",           animal: 1, music: "bright bells" },
+  { name: "Fish Bay",        topics: ["add100","sub100","carryBorrow"],                  subtitle: "Repair the fish docks",                  subtitleRu: "Отремонтируй рыбные пристани",            palette: ["#d8fff1","#24bdd2"],   character: "Nori",          animal: 0, music: "bouncy marimba" },
+  { name: "Whale Coast",     topics: ["multiply","divide","reverseMul"],                 subtitle: "Follow Bluebell's song",                 subtitleRu: "Следуй за песней Блюбелл",                palette: ["#e3f0ff","#5ca6e8"],   character: "Bluebell",      animal: 5, music: "slow ocean chimes" },
+  { name: "Penguin Islands", topics: ["mixed","add3","twoStep"],                         subtitle: "Guide the penguin parade",               subtitleRu: "Проведи парад пингвинов",                 palette: ["#f7f7ff","#7c8fe8"],   character: "Pebble",        animal: 2, music: "tap-dance drums" },
+  { name: "Octopus Cave",    topics: ["missing","patterns","brackets","logic"],          subtitle: "Solve Professor Octo's riddles",         subtitleRu: "Разгадай загадки Профессора Окто",        palette: ["#f4e8ff","#35c9c0"],   character: "Professor Octo",animal: 4, music: "mysterious bubbles" },
+  { name: "Polar Academy",   topics: ["equations","advEquations","orderOfOps"],          subtitle: "Train with Miska",                       subtitleRu: "Тренируйся с Миской",                     palette: ["#ffffff","#8bd5ff"],   character: "Miska",         animal: 3, music: "sparkly classroom" },
+  { name: "Northern Kingdom",topics: ["word","fractions","fracCompare"],                 subtitle: "Carry supplies to the castle",           subtitleRu: "Доставь припасы в замок",                 palette: ["#ffe5ee","#b78cff"],   character: "Nova",          animal: 6, music: "royal horns" },
+  { name: "Arctic Champion", topics: ["adaptive"],                                       subtitle: "Become Guardian of the Arctic",          subtitleRu: "Стань Хранителем Арктики",                palette: ["#fff8b8","#2dd6a6"],   character: "Tumble",        animal: 8, music: "victory fanfare" }
 ].map((w, i) => ({ ...w, id: i }));
 
-const missionVerbs   = ["Scout the Shore","Rescue a Friend","Build a Helper","Open the Treasure","Calm the Storm"];
 const miniGames      = ["Catch Fish","Treasure Hunt","Find Hidden Penguins","Ice Slide","Feed Baby Seals"];
 const recommendedLevels = [1,3,6,8,10,12,15,18];
 const missionDetails = [
@@ -38,6 +37,15 @@ const missionDetails = [
   { title:"Open the Treasure", objective:"Unlock a frozen chest",       reward:"rare treasure chance",         story:"Something shiny is trapped under blue ice." },
   { title:"Calm the Storm",    objective:"Finish the island rescue",    reward:"next island path",              story:"The last gust fades when friends work together." }
 ];
+// S8: RU mirror of missionDetails — same shape/order, picked via md(i).
+const missionDetailsRu = [
+  { title:"Разведать берег",      objective:"Найти следы бури",            reward:"12 рыбок, 6 монет, 3 звезды", story:"Тюлень ищет на снегу следы друзей." },
+  { title:"Спасти друга",         objective:"Добраться до друга на льдине",reward:"новый друг, рыбки, звёзды",   story:"Тихий голосок зовёт с дрейфующей льдины." },
+  { title:"Построить помощника",  objective:"Собрать припасы для города",  reward:"прогресс города",             story:"Городу нужен свет, тёплые дома и оживлённые пристани." },
+  { title:"Открыть сокровище",    objective:"Открыть замёрзший сундук",    reward:"шанс редкого сокровища",      story:"Что-то блестящее вмёрзло в синий лёд." },
+  { title:"Успокоить бурю",       objective:"Завершить спасение острова",  reward:"путь к следующему острову",   story:"Последний порыв ветра стихает, когда друзья работают вместе." }
+];
+function md(i) { return (currentLang === "ru" ? missionDetailsRu : missionDetails)[i] || missionDetails[i]; }
 
 const dialogueBank = {
   before: [
@@ -116,6 +124,13 @@ const rescueLines = [
   "That was brave and clever. I am moving to Arctic Town!",
   "I was chilly, but now I feel safe. Let's celebrate!"
 ];
+const rescueLinesRu = [
+  "Спасибо, Тюлень! Я думал, что никогда не выберусь с этой льдины!",
+  "Ты нашёл меня! Я сохранил это сокровище специально для тебя.",
+  "Это было храбро и умно. Я переезжаю в Арктический город!",
+  "Мне было холодно, но теперь я в безопасности. Давай праздновать!"
+];
+function rescueLine() { const arr = currentLang === "ru" ? rescueLinesRu : rescueLines; return arr[Math.floor(Math.random()*arr.length)]; }
 
 const animals = [
   ["Baby seal","Nori","Seal pups can recognize their mother's call."],
@@ -431,6 +446,42 @@ const ISLAND_BRIEFINGS = {
     { visual:"🏆", title:"Champion mode!", body:"Every question could be any topic. Your weakest topics appear more often — to help you improve!", example:"Keep going — the Arctic needs its Guardian! 🦭" },
   ],
 };
+// S8: RU mirror of ISLAND_BRIEFINGS — same keys/order/visuals, math terms kept
+// accurate (this is teaching content, not flavour text). Picked via briefingsFor().
+const ISLAND_BRIEFINGS_RU = {
+  0: [
+    { visual:"🌊", title:"Сложение чисел", body:"Когда мы складываем, мы считаем дальше, чтобы найти сумму. Называй большее число первым — так быстрее!", example:"6 + 3 = ?  →  Начни с 6, посчитай дальше на 3  →  9" },
+    { visual:"🐚", title:"Вычитание чисел", body:"Вычитание — это когда мы отнимаем. Подумай: какое число нужно ПРИБАВИТЬ, чтобы вернуться к началу?", example:"8 - 5 = ?  →  5 + ? = 8  →  3" },
+  ],
+  1: [
+    { visual:"🐟", title:"Сложение до 100", body:"Сначала складывай десятки, потом единицы. Так числа остаются маленькими и простыми!", example:"34 + 25  →  30+20=50,  4+5=9  →  59" },
+    { visual:"🚢", title:"Переход через десяток", body:"Когда единицы в сумме дают 10 или больше, лишний десяток переносится в столбец десятков.", example:"47 + 36  →  7+6=13, пишем 3, переносим 1  →  83" },
+  ],
+  2: [
+    { visual:"🐳", title:"Умножение", body:"Умножение — это короткий способ складывать одно и то же число много раз.", example:"4 × 3 = 4 + 4 + 4 = 12\n(3 группы по 4)" },
+    { visual:"🐠", title:"Деление", body:"Деление — это разделение на равные группы. Это противоположность умножению!", example:"12 ÷ 4 = ?  →  4 × ? = 12  →  3" },
+  ],
+  3: [
+    { visual:"🐧", title:"Три числа", body:"Складываешь три числа? Сложи первые два, потом добавь третье. Шаг за шагом!", example:"5 + 7 + 3  →  12 + 3  →  15" },
+    { visual:"❓", title:"Найди число", body:"Найди то, что прячется! Вычитай, чтобы найти спрятанное число.", example:"8 + ☐ = 13  →  13 - 8 = 5  →  ☐ = 5" },
+  ],
+  4: [
+    { visual:"🔮", title:"Числовые закономерности", body:"Закономерность повторяется или растёт одинаково каждый раз. Найди правило и угадай следующее число!", example:"2, 4, 8, 16, ?  →  Каждое число удваивается  →  32" },
+    { visual:"🐙", title:"Сначала скобки!", body:"Всегда сначала решай то, что внутри скобок (   ), а потом всё остальное.", example:"(3 + 4) × 2  →  7 × 2  →  14" },
+  ],
+  5: [
+    { visual:"🔭", title:"Уравнения с x", body:"x — это таинственное число. Чтобы найти его, сделай противоположное действие с обеих сторон.", example:"x + 7 = 15  →  x = 15 - 7  →  x = 8" },
+    { visual:"📐", title:"Порядок действий", body:"× и ÷ всегда выполняются раньше + и −, если нет скобок.", example:"3 + 4 × 2  →  3 + 8  →  11  (а НЕ 14)" },
+  ],
+  6: [
+    { visual:"👑", title:"Дроби", body:"Дробь показывает часть целого. Нижнее число — сколько всего равных частей. Верхнее — сколько частей у тебя есть.", example:"¼ от 20  →  20 ÷ 4  →  5" },
+    { visual:"📖", title:"Текстовые задачи", body:"Читай внимательно. Подчеркни числа. Решай: складывать, вычитать, умножать или делить?", example:"«5 коробок, по 4 рыбки» → 5 × 4 = 20 рыбок" },
+  ],
+  7: [
+    { visual:"🏆", title:"Режим чемпиона!", body:"Каждый вопрос может быть на любую тему. Твои самые слабые темы появляются чаще — чтобы помочь тебе стать лучше!", example:"Не останавливайся — Арктике нужен её Хранитель! 🦭" },
+  ],
+};
+function briefingsFor(worldId) { return (currentLang === "ru" ? ISLAND_BRIEFINGS_RU : ISLAND_BRIEFINGS)[worldId]; }
 
 // ── Smart hint data ───────────────────────────────────────────
 const SMART_HINTS = {
@@ -465,7 +516,7 @@ let _briefingSlides = [];
 let _briefingWorldId = 0;
 
 function showIslandBriefing(worldId) {
-  const slides = ISLAND_BRIEFINGS[worldId];
+  const slides = briefingsFor(worldId);
   if (!slides || !slides.length) return;
   _briefingSlides  = slides;
   _briefingSlide   = 0;
@@ -547,12 +598,23 @@ const RESCUE_DIALOGUES = {
   Nova:          ["{name}! I ran three times around the island with joy!", "A fox's nose knows a clever mind — and yours is the cleverest!", "You found me! I was hiding but honestly… I'm so glad."],
   Tumble:        ["SPLASH! That's me jumping for joy, {name}!", "I floated here on an ice floe waiting for a hero like you!", "The sea otters will sing songs about {name} forever!"],
 };
+// S8: RU mirror — same characters/keys/order, picked via rescueDialoguesFor().
+const RESCUE_DIALOGUES_RU = {
+  Pip:           ["Спасибо, {name}! Я думал, что этот лёд никогда не растает!", "Ты пришёл сюда ради меня? Ты потрясающий, {name}!", "Мои ласты замёрзли, но сердце греется — благодаря тебе!"],
+  Nori:          ["Рыбки в безопасности благодаря тебе, {name}!", "{name}! Ты решил все задачи — я знал, что ты справишься!", "Я так долго ждал. Спасибо тебе, смелый путешественник!"],
+  Bluebell:      ["БУУУХ! (Это по-китовьи значит СПАСИБО, {name}!)", "Весь океан услышал твои умные ответы!", "Ты лучший математик Арктики, {name}!"],
+  Pebble:        ["Парад пингвинов снова может шагать!", "{name}, твой мозг больше этого айсберга!", "Я считал каждый твой ответ — ты был великолепен!"],
+  "Professor Octo":["Твои вычисления… *поправляет очки* …безупречны.", "Я проверил 847 путешественников. Ты, {name}, особенный.", "Восхитительно! Юный математик с настоящим талантом!"],
+  Miska:         ["Ты прошёл испытание Полярной академии, {name}!", "Я никогда не видел такой решительности. Ты заслужил это!", "У Арктики новый чемпион. Добро пожаловать в академию!"],
+  Nova:          ["{name}! Я три раза обежал остров от радости!", "Лисий нюх чувствует умный ум — а твой самый умный!", "Ты нашёл меня! Я прятался, но, честно говоря… я так рад."],
+  Tumble:        ["ШЛЁП! Это я прыгаю от радости, {name}!", "Я плыл сюда на льдине, ожидая героя вроде тебя!", "Морские выдры будут вечно петь песни о {name}!"],
+};
 
 function showRescueCelebration(worldId, playerName) {
   const world     = worlds[worldId];
   const charName  = world?.character || "Friend";
   const emoji     = ["🐧","🐟","🐳","🐧","🐙","🦭","🦊","🦦","🦭"][worldId] || "🌟";
-  const dialogues = RESCUE_DIALOGUES[charName] || [`Thank you, ${playerName}!`];
+  const dialogues = (currentLang === "ru" ? RESCUE_DIALOGUES_RU[charName] : RESCUE_DIALOGUES[charName]) || [`Thank you, ${playerName}!`];
   const quote     = dialogues[Math.floor(Math.random()*dialogues.length)]
                       .replace(/{name}/g, playerName || "Explorer");
 
@@ -1008,9 +1070,16 @@ function renderMap() {
 function chooseIsland(id) {
   const world = worlds[id];
   if (id > state.unlockedWorld) {
-    // S5: warning instead of hard lock — allow entry
-    const rec = recommendedLevels[id];
-    if (!confirm(`${world.name} is recommended for level ${rec}. You are level ${state.level}.\n\nThis island may be tricky — explore anyway?`)) return;
+    // S5: soft lock — let curious/advanced kids explore ahead of the usual
+    // order. Confirming must actually open the island (not just preview it),
+    // or the lock icon never goes away and it feels broken on revisit.
+    const rec  = recommendedLevels[id];
+    const name = t(`world${id}`) || world.name;
+    const msg  = t("aheadConfirm")
+      .replace("{name}", name).replace("{rec}", rec).replace("{level}", state.level);
+    if (!confirm(msg)) return;
+    state.unlockedWorld = Math.max(state.unlockedWorld, id);
+    save(true);
   }
   selectedWorld = id;
   react("swim");
@@ -1032,15 +1101,40 @@ function moveTravelSeal() {
 
 function islandSvg(world, locked) {
   const [c1,c2] = locked ? ["#d6dde0","#aebbc2"] : world.palette;
+  // S7: each decor is now a small recognizable symbol tied to the world's
+  // name/theme (was: abstract sun/wave/dot shapes that all looked alike).
   const decor = [
-    `<circle cx="42" cy="45" r="13" fill="#ffd45a"/><path d="M93 35l18 44H73z" fill="#8bd5ff"/>`,
-    `<path d="M40 88c18-28 48-28 66 0" fill="none" stroke="#24bdd2" stroke-width="12"/><circle cx="128" cy="46" r="11" fill="#ffd45a"/>`,
-    `<path d="M32 76c24-30 73-35 112 0" fill="none" stroke="#5ca6e8" stroke-width="10"/><circle cx="80" cy="44" r="9" fill="#fff"/>`,
-    `<circle cx="52" cy="62" r="12" fill="#26364a"/><circle cx="120" cy="62" r="12" fill="#26364a"/>`,
-    `<path d="M58 42c32-23 60 1 52 45" fill="none" stroke="#856de8" stroke-width="12"/><circle cx="94" cy="50" r="9" fill="#35c9c0"/>`,
-    `<rect x="70" y="32" width="38" height="54" rx="7" fill="#fff"/><path d="M64 38h50" stroke="#8bd5ff" stroke-width="9"/>`,
-    `<path d="M55 88V42l32-20 32 20v46" fill="#ffe5ee"/><circle cx="88" cy="48" r="9" fill="#b78cff"/>`,
-    `<path d="M43 82l46-55 46 55z" fill="#fff8b8"/><circle cx="90" cy="43" r="13" fill="#2dd6a6"/>`
+    // 0 Snow Beach — sun + scallop shell (matches "find warm shells" story)
+    `<circle cx="118" cy="40" r="13" fill="#ffd45a"/>
+     <path d="M70 84Q70 56 90 50Q110 56 110 84Z" fill="#fff"/>
+     <path d="M90 50V84M80 53V82M100 53V82" stroke="#ffe2b0" stroke-width="2.5"/>`,
+    // 1 Fish Bay — a little fish
+    `<ellipse cx="92" cy="55" rx="26" ry="15" fill="#24bdd2"/>
+     <path d="M66 55 42 40 48 55 42 70Z" fill="#24bdd2"/>
+     <circle cx="110" cy="50" r="3.5" fill="#0d3a45"/>`,
+    // 2 Whale Coast — a whale tail fluke
+    `<path d="M90 88C73 60 53 44 43 24c20 10 35 25 47 41 12-16 27-31 47-41-10 20-30 36-47 64Z" fill="#5ca6e8"/>`,
+    // 3 Penguin Islands — a standing penguin
+    `<ellipse cx="90" cy="62" rx="20" ry="28" fill="#26364a"/>
+     <ellipse cx="90" cy="66" rx="11" ry="20" fill="#fff"/>
+     <path d="M82 38 90 29 98 38Z" fill="#ffb847"/>
+     <circle cx="85" cy="42" r="2" fill="#fff"/><circle cx="95" cy="42" r="2" fill="#fff"/>`,
+    // 4 Octopus Cave — an octopus with curled tentacles
+    `<ellipse cx="90" cy="48" rx="24" ry="20" fill="#35c9c0"/>
+     <path d="M68 60q-10 10-4 20M79 64q-6 14 2 20M90 66q0 16 0 22M101 64q6 14-2 20M112 60q10 10 4 20"
+           fill="none" stroke="#35c9c0" stroke-width="8" stroke-linecap="round"/>
+     <circle cx="82" cy="44" r="3" fill="#0d3a45"/><circle cx="98" cy="44" r="3" fill="#0d3a45"/>`,
+    // 5 Polar Academy — a graduation cap
+    `<path d="M90 38 130 52 90 66 50 52Z" fill="#8bd5ff"/>
+     <rect x="84" y="66" width="12" height="16" rx="2" fill="#fff"/>
+     <circle cx="90" cy="38" r="3" fill="#5ca6e8"/>
+     <path d="M122 54v13q0 5-8 5t-8-5v-9" fill="none" stroke="#5ca6e8" stroke-width="2"/>`,
+    // 6 Northern Kingdom — a crown
+    `<path d="M55 80 65 45 80 65 90 35 100 65 115 45 125 80Z" fill="#b78cff"/>
+     <rect x="55" y="78" width="70" height="10" rx="3" fill="#b78cff"/>
+     <circle cx="90" cy="35" r="4" fill="#ffd45a"/>`,
+    // 7 Arctic Champion — a star (ties into the game's own star currency)
+    `<path d="M90 28 100 52 126 54 106 70 114 96 90 80 66 96 74 70 54 54 80 52Z" fill="#2dd6a6"/>`
   ][world.id];
   return `<svg viewBox="0 0 180 160" aria-hidden="true">
     <ellipse cx="90" cy="116" rx="72" ry="30" fill="${c1}"/>
@@ -1054,13 +1148,14 @@ function renderQuest() {
   const w       = worlds[selectedWorld];
   const done    = completedMissions();
   const mission = nextMission();
-  const details = missionDetails[mission] || missionDetails[4];
+  const details = md(mission) || md(4);
   const islandPct = Math.round((done/5)*100);
   const wName   = t(`world${selectedWorld}`) || w.name;
   $("questTitle").textContent    = wName;
   const rec = recommendedLevels[selectedWorld];
-  $("questText").textContent     = `${w.subtitle}. ${details.story} ${t("recommendedLevel")} ${rec}.`;
-  $("dialogBox").textContent     = state.level < rec ? `${w.character}: This place is level ${rec}, but brave explorers may still visit unlocked islands.` : dialogFor(w, mission);
+  const wSub = currentLang === "ru" ? (w.subtitleRu || w.subtitle) : w.subtitle;
+  $("questText").textContent     = `${wSub}. ${details.story} ${t("recommendedLevel")} ${rec}.`;
+  $("dialogBox").textContent     = state.level < rec ? t("underleveledHint").replace("{character}", w.character).replace("{rec}", rec) : dialogFor(w, mission);
   $("islandProgressText").textContent  = `${t("islandProgress")} ${islandPct}%`;
   $("islandMeter").style.width   = `${islandPct}%`;
   $("missionProgressText").textContent = done >= 5 ? t("islandComplete") : `${t("missionOf")} ${mission+1} / 5`;
@@ -1070,19 +1165,29 @@ function renderQuest() {
 }
 
 function dialogFor(world, mission) {
-  const lines = [
+  const linesEn = [
     `${world.character}: Sausage, the storm left clues in the snow. Let's start small and brave.`,
     `${world.character}: I can see a friend nearby. Three good answers will move the rescue sled.`,
     `${world.character}: The town needs a new helper. Let's earn supplies and make it shine.`,
     `${world.character}: A treasure chest is frozen shut. Warm it up with clever thinking.`,
     `${world.character}: This is the final gust. Then this island will sparkle again.`
   ];
-  return lines[mission] || `${world.character}: This island is safe. Want to replay for extra treasure?`;
+  const linesRu = [
+    `${world.character}: Тюлень, буря оставила следы на снегу. Начнём с малого и смело.`,
+    `${world.character}: Я вижу друга совсем рядом. Три верных ответа — и спасательные нарты тронутся.`,
+    `${world.character}: Городу нужен новый помощник. Заработаем припасы и сделаем его краше.`,
+    `${world.character}: Сундук с сокровищем вмёрз в лёд. Растопи его умом.`,
+    `${world.character}: Это последний порыв бури. Потом остров снова засияет.`
+  ];
+  const lines = currentLang === "ru" ? linesRu : linesEn;
+  return lines[mission] || (currentLang === "ru"
+    ? `${world.character}: Этот остров безопасен. Хочешь сыграть ещё раз за дополнительное сокровище?`
+    : `${world.character}: This island is safe. Want to replay for extra treasure?`);
 }
 
 // ─── Mission ─────────────────────────────────────────────────────────────────
 function exitMission() {
-  if (!confirm("Exit this mission? Your progress on this question will be lost.")) return;
+  if (!confirm(t("exitMissionConfirm"))) return;
   trip.active = false;
   $("challenge").hidden = true;
   const old = $("backToMapBtn");
@@ -1103,7 +1208,7 @@ function startMission(daily) {
   const backBtn = document.createElement("button");
   backBtn.id = "backToMapBtn";
   backBtn.className = "back-to-map-btn";
-  backBtn.innerHTML = "← Map";
+  backBtn.innerHTML = `← ${t("backToMap")}`;
   backBtn.addEventListener("click", exitMission);
   const sceneEl = document.querySelector(".challenge-scene");
   if (sceneEl) sceneEl.prepend(backBtn);
@@ -1119,14 +1224,15 @@ function startMission(daily) {
 function makeProblem() {
   const world   = worlds[trip.world];
   const topic   = chooseTopic(world.topics);
-  const details = missionDetails[trip.mission] || missionDetails[0];
+  const details = md(trip.mission) || md(0);
+  const wName   = t(`world${world.id}`) || world.name;
   currentProblem = generateProblem(topic);
   currentProblem.started = Date.now();
   $("topicLabel").innerHTML    = currentLang === "learn"
-    ? `${world.name} - ${missionVerbs[trip.mission]}<span class="learn-ru">${topicLabelLearn(topic)}</span>`
-    : `${world.name} - ${missionVerbs[trip.mission]}`;
-  $("missionTitle").textContent  = trip.daily ? "Daily Rescue" : `Mission ${trip.mission+1}: ${details.title}`;
-  $("questionsLeft").textContent = `${Math.max(0, trip.needed-trip.solved)} questions remaining`;
+    ? `${wName} - ${details.title}<span class="learn-ru">${topicLabelLearn(topic)}</span>`
+    : `${wName} - ${details.title}`;
+  $("missionTitle").textContent  = trip.daily ? t("dailyRescue") : `${t("missionOf")} ${trip.mission+1}: ${details.title}`;
+  $("questionsLeft").textContent = `${Math.max(0, trip.needed-trip.solved)} ${t("questionsLeft")}`;
   $("problemText").textContent   = currentProblem.text;
   $("hintText").hidden           = true;
   $("hintText").textContent      = currentProblem.hint;
@@ -1556,7 +1662,7 @@ function answer(value, btn) {
     playSound("correct");
     speak("correct");
     toast(encouragement());
-    $("questionsLeft").textContent = `${Math.max(0, trip.needed-trip.solved)} questions remaining`;
+    $("questionsLeft").textContent = `${Math.max(0, trip.needed-trip.solved)} ${t("questionsLeft")}`;
     $("missionMeter").style.width  = `${Math.round((trip.solved/trip.needed)*100)}%`;
     announceResult(true, currentProblem.answer, currentProblem.topic);
     setTimeout(() => trip.solved >= trip.needed ? completeMission() : makeProblem(), 860);
@@ -1859,7 +1965,7 @@ function playRescueAnimation(animal, onDone) {
       <div class="rescue-wave-bg"></div>
       <div class="rescue-animal-wrap" id="rescueAnimalWrap">
         ${animalSvgLarge(animal.id, animal.species)}
-        <div class="rescue-speech">"${rescueLines[Math.floor(Math.random()*rescueLines.length)]}"</div>
+        <div class="rescue-speech">"${rescueLine()}"</div>
       </div>
       <div class="rescue-sausage-wrap">
         <svg class="rescue-sausage-svg" viewBox="0 0 260 220">
@@ -1916,9 +2022,61 @@ function showReward(animal, building, rare) {
   }
 }
 
+// S7: ghost silhouette of the next building Sausage hasn't unlocked yet.
+// Shows kids exactly where the town is about to grow and how many stars are
+// left, so the scene always promises something instead of just listing it
+// in a separate grid below.
+function townGhostHtml(positions) {
+  const next = buildings.find(b => !state.buildings.includes(b.id));
+  if (!next) return "";
+  const [left, top] = positions[next.id];
+  const finale = next.id === 7 ? " is-finale" : "";
+  const need = Math.max(0, next.cost - state.stars);
+  return `<div class="town-ghost-wrap${finale}" style="left:${left}%;top:${top}%" aria-hidden="true">
+    <div class="town-building-ghost">${buildingSvg(next.id)}</div>
+    <div class="town-ghost-badge">⭐ ${need} to build ${next.name}</div>
+  </div>`;
+}
+
+// S7: a recognizable little fish for the swimming background decoration —
+// was a plain yellow CSS oval+triangle, easy to mistake for a water splash.
+// Three real Arctic species as colour variants so it's not one fish on loop.
+function townFishSvg(variant = 0) {
+  const palettes = [
+    { body:"#5fc6e8", belly:"#8fdaf0", fin:"#3aa8cc" }, // 0 Arctic cod
+    { body:"#c9d6e0", belly:"#eef3f6", fin:"#9fb0bd" }, // 1 Capelin — paler, silvery
+    { body:"#5ca8c2", belly:"#ffb8c4", fin:"#3f8aa0" }, // 2 Arctic char — pink belly
+  ];
+  const p = palettes[variant] || palettes[0];
+  const spots = variant === 2
+    ? `<circle cx="24" cy="10" r="1" fill="#ffe1e8"/><circle cx="31" cy="15" r="1" fill="#ffe1e8"/>`
+    : "";
+  return `<svg viewBox="0 0 48 26" aria-hidden="true">
+    <path d="M10 13 0 3 4 13 0 23Z" fill="${p.fin}"/>
+    <ellipse cx="28" cy="13" rx="15" ry="9" fill="${p.body}"/>
+    <ellipse cx="28" cy="17" rx="11" ry="4" fill="${p.belly}" opacity=".7"/>
+    <path d="M20 5Q27-1 32 5Q27 7 20 5Z" fill="${p.fin}"/>
+    ${spots}
+    <circle cx="36" cy="10" r="2.4" fill="#143247"/>
+    <circle cx="36.8" cy="9.2" r=".9" fill="#fff"/>
+  </svg>`;
+}
+
 // ─── Town ─────────────────────────────────────────────────────────────────────
+// S7: positions are clustered onto one shared ground band instead of scattered
+// across the whole scene, with Ice Castle (id 7, the priciest/finale building)
+// centered, set slightly further back, and rendered larger via .is-finale.
 function renderTown() {
-  const positions = [[7,58],[22,38],[38,58],[53,35],[68,58],[79,37],[12,22],[58,16]];
+  const positions = [
+    [6, 56],   // 0 Fish Market
+    [18, 48],  // 1 Lighthouse
+    [30, 58],  // 2 Aquarium
+    [41, 50],  // 3 Seal House
+    [60, 50],  // 4 Penguin Village
+    [71, 58],  // 5 Harbor
+    [84, 48],  // 6 Arctic Museum
+    [50, 36],  // 7 Ice Castle — centered, set back, larger (focal point)
+  ];
 
   // S6: Living Town — aurora, stars, snowflakes
   const starCount = 18;
@@ -1941,8 +2099,9 @@ function renderTown() {
   const livelyExtras = `
     ${auroraHtml}
     ${groundHtml}
-    <span class="town-fish" style="left:-40px;top:52%;animation-delay:.2s"></span>
-    <span class="town-fish" style="left:-120px;top:61%;animation-delay:1.4s"></span>
+    <span class="town-fish" style="left:-50px;top:50%;animation-delay:0s;animation-duration:17s">${townFishSvg(0)}</span>
+    <span class="town-fish" style="left:-130px;top:62%;animation-delay:4s;animation-duration:21s">${townFishSvg(1)}</span>
+    <span class="town-fish" style="left:-90px;top:44%;animation-delay:9s;animation-duration:19s">${townFishSvg(2)}</span>
     <span class="town-splash" style="left:76%;top:47%"></span>
     <span class="town-critter" style="left:8%;top:74%">${animalSvg(1)}</span>
     <span class="town-critter" style="left:88%;top:68%;animation-delay:1s">${animalSvg(8)}</span>
@@ -1951,8 +2110,10 @@ function renderTown() {
     buildings.map((b,i) => {
       if (!state.buildings.includes(b.id)) return "";
       const [left,top] = positions[i];
-      return `<button class="town-building" style="left:${left}%;top:${top}%" data-building="${b.id}" aria-label="${b.name}">${buildingSvg(b.id)}</button>`;
+      const finale = b.id === 7 ? " is-finale" : "";
+      return `<button class="town-building${finale}" style="left:${left}%;top:${top}%" data-building="${b.id}" aria-label="${b.name}">${buildingSvg(b.id)}</button>`;
     }).join("") +
+    townGhostHtml(positions) +
     state.animals.slice(0,9).map((id,i) =>
       `<div class="town-friend" style="left:${15+i*8}%;top:${70+(i%3)*6}%;animation-delay:${i*.25}s">${animalSvg(id)}</div>`
     ).join("");
@@ -3395,6 +3556,7 @@ const STRINGS = {
     questionsLeft:"questions remaining", showHint:"Show a friendly hint",
     // Mini-games
     returnToMap:"Return to Map",
+    backToMap:"Map",
     minigame_slide_title:"Ice Slide!", minigame_slide_text:"Tap Left / Right to dodge the rocks!",
     minigame_snow_title:"Snowball Catch!", minigame_snow_text:"Move the bucket to catch falling snowballs!",
     left:"Left", right:"Right",
@@ -3439,8 +3601,12 @@ const STRINGS = {
     level:"Level",
     // Misc
     islandComplete:"Island complete", missionOf:"Mission",
+    dailyRescue:"Daily Rescue",
     objective:"Objective", rewardLabel:"Reward",
     recommendedLevel:"Recommended level",
+    aheadConfirm:"You haven't reached {name} yet — Sausage usually visits islands in order. It's tuned for level {rec}, and you're level {level}.\n\nExplore it early anyway?",
+    underleveledHint:"{character}: This place is level {rec}, but brave explorers may still visit unlocked islands.",
+    exitMissionConfirm:"Exit this mission? Your progress on this question will be lost.",
     stormCovers:"Storm clouds still cover that island.",
     keepExploring:"Keep Exploring",
     missionComplete:"Mission Complete!", rareTreasure:"Rare Treasure!",
@@ -3487,6 +3653,7 @@ const STRINGS = {
     questionsLeft:"вопросов осталось", showHint:"Подсказка",
     // Mini-games
     returnToMap:"На карту",
+    backToMap:"Карта",
     minigame_slide_title:"Ледяная горка!", minigame_slide_text:"Нажимай Влево / Вправо, чтобы уклоняться!",
     minigame_snow_title:"Лови снежки!", minigame_snow_text:"Двигай ведро и лови снежки!",
     left:"Влево", right:"Вправо",
@@ -3531,8 +3698,12 @@ const STRINGS = {
     level:"Уровень",
     // Misc
     islandComplete:"Остров пройден", missionOf:"Миссия",
+    dailyRescue:"Ежедневное спасение",
     objective:"Задание", rewardLabel:"Награда",
     recommendedLevel:"Рекомендуемый уровень",
+    aheadConfirm:"Ты ещё не добрался до острова «{name}» — Тюлень обычно путешествует по порядку. Этот остров рассчитан на уровень {rec}, а у тебя {level}.\n\nИсследовать заранее?",
+    underleveledHint:"{character}: Это место для уровня {rec}, но смелые путешественники могут заглянуть и раньше.",
+    exitMissionConfirm:"Выйти из миссии? Прогресс по этому вопросу будет потерян.",
     stormCovers:"Этот остров ещё закрыт бурей.",
     keepExploring:"Продолжить!",
     missionComplete:"Миссия выполнена!", rareTreasure:"Редкое сокровище!",
