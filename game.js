@@ -2598,13 +2598,25 @@ function renderTown() {
       return `<button class="town-building${finale}" style="left:${left}%;top:${top}%" data-building="${b.id}" aria-label="${b.name}">${buildingSvg(b.id)}</button>`;
     }).join("") +
     townGhostHtml(positions) +
-    state.animals.slice(0,9).map((id,i) =>
-      `<div class="town-friend" style="left:${15+i*8}%;top:${70+(i%3)*6}%;animation-delay:${i*.25}s">${animalSvg(id)}</div>`
-    ).join("");
+    state.animals.slice(0,9).map((id,i) => {
+      const a       = animals.find(x => x.id === id);
+      const feeds   = (state.animalFeeds && state.animalFeeds[id]) || 0;
+      const canFeed = state.fish >= FEED_COST;
+      const badge   = feeds > 0 ? `❤️${feeds}` : "🐟";
+      const label   = currentLang === "ru"
+        ? `Покормить ${a ? a.name : "друга"} — ${FEED_COST} рыбки`
+        : `Feed ${a ? a.name : "friend"} — ${FEED_COST} fish`;
+      return `<button class="town-friend${canFeed?"":" feed-disabled"}" style="left:${15+i*8}%;top:${70+(i%3)*6}%;animation-delay:${i*.25}s" data-feed="${id}" ${canFeed?"":"disabled"} aria-label="${label}">${animalSvg(id)}<span class="town-friend-badge">${badge}</span></button>`;
+    }).join("");
   const scene = $("townScene");
   if (scene && !scene.dataset.bound) {
     scene.dataset.bound = "1";
     scene.addEventListener("click", e => {
+      const feedBtn = e.target.closest("[data-feed]");
+      if (feedBtn) {
+        if (!feedBtn.disabled) feedAnimal(Number(feedBtn.dataset.feed));
+        return;
+      }
       const btn = e.target.closest("[data-building]");
       if (!btn) return;
       const building = buildings[Number(btn.dataset.building)];
@@ -2642,7 +2654,7 @@ function renderAlbum() {
     const rescued = state.animals.includes(a.id);
     const feeds   = (state.animalFeeds && state.animalFeeds[a.id]) || 0;
     const feedRow = rescued ? `<div class="feed-row">
-        <button class="feed-btn" data-feed="${a.id}" ${state.fish<FEED_COST?"disabled":""} aria-label="Feed ${a.name} — ${FEED_COST} fish">🐟 ${currentLang==="ru"?"Покормить":"Feed"} (${FEED_COST})</button>
+        <button class="feed-btn" data-feed="${a.id}" ${state.fish<FEED_COST?"disabled":""} aria-label="${currentLang==="ru"?`Покормить ${a.name} — ${FEED_COST} рыбки`:`Feed ${a.name} — ${FEED_COST} fish`}">🐟 ${currentLang==="ru"?"Покормить":"Feed"} (${FEED_COST})</button>
         ${feeds>0 ? `<span class="feed-count">${currentLang==="ru"?"Покормлен":"Fed"} ${feeds}×</span>` : ""}
       </div>` : "";
     return `<article class="item-card ${rescued?"":"locked"}">${animalSvg(a.id)}<h3>${rescued?a.name:"Hidden Friend"}</h3>
@@ -2677,6 +2689,7 @@ function feedAnimal(id) {
   checkAchievements();
   save();
   renderAlbum();
+  renderTown();
   renderHeader();
 }
 
@@ -2967,8 +2980,8 @@ const FISH_SVG = `<svg viewBox="0 0 64 34" aria-hidden="true">
 
 // Mini-game 1: Catch Fish — fish swim across; catch 5 before they all escape to win
 function startCatchFish() {
-  $("miniTitle").textContent = "Catch Fish!";
-  $("miniText").textContent  = "Tap the fish before they swim away! Catch 5 to win.";
+  $("miniTitle").textContent = t("catchFish_title");
+  $("miniText").textContent  = t("catchFish_text");
   const stage = $("miniStage");
   stage.innerHTML = "";
   stage.className = "mini-stage mini-catchfish";
@@ -2977,9 +2990,9 @@ function startCatchFish() {
   const speedBar = document.createElement("div");
   speedBar.className = "mini-speed-bar";
   speedBar.innerHTML = `
-    <button class="speed-btn active" data-speed="9000">🐢 Slow</button>
-    <button class="speed-btn" data-speed="5500">🐟 Normal</button>
-    <button class="speed-btn" data-speed="3000">⚡ Fast</button>`;
+    <button class="speed-btn active" data-speed="9000">🐢 ${t("speedSlow")}</button>
+    <button class="speed-btn" data-speed="5500">🐟 ${t("speedNormal")}</button>
+    <button class="speed-btn" data-speed="3000">⚡ ${t("speedFast")}</button>`;
   stage.appendChild(speedBar);
 
   const TOTAL = 9;
@@ -3013,7 +3026,7 @@ function startCatchFish() {
       fish.style.setProperty("--swim-dist", `${stageW + 140}px`);
       fish.style.setProperty("--swim-dur",  `${speed + i * 200}ms`);
       fish.style.animationDelay = `${i * 0.3}s`;
-      fish.setAttribute("aria-label", "Catch this fish");
+      fish.setAttribute("aria-label", currentLang === "ru" ? "Поймай эту рыбку" : "Catch this fish");
       // A fish that reaches the far edge without being caught "escapes"
       fish.addEventListener("animationend", () => {
         if (fish.dataset.resolved) return;
@@ -3029,7 +3042,7 @@ function startCatchFish() {
         fish.style.pointerEvents = "none";
         state.fish += 2;
         playSound("coin");
-        toast(`+2 fish! (${caught}/5)`);
+        toast(currentLang === "ru" ? `+2 рыбки! (${caught}/5)` : `+2 fish! (${caught}/5)`);
         renderHeader();
         if (caught >= 5 || resolved >= TOTAL) finish();
       });
@@ -3053,8 +3066,8 @@ function startCatchFish() {
 
 // Mini-game 2: Treasure Hunt — tap the right shell to find coins
 function startTreasureHunt() {
-  $("miniTitle").textContent = "Treasure Hunt!";
-  $("miniText").textContent  = "One shell hides a treasure chest. Find it!";
+  $("miniTitle").textContent = t("treasureHunt_title");
+  $("miniText").textContent  = t("treasureHunt_text");
   const stage = $("miniStage");
   stage.innerHTML = "";
   stage.className = "mini-stage mini-treasure";
@@ -3067,7 +3080,7 @@ function startTreasureHunt() {
   for (let i=0; i<SHELLS; i++) {
     const shell = document.createElement("button");
     shell.className = "shell-btn";
-    shell.setAttribute("aria-label",`Shell ${i+1}`);
+    shell.setAttribute("aria-label", currentLang === "ru" ? `Ракушка ${i+1}` : `Shell ${i+1}`);
     shell.style.left = `${10+(i%3)*32}%`;
     shell.style.top  = `${i<3 ? 25 : 58}%`;
     shell.innerHTML  = `<svg viewBox="0 0 60 60" aria-hidden="true"><ellipse cx="30" cy="38" rx="22" ry="16" fill="#f4e0bb"/><path d="M10 38 Q30 8 50 38" fill="#e8c98a"/><line x1="30" y1="22" x2="30" y2="54" stroke="#c9a96e" stroke-width="2"/><line x1="15" y1="32" x2="45" y2="32" stroke="#c9a96e" stroke-width="2"/></svg>`;
@@ -3080,7 +3093,7 @@ function startTreasureHunt() {
         const bonus = Math.max(5, 15-attempts*2);
         state.coins += bonus;
         playSound("coin");
-        toast(`Treasure! +${bonus} coins 🎁`);
+        toast(currentLang === "ru" ? `Сокровище! +${bonus} монет 🎁` : `Treasure! +${bonus} coins 🎁`);
         renderHeader();
         if (miniGameTimer) clearTimeout(miniGameTimer);
         miniGameTimer = setTimeout(() => finishMiniGame(5, "treasure"), 1200);
@@ -3100,7 +3113,7 @@ function startTreasureHunt() {
           const bonus = 3;
           state.coins += bonus;
           playSound("coin");
-          toast(`Found it! +${bonus} coins 🎁`);
+          toast(currentLang === "ru" ? `Нашёл! +${bonus} монет 🎁` : `Found it! +${bonus} coins 🎁`);
           renderHeader();
           if (miniGameTimer) clearTimeout(miniGameTimer);
           miniGameTimer = setTimeout(() => finishMiniGame(3, "treasure"), 1400);
@@ -3114,8 +3127,8 @@ function startTreasureHunt() {
 
 // Mini-game 3: Find the Penguin — solve a problem, tap the iceberg with the right answer
 function startFindPenguin() {
-  $("miniTitle").textContent = "Find the Penguin!";
-  $("miniText").textContent  = "Solve it, then tap the iceberg with the right answer!";
+  $("miniTitle").textContent = t("findPenguin_title");
+  $("miniText").textContent  = t("findPenguin_text");
   const stage = $("miniStage");
   stage.innerHTML = "";
   stage.className = "mini-stage mini-penguin";
@@ -3152,7 +3165,7 @@ function startFindPenguin() {
     state.coins += bonus; state.fish += bonus;
     playSound("coin");
     react("excited");
-    toast(`Found Pebble! +${bonus} fish & coins 🐧`);
+    toast(currentLang === "ru" ? `Нашёл Пебла! +${bonus} рыбок и монет 🐧` : `Found Pebble! +${bonus} fish & coins 🐧`);
     renderHeader();
     if (miniGameTimer) clearTimeout(miniGameTimer);
     miniGameTimer = setTimeout(() => finishMiniGame(result, "penguin"), 1400);
@@ -3161,7 +3174,7 @@ function startFindPenguin() {
   values.forEach((val, i) => {
     const berg = document.createElement("button");
     berg.className = "iceberg-btn";
-    berg.setAttribute("aria-label", `Iceberg showing ${val}`);
+    berg.setAttribute("aria-label", currentLang === "ru" ? `Айсберг с числом ${val}` : `Iceberg showing ${val}`);
     berg.style.left   = `${8+(i*18)}%`;
     berg.style.bottom = `${25+Math.random()*15}%`;
     berg.innerHTML = `<svg viewBox="0 0 90 80" aria-hidden="true">
@@ -3334,15 +3347,20 @@ function finishMiniGame(caught, type) {
 
   // Show result overlay inside mini-game instead of hiding it
   const stage = $("miniStage");
+  const isRu = currentLang === "ru";
+  const resultMsg = caught >= 5 ? t("miniWellDone") : t("miniGoodEffort");
+  const coinsBit  = isRu
+    ? `+${Math.min(caught,5)} монет${caught >= 5 ? " и +2 звезды!" : ""}`
+    : `+${Math.min(caught,5)} coins${caught >= 5 ? " and +2 stars earned!" : ""}`;
   stage.innerHTML = `
     <div class="mini-result">
       <div class="mini-result-icon">${caught >= 5 ? "🎉" : "💪"}</div>
-      <div class="mini-result-msg">${caught >= 5 ? "Well done!" : "Good effort!"}</div>
-      <div class="mini-result-sub">+${Math.min(caught,5)} coins${caught >= 5 ? " and +2 stars earned!" : ""}</div>
+      <div class="mini-result-msg">${resultMsg}</div>
+      <div class="mini-result-sub">${coinsBit}</div>
       <div class="mini-result-btns">
-        <button class="secondary mini-retry-btn">🔁 Play Again</button>
-        <button class="primary mini-play-again-btn">Next Mini-game 🎮</button>
-        <button class="secondary mini-map-btn">Return to Map 🗺️</button>
+        <button class="secondary mini-retry-btn">🔁 ${t("miniPlayAgain")}</button>
+        <button class="primary mini-play-again-btn">${t("miniNextGame")} 🎮</button>
+        <button class="secondary mini-map-btn">${t("miniReturnMap")} 🗺️</button>
       </div>
     </div>`;
   stage.querySelector(".mini-retry-btn").addEventListener("click", () => {
@@ -4433,6 +4451,12 @@ const STRINGS = {
     minigame_slide_title:"Ice Slide!", minigame_slide_text:"Tap Left / Right to dodge the rocks!",
     minigame_snow_title:"Snowball Catch!", minigame_snow_text:"Move the bucket to catch falling snowballs!",
     left:"Left", right:"Right",
+    catchFish_title:"Catch Fish!", catchFish_text:"Tap the fish before they swim away! Catch 5 to win.",
+    speedSlow:"Slow", speedNormal:"Normal", speedFast:"Fast",
+    treasureHunt_title:"Treasure Hunt!", treasureHunt_text:"One shell hides a treasure chest. Find it!",
+    findPenguin_title:"Find the Penguin!", findPenguin_text:"Solve it, then tap the iceberg with the right answer!",
+    miniWellDone:"Well done!", miniGoodEffort:"Good effort!",
+    miniPlayAgain:"Play Again", miniNextGame:"Next Mini-game", miniReturnMap:"Return to Map",
     // Rewards / shop
     costumesAndPets:"Costumes and Pets", spendCoins:"Spend coins on playful looks for Sausage.",
     achievements:"Achievements", owned:"Owned", buy:"Buy", equip:"Equip", equipped:"Equipped",
@@ -4535,6 +4559,12 @@ const STRINGS = {
     minigame_slide_title:"Ледяная горка!", minigame_slide_text:"Нажимай Влево / Вправо, чтобы уклоняться!",
     minigame_snow_title:"Лови снежки!", minigame_snow_text:"Двигай ведро и лови снежки!",
     left:"Влево", right:"Вправо",
+    catchFish_title:"Лови рыбу!", catchFish_text:"Тапай по рыбкам, пока они не уплыли! Поймай 5, чтобы выиграть.",
+    speedSlow:"Медленно", speedNormal:"Нормально", speedFast:"Быстро",
+    treasureHunt_title:"Охота за сокровищем!", treasureHunt_text:"В одной ракушке спрятан сундук с сокровищем. Найди её!",
+    findPenguin_title:"Найди пингвина!", findPenguin_text:"Реши задачу, потом нажми на айсберг с правильным ответом!",
+    miniWellDone:"Отлично!", miniGoodEffort:"Хорошая попытка!",
+    miniPlayAgain:"Играть снова", miniNextGame:"Следующая игра", miniReturnMap:"На карту",
     // Rewards / shop
     costumesAndPets:"Костюмы и питомцы", spendCoins:"Трать монеты на образы для Сосиски.",
     achievements:"Достижения", owned:"Куплено", buy:"Купить", equip:"Надеть", equipped:"Надето",
