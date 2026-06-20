@@ -172,6 +172,11 @@
           <div class="challenge-scene">
             <div class="iceberg"></div>
             <div class="storm-overlay" id="stormOverlay" hidden aria-hidden="true"></div>
+            <div class="storm-clouds" id="stormClouds" hidden aria-hidden="true">
+              <div class="storm-cloud storm-cloud-1"></div>
+              <div class="storm-cloud storm-cloud-2"></div>
+              <div class="storm-cloud storm-cloud-3"></div>
+            </div>
             <div class="mission-trail" id="missionTrail" aria-hidden="true">
               <div class="mission-trail-track"></div>
               <span class="mission-trail-start">🐾</span>
@@ -390,6 +395,8 @@
       <div id="aboutTabAbout" class="about-tab-panel">
         <p>An educational math game for children aged 6–11. Help Sausage the Seal rescue friends across the Arctic Ocean by solving math problems.</p>
         <p>🐟 <b>Free to play.</b> No ads. No in-app purchases. All data stays on your device.</p>
+        <label style="display:block;margin:14px 0 4px;font-weight:800;color:var(--deep)">🔊 <span data-i18n="volumeLabel">Volume</span></label>
+        <input type="range" id="volumeSlider" min="0" max="100" step="5" style="width:100%">
         <p style="color:var(--muted);font-size:.85rem">For feedback: <b>sausagetheseal@gmail.com</b></p>
       </div>
 

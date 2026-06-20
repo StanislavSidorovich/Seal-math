@@ -368,6 +368,41 @@ button { font: inherit; color: inherit; }
   35%  { opacity: .95; background: radial-gradient(circle at 50% 30%, rgba(255,228,150,.92), rgba(255,228,150,.18)); }
   100% { opacity: 0; }
 }
+/* S16: explicit cloud shapes — the flat tint alone read as "screen got
+   darker", not "there's a storm". These drift apart and shrink toward the
+   edges as stormIntensity drops, instead of just fading in place. */
+.storm-clouds {
+  position: absolute;
+  inset: 0;
+  z-index: 4;
+  pointer-events: none;
+  overflow: hidden;
+  border-radius: inherit;
+  opacity: 0;
+  transition: opacity .6s ease;
+}
+.storm-cloud {
+  position: absolute;
+  background: #3d4f63;
+  border-radius: 50px;
+  filter: blur(1px) drop-shadow(0 6px 8px rgba(10,20,35,.35));
+  transition: transform .8s cubic-bezier(.3,.7,.4,1), opacity .8s ease;
+}
+.storm-cloud:before, .storm-cloud:after {
+  content: "";
+  position: absolute;
+  background: inherit;
+  border-radius: 50%;
+}
+.storm-cloud-1 { width: 130px; height: 42px; top: 8px;  left: 4%; }
+.storm-cloud-1:before { width: 56px; height: 56px; top: -24px; left: 8px; }
+.storm-cloud-1:after  { width: 46px; height: 46px; top: -16px; left: 64px; }
+.storm-cloud-2 { width: 105px; height: 36px; top: 32px; left: 36%; }
+.storm-cloud-2:before { width: 48px; height: 48px; top: -20px; left: 6px; }
+.storm-cloud-2:after  { width: 40px; height: 40px; top: -14px; left: 52px; }
+.storm-cloud-3 { width: 115px; height: 38px; top: 4px;  right: 5%; }
+.storm-cloud-3:before { width: 50px; height: 50px; top: -22px; left: 12px; }
+.storm-cloud-3:after  { width: 42px; height: 42px; top: -14px; left: 58px; }
 .small-seal { position: absolute; width: 190px; right: 20px; bottom: 24px; animation: bob 2.6s ease-in-out infinite; }
 .fish {
   position: absolute;

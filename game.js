@@ -450,7 +450,7 @@ function defaultState() {
     fish:0, coins:0, stars:0, xp:0, level:1, unlockedWorld:0,
     solved:0, correct:0, wrong:0, timePlayed:0, startedAt:Date.now(),
     topics, buildings:[], animals:[], shop:[], achievements:[],
-    muted:false, streak:{ count:0, last:"", days:[] }, daily:{ date:"", solved:0, claimed:false },
+    muted:false, volume:1.0, streak:{ count:0, last:"", days:[] }, daily:{ date:"", solved:0, claimed:false },
     hintsUsed:0, perfectTrips:0, missions:{}, equipped:{ costume:null, accessory:null, pet:null },
     miniGamesPlayed:0, rareTreasures:0, visitors:[], specialCosmetics:[],
     dialogueHistory:[], dailySpecial:"", doubleRewardsUntil:0, mysteryVisits:0,
@@ -976,6 +976,17 @@ function showAboutModal() {
   const vEl = $("aboutVersion");
   if (vEl) vEl.textContent = GAME_VERSION;
   switchAboutTab("about");
+  const volSlider = $("volumeSlider");
+  if (volSlider) {
+    volSlider.value = Math.round((state.volume ?? 1.0) * 100);
+    if (!volSlider.dataset.bound) {
+      volSlider.dataset.bound = "1";
+      volSlider.addEventListener("input", () => {
+        state.volume = Number(volSlider.value) / 100;
+        save();
+      });
+    }
+  }
   modal.hidden = false;
 }
 
@@ -1190,40 +1201,43 @@ function moveTravelSeal() {
 
 function islandSvg(world, locked) {
   const [c1,c2] = locked ? ["#d6dde0","#aebbc2"] : world.palette;
-  // S7: each decor is now a small recognizable symbol tied to the world's
-  // name/theme (was: abstract sun/wave/dot shapes that all looked alike).
+  // S17: every decor shape now has a dark outline + a fill that's
+  // deliberately NOT the same as the hill's own colour — six of eight were
+  // reusing world.palette[1] verbatim, so the icon blended invisibly into
+  // its own hill (e.g. the whale tail was the exact same blue as the hill).
+  const O = `stroke="#1d3a4a" stroke-width="3" stroke-linejoin="round" stroke-linecap="round"`;
   const decor = [
-    // 0 Snow Beach — sun + scallop shell (matches "find warm shells" story)
-    `<circle cx="118" cy="40" r="13" fill="#ffd45a"/>
-     <path d="M70 84Q70 56 90 50Q110 56 110 84Z" fill="#fff"/>
-     <path d="M90 50V84M80 53V82M100 53V82" stroke="#ffe2b0" stroke-width="2.5"/>`,
-    // 1 Fish Bay — a little fish
-    `<ellipse cx="92" cy="55" rx="26" ry="15" fill="#24bdd2"/>
-     <path d="M66 55 42 40 48 55 42 70Z" fill="#24bdd2"/>
-     <circle cx="110" cy="50" r="3.5" fill="#0d3a45"/>`,
-    // 2 Whale Coast — a whale tail fluke
-    `<path d="M90 88C73 60 53 44 43 24c20 10 35 25 47 41 12-16 27-31 47-41-10 20-30 36-47 64Z" fill="#5ca6e8"/>`,
-    // 3 Penguin Islands — a standing penguin
-    `<ellipse cx="90" cy="62" rx="20" ry="28" fill="#26364a"/>
+    // 0 Snow Beach — sun + scallop shell
+    `<circle cx="118" cy="40" r="13" fill="#ffd45a" ${O}/>
+     <path d="M70 84Q70 56 90 50Q110 56 110 84Z" fill="#fff" ${O}/>
+     <path d="M90 50V84M80 53V82M100 53V82" stroke="#ffb74d" stroke-width="2.5"/>`,
+    // 1 Fish Bay — a little fish (warm orange, pops against the teal hill)
+    `<ellipse cx="92" cy="55" rx="26" ry="15" fill="#ff9f4a" ${O}/>
+     <path d="M66 55 42 40 48 55 42 70Z" fill="#ff9f4a" ${O}/>
+     <circle cx="110" cy="50" r="3.5" fill="#1d3a4a"/>`,
+    // 2 Whale Coast — a dark slate tail fluke, classic whale-against-sky look
+    `<path d="M90 88C73 60 53 44 43 24c20 10 35 25 47 41 12-16 27-31 47-41-10 20-30 36-47 64Z" fill="#2c4a63" ${O}/>`,
+    // 3 Penguin Islands — a standing penguin (already had good contrast)
+    `<ellipse cx="90" cy="62" rx="20" ry="28" fill="#26364a" ${O}/>
      <ellipse cx="90" cy="66" rx="11" ry="20" fill="#fff"/>
-     <path d="M82 38 90 29 98 38Z" fill="#ffb847"/>
+     <path d="M82 38 90 29 98 38Z" fill="#ffb847" ${O}/>
      <circle cx="85" cy="42" r="2" fill="#fff"/><circle cx="95" cy="42" r="2" fill="#fff"/>`,
-    // 4 Octopus Cave — an octopus with curled tentacles
-    `<ellipse cx="90" cy="48" rx="24" ry="20" fill="#35c9c0"/>
+    // 4 Octopus Cave — coral octopus, clearly different from the teal hill
+    `<ellipse cx="90" cy="48" rx="24" ry="20" fill="#ff8a73" ${O}/>
      <path d="M68 60q-10 10-4 20M79 64q-6 14 2 20M90 66q0 16 0 22M101 64q6 14-2 20M112 60q10 10 4 20"
-           fill="none" stroke="#35c9c0" stroke-width="8" stroke-linecap="round"/>
-     <circle cx="82" cy="44" r="3" fill="#0d3a45"/><circle cx="98" cy="44" r="3" fill="#0d3a45"/>`,
-    // 5 Polar Academy — a graduation cap
-    `<path d="M90 38 130 52 90 66 50 52Z" fill="#8bd5ff"/>
-     <rect x="84" y="66" width="12" height="16" rx="2" fill="#fff"/>
-     <circle cx="90" cy="38" r="3" fill="#5ca6e8"/>
-     <path d="M122 54v13q0 5-8 5t-8-5v-9" fill="none" stroke="#5ca6e8" stroke-width="2"/>`,
-    // 6 Northern Kingdom — a crown
-    `<path d="M55 80 65 45 80 65 90 35 100 65 115 45 125 80Z" fill="#b78cff"/>
-     <rect x="55" y="78" width="70" height="10" rx="3" fill="#b78cff"/>
-     <circle cx="90" cy="35" r="4" fill="#ffd45a"/>`,
-    // 7 Arctic Champion — a star (ties into the game's own star currency)
-    `<path d="M90 28 100 52 126 54 106 70 114 96 90 80 66 96 74 70 54 54 80 52Z" fill="#2dd6a6"/>`
+           fill="none" stroke="#ff8a73" stroke-width="8" stroke-linecap="round"/>
+     <circle cx="82" cy="44" r="3" fill="#1d3a4a"/><circle cx="98" cy="44" r="3" fill="#1d3a4a"/>`,
+    // 5 Polar Academy — deep navy mortarboard cap, gold tassel
+    `<path d="M90 38 130 52 90 66 50 52Z" fill="#274b73" ${O}/>
+     <rect x="84" y="66" width="12" height="16" rx="2" fill="#fff" ${O}/>
+     <circle cx="90" cy="38" r="3" fill="#ffd45a"/>
+     <path d="M122 54v13q0 5-8 5t-8-5v-9" fill="none" stroke="#ffd45a" stroke-width="2.5"/>`,
+    // 6 Northern Kingdom — gold crown (crowns read as crowns when gold, not purple)
+    `<path d="M55 80 65 45 80 65 90 35 100 65 115 45 125 80Z" fill="#ffd45a" ${O}/>
+     <rect x="55" y="78" width="70" height="10" rx="3" fill="#ffd45a" ${O}/>
+     <circle cx="90" cy="35" r="4" fill="#ff5a7a"/>`,
+    // 7 Arctic Champion — gold star (matches the game's own star icon colour)
+    `<path d="M90 28 100 52 126 54 106 70 114 96 90 80 66 96 74 70 54 54 80 52Z" fill="#ffd45a" ${O}/>`
   ][world.id];
   return `<svg viewBox="0 0 180 160" aria-hidden="true">
     <ellipse cx="90" cy="116" rx="72" ry="30" fill="${c1}"/>
@@ -1300,12 +1314,11 @@ function startMission(daily) {
   $("challenge").hidden = false;
   $("miniGame").hidden  = true;
   $("challenge").scrollIntoView({ behavior: "smooth", block: "start" });
-  const stormEl = $("stormOverlay");
-  if (stormEl) {
-    stormEl.classList.remove("calm-flash");
-    stormEl.hidden = mission !== 4;
-    stormEl.style.opacity = mission === 4 ? "1" : "0";
-  }
+  const stormEl  = $("stormOverlay");
+  const cloudsEl = $("stormClouds");
+  if (stormEl)  { stormEl.classList.remove("calm-flash"); stormEl.hidden  = mission !== 4; }
+  if (cloudsEl) cloudsEl.hidden = mission !== 4;
+  if (mission === 4) syncStormVisuals();
   // Back-to-map button — recreate fresh each time, overlay on the scene
   const old = $("backToMapBtn");
   if (old) old.remove();
@@ -1346,20 +1359,35 @@ function missionTrailPos(solved, needed) {
   return 8 + Math.min(1, solved / needed) * 84; // % across the track, clear of start/goal icons
 }
 
-// S15: storm boss mode helpers — progress here is driven by stormIntensity
-// (clamped 0-100), not the usual solved/needed ratio, since mistakes can
-// push it back up. Reuses the exact same trail/marker as every other mission.
+// S15/S16: storm boss mode — progress is driven by stormIntensity (clamped
+// 0-100), not the usual solved/needed ratio, since mistakes can push it back
+// up. syncStormVisuals() is the single place that draws it (tint + clouds +
+// trail + label) so init and every answer share the exact same code path —
+// no risk of one spot drawing a stale state.
 function stormTrailPos() {
   return 8 + Math.min(1, Math.max(0, (100 - trip.stormIntensity) / 100)) * 84;
 }
-function adjustStorm(delta) {
-  trip.stormIntensity = Math.max(0, Math.min(100, trip.stormIntensity + delta));
-  const el = $("stormOverlay");
-  if (el) el.style.opacity = String((trip.stormIntensity / 100) * 0.78);
+function syncStormVisuals() {
+  const pct = trip.stormIntensity / 100;
+  const overlayEl = $("stormOverlay");
+  if (overlayEl) overlayEl.style.opacity = String(Math.pow(pct, 0.7) * 0.72);
+  const cloudsEl = $("stormClouds");
+  if (cloudsEl) {
+    cloudsEl.style.opacity = String(Math.pow(pct, 0.55) * 0.95); // stays visible longer, only clears near the very end
+    cloudsEl.querySelectorAll(".storm-cloud").forEach((c, i) => {
+      const drift = (1 - pct) * (45 + i * 20); // each cloud blows away at a slightly different rate
+      const dir   = i % 2 === 0 ? -1 : 1;
+      c.style.transform = `translateX(${dir * drift}%) scale(${1 - (1-pct)*0.35})`;
+    });
+  }
   $("missionTrailMarker").style.left = `${stormTrailPos()}%`;
   $("questionsLeft").textContent = currentLang === "ru"
     ? `🌪️ Буря: ${Math.round(trip.stormIntensity)}%`
     : `🌪️ Storm: ${Math.round(trip.stormIntensity)}%`;
+}
+function adjustStorm(delta) {
+  trip.stormIntensity = Math.max(0, Math.min(100, trip.stormIntensity + delta));
+  syncStormVisuals();
 }
 
 function makeProblem() {
@@ -1374,10 +1402,7 @@ function makeProblem() {
     : `${wName} - ${details.title}`;
   $("missionTitle").textContent  = trip.daily ? t("dailyRescue") : `${t("missionOf")} ${trip.mission+1}: ${details.title}`;
   if (trip.mission === 4) {
-    $("questionsLeft").textContent = currentLang === "ru"
-      ? `🌪️ Буря: ${Math.round(trip.stormIntensity)}%`
-      : `🌪️ Storm: ${Math.round(trip.stormIntensity)}%`;
-    $("missionTrailMarker").style.left = `${stormTrailPos()}%`;
+    syncStormVisuals();
   } else {
     $("questionsLeft").textContent = `${Math.max(0, trip.needed-trip.solved)} ${t("questionsLeft")}`;
     $("missionTrailMarker").style.left = `${missionTrailPos(trip.solved, trip.needed)}%`;
@@ -1933,11 +1958,14 @@ function gainRewards() {
 // mission uses (rewards/unlocks/buildings all stay identical).
 function clearStorm() {
   const el = $("stormOverlay");
+  const cloudsEl = $("stormClouds");
   if (el) { el.classList.add("calm-flash"); }
+  if (cloudsEl) { cloudsEl.style.opacity = "0"; }
   playSound("perfect");
   toast(currentLang === "ru" ? "Буря стихла! ☀️" : "The storm has calmed! ☀️");
   setTimeout(() => {
-    if (el) { el.hidden = true; el.classList.remove("calm-flash"); }
+    if (el)      { el.hidden = true; el.classList.remove("calm-flash"); }
+    if (cloudsEl) cloudsEl.hidden = true;
     completeMission();
   }, 1100);
 }
@@ -3303,8 +3331,9 @@ function playWaveSound() {
   filter.type = "lowpass";
   filter.frequency.value = 450 + Math.random() * 300;
   const gain = audioCtx.createGain();
+  const v = .052 * (state.volume ?? 1.0);
   gain.gain.setValueAtTime(.0001, now);
-  gain.gain.exponentialRampToValueAtTime(.035, now + dur * 0.4);
+  gain.gain.exponentialRampToValueAtTime(v, now + dur * 0.4);
   gain.gain.exponentialRampToValueAtTime(.0001, now + dur);
   src.connect(filter).connect(gain).connect(audioCtx.destination);
   src.start(now);
@@ -3319,8 +3348,9 @@ function playCritterCall(kind) {
   const gain = audioCtx.createGain();
   osc.connect(gain).connect(audioCtx.destination);
   const fire = (vol, len) => {
+    const v = vol * (state.volume ?? 1.0);
     gain.gain.setValueAtTime(.0001, now);
-    gain.gain.exponentialRampToValueAtTime(vol, now + .025);
+    gain.gain.exponentialRampToValueAtTime(v, now + .025);
     gain.gain.exponentialRampToValueAtTime(.0001, now + len);
     osc.start(now);
     osc.stop(now + len + .05);
@@ -3330,37 +3360,37 @@ function playCritterCall(kind) {
     osc.frequency.setValueAtTime(320, now);
     osc.frequency.exponentialRampToValueAtTime(220, now + .12);
     osc.frequency.exponentialRampToValueAtTime(300, now + .24);
-    fire(.045, .28);
+    fire(.07, .28);
   } else if (kind === "whale") {
     osc.type = "sine";
     osc.frequency.setValueAtTime(180, now);
     osc.frequency.exponentialRampToValueAtTime(110, now + 1.1);
-    fire(.05, 1.3);
+    fire(.08, 1.3);
   } else if (kind === "bubble") {
     osc.type = "sine";
     osc.frequency.setValueAtTime(700, now);
     osc.frequency.exponentialRampToValueAtTime(1400, now + .15);
-    fire(.04, .18);
+    fire(.065, .18);
   } else if (kind === "chime") {
     osc.type = "triangle";
     osc.frequency.setValueAtTime(1318, now);
-    fire(.045, .5);
+    fire(.07, .5);
   } else if (kind === "horn") {
     osc.type = "square";
     osc.frequency.setValueAtTime(196, now);
     osc.frequency.exponentialRampToValueAtTime(247, now + .3);
-    fire(.04, .55);
+    fire(.065, .55);
   } else if (kind === "fanfare") {
     osc.type = "square";
     osc.frequency.setValueAtTime(523, now);
     osc.frequency.exponentialRampToValueAtTime(784, now + .3);
-    fire(.045, .4);
+    fire(.07, .4);
   } else { // gull — default
     osc.type = "sine";
     osc.frequency.setValueAtTime(2100, now);
     osc.frequency.exponentialRampToValueAtTime(3000, now + .09);
     osc.frequency.exponentialRampToValueAtTime(1900, now + .2);
-    fire(.05, .22);
+    fire(.075, .22);
   }
 }
 
@@ -3392,12 +3422,13 @@ function stopWorldMusic() {
 }
 
 function tone(freq, len, wave="sine", vol=.18) {
+  const v = vol * (state.volume ?? 1.0);
   const osc  = audioCtx.createOscillator();
   const gain = audioCtx.createGain();
   osc.type = wave;
   osc.frequency.value = freq;
   gain.gain.setValueAtTime(.0001, audioCtx.currentTime);
-  gain.gain.exponentialRampToValueAtTime(vol, audioCtx.currentTime+.02);
+  gain.gain.exponentialRampToValueAtTime(v, audioCtx.currentTime+.02);
   gain.gain.exponentialRampToValueAtTime(.0001, audioCtx.currentTime+len);
   osc.connect(gain).connect(audioCtx.destination);
   osc.start();
@@ -3861,6 +3892,7 @@ const STRINGS = {
     costumesAndPets:"Costumes and Pets", spendCoins:"Spend coins on playful looks for Sausage.",
     achievements:"Achievements", owned:"Owned", buy:"Buy", equip:"Equip", equipped:"Equipped",
     unequip:"Unequip",
+    volumeLabel:"Volume",
     equippedOnSausage:"Equipped on Sausage.", ownedEquipInMySeal:"Owned. Equip it in My Seal.",
     visibleReward:"A visible reward for Sausage.", unlockedAndEquipped:"unlocked and equipped!",
     // Town
@@ -3961,6 +3993,7 @@ const STRINGS = {
     costumesAndPets:"Костюмы и питомцы", spendCoins:"Трать монеты на образы для Сосиски.",
     achievements:"Достижения", owned:"Куплено", buy:"Купить", equip:"Надеть", equipped:"Надето",
     unequip:"Снять",
+    volumeLabel:"Громкость",
     equippedOnSausage:"Надето на Тюленя.", ownedEquipInMySeal:"Куплено. Надень в разделе «Мой Тюлень».",
     visibleReward:"Заметная награда для Тюленя.", unlockedAndEquipped:"открыт и надет!",
     // Town
