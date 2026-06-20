@@ -242,7 +242,20 @@ const achievementNames = [
   "Word Problem Wizard","Perfect Trip","Fast Flipper","Daily Visitor","Three Day Streak","Seven Day Streak",
   "Costume Collector","Pet Pal","Coin Spender","Star Saver","Fish Feast","Level 5","Level 10",
   "No Mistake Run","Comeback Kid","Super Solver","Guardian Helper","Town Complete","Guardian of the Arctic",
-  "Two Week Streak","One Month Streak"
+  "Two Week Streak","One Month Streak","Animal's Best Friend"
+];
+
+// P16: one emoji badge per achievement instead of a generic ⭐ for all 53 —
+// cheap (no new SVG art), but gives each one a distinct, recognizable
+// identity. Same order/index as achievementNames; streak-family badges
+// intentionally share 🔥 (consistent iconography for one category, same
+// idea as Duolingo reusing one streak icon across all its milestones).
+const ACHIEVEMENT_ICONS = [
+  "🐟","✅","🔟","🎯","🌟","💯","🏠","🏘️","🔨","🧡","👥",
+  "🦸","⭐","🪙","💰","💡","💪","🏖️","⛵","🐳","🐧","🐙",
+  "🎓","🏰","🏆","➕","➖","✖️","➗","🔮","🧮","📖","💎",
+  "⚡","📅","🔥","🔥","👒","🐠","🛍️","✨","🍽️","5️⃣","🔝",
+  "🥇","🔁","🧠","🛡️","🏙️","👑","🔥","🔥","🐾"
 ];
 
 // ─── Daily special names ─────────────────────────────────────────────────────
@@ -250,6 +263,13 @@ const dailySpecialNames = [
   "Glitter Shell","Aurora Scarf Pin","Crystal Fish Badge","Snowflake Sticker",
   "Tiny Crown Charm","Moonlit Pebble","Golden Flipper Token"
 ];
+
+// P16: one icon per daily-special instead of a generic ✨ for all of them.
+const DAILY_SPECIAL_ICONS = {
+  "Glitter Shell":"🐚", "Aurora Scarf Pin":"🧣", "Crystal Fish Badge":"💎",
+  "Snowflake Sticker":"❄️", "Tiny Crown Charm":"👑", "Moonlit Pebble":"🌙",
+  "Golden Flipper Token":"🏅"
+};
 
 // ─── Daily challenge narratives ──────────────────────────────────────────────
 const dailyNarratives = [
@@ -364,6 +384,7 @@ function migrateOldSave() {
     merged.missions = { ...base.missions, ...(oldState.missions || {}) };
     if (!merged.dailySpecial) merged.dailySpecial = dailySpecialName();
     if (oldState.solved !== undefined && oldState.onboarded === undefined) merged.onboarded = true;
+    merged.startedAt = Date.now();
     profile.state = merged;
     profile.name = "Player 1";
     return profile;
@@ -429,6 +450,13 @@ function loadProfileState(profile) {
   merged.missions = { ...base.missions, ...(raw.missions || {}) };
   if (!merged.dailySpecial) merged.dailySpecial = dailySpecialName();
   if ((raw.solved !== undefined) && (raw.onboarded === undefined)) merged.onboarded = true;
+  // P13: startedAt is a runtime checkpoint ("when did THIS session begin"),
+  // not something meant to survive a save/reload. Without this reset, a
+  // profile reopened a day later would compute its first elapsed-time as
+  // the entire gap since it was last closed, and silently fold that whole
+  // gap into Time Played — this, not just backgrounded tabs, is the main
+  // reason that stat could read in the thousands of minutes.
+  merged.startedAt = Date.now();
   return merged;
 }
 
@@ -442,6 +470,7 @@ let audioCtx = null;
 let miniGameTimer = null;
 let parentGateVerified = false; // re-armed each app load and on profile switch
 let parentGateAnswer = null;
+let _pageActive = true; // P13: tracks whether the tab/window is actually in front of the player
 
 function $(id) { return document.getElementById(id); }
 
@@ -457,7 +486,7 @@ function defaultState() {
     muted:false, volume:1.0, streak:{ count:0, last:"", days:[], freezeTokens:1, longestStreak:0 }, daily:{ date:"", solved:0, claimed:false },
     hintsUsed:0, perfectTrips:0, missions:{}, equipped:{ costume:null, accessory:null, pet:null },
     miniGamesPlayed:0, rareTreasures:0, visitors:[], specialCosmetics:[],
-    dialogueHistory:{}, dailySpecial:"", doubleRewardsUntil:0, mysteryVisits:0,
+    dialogueHistory:{}, dailySpecial:"", doubleRewardsUntil:0, mysteryVisits:0, animalFeeds:{},
     onboarded: false, gameVersion: GAME_VERSION
   };
 }
@@ -466,8 +495,15 @@ function loadState() { return defaultState(); } // legacy shim — not used afte
 
 let _saveTimer = null;
 function save(immediate = false) {
-  state.timePlayed += Math.floor((Date.now() - state.startedAt) / 1000);
-  state.startedAt = Date.now();
+  // P13: previously this always added wall-clock time since the last save,
+  // so "Time Played" kept growing even with the tab backgrounded or the
+  // window unfocused (e.g. a phone left on the lock screen with the PWA
+  // still "open"). Now it only accumulates while the page is actually the
+  // active, visible thing — see pauseTimeTracking()/resumeTimeTracking().
+  if (_pageActive) {
+    state.timePlayed += Math.floor((Date.now() - state.startedAt) / 1000);
+    state.startedAt = Date.now();
+  }
   const curr = getActiveProfile();
   if (curr) {
     curr.state = state;
@@ -511,6 +547,7 @@ const ISLAND_BRIEFINGS = {
   4: [
     { visual:"🔮", title:"Number patterns", body:"Patterns repeat or grow the same way each time. Find the rule, predict the next!", example:"2, 4, 8, 16, ?  →  Each doubles  →  32" },
     { visual:"🐙", title:"Brackets first!", body:"Always solve what's inside brackets (   ) before doing anything else.", example:"(3 + 4) × 2  →  7 × 2  →  14" },
+    { visual:"🧠", title:"Comparing & the middle number", body:"To find the biggest, compare every number and pick the largest. To find the middle (median), line all the numbers up from smallest to biggest — the one in the middle is the median.", example:"8, 20, 12  →  in order: 8, 12, 20  →  middle = 12" },
   ],
   5: [
     { visual:"🔭", title:"Equations with x", body:"x is a mystery number. To find it, do the opposite operation on both sides.", example:"x + 7 = 15  →  x = 15 - 7  →  x = 8" },
@@ -546,6 +583,7 @@ const ISLAND_BRIEFINGS_RU = {
   4: [
     { visual:"🔮", title:"Числовые закономерности", body:"Закономерность повторяется или растёт одинаково каждый раз. Найди правило и угадай следующее число!", example:"2, 4, 8, 16, ?  →  Каждое число удваивается  →  32" },
     { visual:"🐙", title:"Сначала скобки!", body:"Всегда сначала решай то, что внутри скобок (   ), а потом всё остальное.", example:"(3 + 4) × 2  →  7 × 2  →  14" },
+    { visual:"🧠", title:"Сравнение и среднее число", body:"Чтобы найти самое большое число, сравни все числа и выбери наибольшее. Чтобы найти середину (медиану), расставь все числа по порядку от меньшего к большему — число посередине и есть медиана.", example:"8, 20, 12  →  по порядку: 8, 12, 20  →  середина = 12" },
   ],
   5: [
     { visual:"🔭", title:"Уравнения с x", body:"x — это таинственное число. Чтобы найти его, сделай противоположное действие с обеих сторон.", example:"x + 7 = 15  →  x = 15 - 7  →  x = 8" },
@@ -648,7 +686,13 @@ function maybeShowSmartHint(topic) {
   const panel = $("smartHintPanel");
   if (!panel) return;
   $("smartHintTitle").textContent   = hint.title;
-  $("smartHintText").textContent    = hint.text;
+  // P12: topics like "logic" bundle several different sub-skills (comparing,
+  // adding three groups, finding a median) under one generic hint. The
+  // generic text could describe a completely different sub-skill than the
+  // one the player actually got wrong, so prefer the hint generated for
+  // THIS specific question when available, and keep the curated worked
+  // example as supporting context either way.
+  $("smartHintText").textContent    = (currentProblem && currentProblem.hint) || hint.text;
   $("smartHintExample").textContent = hint.example || "";
   panel.hidden = false;
   // auto-hide after 12 seconds
@@ -792,6 +836,7 @@ function launchGame() {
   renderAll();
   attachEvents();
   startTimer();
+  attachTimeTracking();
   checkAchievements();
   randomSurprise();
   if (!state.onboarded) {
@@ -1045,6 +1090,11 @@ function attachEvents() {
   $("resetAllBtn").addEventListener("click",       resetEverything);
   $("muteBtn").addEventListener("click",           () => { state.muted = !state.muted; save(); renderHeader(); });
   $("menuBtn").addEventListener("click",           () => $("tabs").classList.toggle("open"));
+  // P14: Lucky Catch bonus game
+  const luckyCatchEntryBtn = $("luckyCatchEntryBtn");
+  const luckyCatchClose    = $("luckyCatchClose");
+  if (luckyCatchEntryBtn) luckyCatchEntryBtn.addEventListener("click", openLuckyCatchEntry);
+  if (luckyCatchClose)    luckyCatchClose.addEventListener("click", closeLuckyCatch);
   document.querySelectorAll(".tab").forEach(btn => btn.addEventListener("click", () => switchView(btn.dataset.view)));
   document.addEventListener("pointerdown", initAudio, { once:true });
   // S5: Rescue celebration close
@@ -1251,52 +1301,64 @@ function moveTravelSeal() {
   seal.style.top  = `${top}%`;
 }
 
+// S17: every decor shape has a dark outline + a fill that's deliberately
+// NOT the same as the hill's own colour, so the icon doesn't blend
+// invisibly into its own hill. Hoisted to module scope (was local to
+// islandSvg()) so islandWatermarkSvg() can reuse the same per-island
+// emblems as a cheap "this screen belongs to this island" accent
+// elsewhere, without redrawing anything new.
+const ISLAND_DECOR_STROKE = `stroke="#1d3a4a" stroke-width="3" stroke-linejoin="round" stroke-linecap="round"`;
+const ISLAND_DECOR = [
+  // 0 Snow Beach — sun + scallop shell
+  `<circle cx="118" cy="40" r="13" fill="#ffd45a" ${ISLAND_DECOR_STROKE}/>
+   <path d="M70 84Q70 56 90 50Q110 56 110 84Z" fill="#fff" ${ISLAND_DECOR_STROKE}/>
+   <path d="M90 50V84M80 53V82M100 53V82" stroke="#ffb74d" stroke-width="2.5"/>`,
+  // 1 Fish Bay — a little fish (warm orange, pops against the teal hill)
+  `<ellipse cx="92" cy="55" rx="26" ry="15" fill="#ff9f4a" ${ISLAND_DECOR_STROKE}/>
+   <path d="M66 55 42 40 48 55 42 70Z" fill="#ff9f4a" ${ISLAND_DECOR_STROKE}/>
+   <circle cx="110" cy="50" r="3.5" fill="#1d3a4a"/>`,
+  // 2 Whale Coast — a dark slate tail fluke, classic whale-against-sky look
+  `<path d="M90 88C73 60 53 44 43 24c20 10 35 25 47 41 12-16 27-31 47-41-10 20-30 36-47 64Z" fill="#2c4a63" ${ISLAND_DECOR_STROKE}/>`,
+  // 3 Penguin Islands — a standing penguin (already had good contrast)
+  `<ellipse cx="90" cy="62" rx="20" ry="28" fill="#26364a" ${ISLAND_DECOR_STROKE}/>
+   <ellipse cx="90" cy="66" rx="11" ry="20" fill="#fff"/>
+   <path d="M82 38 90 29 98 38Z" fill="#ffb847" ${ISLAND_DECOR_STROKE}/>
+   <circle cx="85" cy="42" r="2" fill="#fff"/><circle cx="95" cy="42" r="2" fill="#fff"/>`,
+  // 4 Octopus Cave — coral octopus, clearly different from the teal hill
+  `<ellipse cx="90" cy="48" rx="24" ry="20" fill="#ff8a73" ${ISLAND_DECOR_STROKE}/>
+   <path d="M68 60q-10 10-4 20M79 64q-6 14 2 20M90 66q0 16 0 22M101 64q6 14-2 20M112 60q10 10 4 20"
+         fill="none" stroke="#ff8a73" stroke-width="8" stroke-linecap="round"/>
+   <circle cx="82" cy="44" r="3" fill="#1d3a4a"/><circle cx="98" cy="44" r="3" fill="#1d3a4a"/>`,
+  // 5 Polar Academy — deep navy mortarboard cap, gold tassel
+  `<path d="M90 38 130 52 90 66 50 52Z" fill="#274b73" ${ISLAND_DECOR_STROKE}/>
+   <rect x="84" y="66" width="12" height="16" rx="2" fill="#fff" ${ISLAND_DECOR_STROKE}/>
+   <circle cx="90" cy="38" r="3" fill="#ffd45a"/>
+   <path d="M122 54v13q0 5-8 5t-8-5v-9" fill="none" stroke="#ffd45a" stroke-width="2.5"/>`,
+  // 6 Northern Kingdom — gold crown (crowns read as crowns when gold, not purple)
+  `<path d="M55 80 65 45 80 65 90 35 100 65 115 45 125 80Z" fill="#ffd45a" ${ISLAND_DECOR_STROKE}/>
+   <rect x="55" y="78" width="70" height="10" rx="3" fill="#ffd45a" ${ISLAND_DECOR_STROKE}/>
+   <circle cx="90" cy="35" r="4" fill="#ff5a7a"/>`,
+  // 7 Arctic Champion — gold star (matches the game's own star icon colour)
+  `<path d="M90 28 100 52 126 54 106 70 114 96 90 80 66 96 74 70 54 54 80 52Z" fill="#ffd45a" ${ISLAND_DECOR_STROKE}/>`
+];
+
 function islandSvg(world, locked) {
   const [c1,c2] = locked ? ["#d6dde0","#aebbc2"] : world.palette;
-  // S17: every decor shape now has a dark outline + a fill that's
-  // deliberately NOT the same as the hill's own colour — six of eight were
-  // reusing world.palette[1] verbatim, so the icon blended invisibly into
-  // its own hill (e.g. the whale tail was the exact same blue as the hill).
-  const O = `stroke="#1d3a4a" stroke-width="3" stroke-linejoin="round" stroke-linecap="round"`;
-  const decor = [
-    // 0 Snow Beach — sun + scallop shell
-    `<circle cx="118" cy="40" r="13" fill="#ffd45a" ${O}/>
-     <path d="M70 84Q70 56 90 50Q110 56 110 84Z" fill="#fff" ${O}/>
-     <path d="M90 50V84M80 53V82M100 53V82" stroke="#ffb74d" stroke-width="2.5"/>`,
-    // 1 Fish Bay — a little fish (warm orange, pops against the teal hill)
-    `<ellipse cx="92" cy="55" rx="26" ry="15" fill="#ff9f4a" ${O}/>
-     <path d="M66 55 42 40 48 55 42 70Z" fill="#ff9f4a" ${O}/>
-     <circle cx="110" cy="50" r="3.5" fill="#1d3a4a"/>`,
-    // 2 Whale Coast — a dark slate tail fluke, classic whale-against-sky look
-    `<path d="M90 88C73 60 53 44 43 24c20 10 35 25 47 41 12-16 27-31 47-41-10 20-30 36-47 64Z" fill="#2c4a63" ${O}/>`,
-    // 3 Penguin Islands — a standing penguin (already had good contrast)
-    `<ellipse cx="90" cy="62" rx="20" ry="28" fill="#26364a" ${O}/>
-     <ellipse cx="90" cy="66" rx="11" ry="20" fill="#fff"/>
-     <path d="M82 38 90 29 98 38Z" fill="#ffb847" ${O}/>
-     <circle cx="85" cy="42" r="2" fill="#fff"/><circle cx="95" cy="42" r="2" fill="#fff"/>`,
-    // 4 Octopus Cave — coral octopus, clearly different from the teal hill
-    `<ellipse cx="90" cy="48" rx="24" ry="20" fill="#ff8a73" ${O}/>
-     <path d="M68 60q-10 10-4 20M79 64q-6 14 2 20M90 66q0 16 0 22M101 64q6 14-2 20M112 60q10 10 4 20"
-           fill="none" stroke="#ff8a73" stroke-width="8" stroke-linecap="round"/>
-     <circle cx="82" cy="44" r="3" fill="#1d3a4a"/><circle cx="98" cy="44" r="3" fill="#1d3a4a"/>`,
-    // 5 Polar Academy — deep navy mortarboard cap, gold tassel
-    `<path d="M90 38 130 52 90 66 50 52Z" fill="#274b73" ${O}/>
-     <rect x="84" y="66" width="12" height="16" rx="2" fill="#fff" ${O}/>
-     <circle cx="90" cy="38" r="3" fill="#ffd45a"/>
-     <path d="M122 54v13q0 5-8 5t-8-5v-9" fill="none" stroke="#ffd45a" stroke-width="2.5"/>`,
-    // 6 Northern Kingdom — gold crown (crowns read as crowns when gold, not purple)
-    `<path d="M55 80 65 45 80 65 90 35 100 65 115 45 125 80Z" fill="#ffd45a" ${O}/>
-     <rect x="55" y="78" width="70" height="10" rx="3" fill="#ffd45a" ${O}/>
-     <circle cx="90" cy="35" r="4" fill="#ff5a7a"/>`,
-    // 7 Arctic Champion — gold star (matches the game's own star icon colour)
-    `<path d="M90 28 100 52 126 54 106 70 114 96 90 80 66 96 74 70 54 54 80 52Z" fill="#ffd45a" ${O}/>`
-  ][world.id];
+  const decor = ISLAND_DECOR[world.id];
   return `<svg viewBox="0 0 180 160" aria-hidden="true">
     <ellipse cx="90" cy="116" rx="72" ry="30" fill="${c1}"/>
     <path d="M28 112c22-52 50-72 84-60 22 8 38 28 48 60z" fill="${c2}"/>
     <path d="M47 101h86" stroke="#fff" stroke-width="9" stroke-linecap="round"/>
     ${decor}
   </svg>`;
+}
+
+// P15: lightweight per-island accent for the challenge screen — just the
+// island's own emblem (sun+shell, fish, whale tail, penguin, octopus,
+// mortarboard, crown, star), no hill/ground beneath it, faded into a corner
+// watermark. Reuses ISLAND_DECOR directly, so this is zero new art.
+function islandWatermarkSvg(worldId) {
+  return `<svg viewBox="20 18 140 88" aria-hidden="true">${ISLAND_DECOR[worldId] || ""}</svg>`;
 }
 
 function renderQuest() {
@@ -1385,7 +1447,19 @@ function startMission(daily) {
   // P6: apply island palette to challenge scene
   const w = worlds[trip.world];
   const scene = document.querySelector(".challenge-scene");
-  if (scene) scene.style.background = `linear-gradient(${w.palette[0]} 0 45%, ${w.palette[1]} 45% 100%)`;
+  if (scene) {
+    scene.style.background = `linear-gradient(${w.palette[0]} 0 45%, ${w.palette[1]} 45% 100%)`;
+    // P15: faint per-island emblem watermark — cheap reuse of the existing
+    // map-icon art, just enough to make the challenge screen feel like it
+    // belongs to this specific island instead of only the background color.
+    let wm = scene.querySelector(".challenge-watermark");
+    if (!wm) {
+      wm = document.createElement("div");
+      wm.className = "challenge-watermark";
+      scene.appendChild(wm);
+    }
+    wm.innerHTML = islandWatermarkSvg(w.id);
+  }
   react("swim");
   makeProblem();
 }
@@ -1543,45 +1617,62 @@ function generateProblem(topic) {
     case "mixed":       return generateProblem(["add20","sub20","multiply","divide"][rand(4)-1]);
     case "missing":     a=rand(20); answer=rand(15); text=`${a} + ☐ = ${a+answer}`; hint="Find what is missing by subtracting."; break;
     case "patterns": {
+      const isRu = currentLang === "ru";
+      // P12: previously this showed only the bare sequence ("15, 20, 25, 30, ?")
+      // with no instruction — adults infer "find the next number", but a
+      // young child may not. Every form now opens with a short prompt.
+      const prefix = isRu ? "Что будет следующим? " : "What comes next? ";
       const patForms = [
         // arithmetic +step
-        () => { const a=rand(6),b=rand(5)+1; return { text:`${a}, ${a+b}, ${a+b*2}, ${a+b*3}, ?`, answer:a+b*4, hint:`The pattern grows by ${b} each step.` }; },
+        () => { const a=rand(6),b=rand(5)+1; return { text:`${prefix}${a}, ${a+b}, ${a+b*2}, ${a+b*3}, ?`, answer:a+b*4, hint: isRu?`Закономерность растёт на ${b} каждый шаг.`:`The pattern grows by ${b} each step.` }; },
         // arithmetic ×2 geometric
-        () => { const a=rand(3)+1; return { text:`${a}, ${a*2}, ${a*4}, ${a*8}, ?`, answer:a*16, hint:"Each number doubles." }; },
+        () => { const a=rand(3)+1; return { text:`${prefix}${a}, ${a*2}, ${a*4}, ${a*8}, ?`, answer:a*16, hint: isRu?"Каждое число удваивается.":"Each number doubles." }; },
         // ×3
-        () => { const a=rand(2)+1; return { text:`${a}, ${a*3}, ${a*9}, ?`, answer:a*27, hint:"Each number is multiplied by 3." }; },
+        () => { const a=rand(2)+1; return { text:`${prefix}${a}, ${a*3}, ${a*9}, ?`, answer:a*27, hint: isRu?"Каждое число умножается на 3.":"Each number is multiplied by 3." }; },
         // subtract pattern
-        () => { const a=rand(10)+20, b=rand(4)+2; return { text:`${a}, ${a-b}, ${a-b*2}, ${a-b*3}, ?`, answer:a-b*4, hint:`The pattern decreases by ${b} each step.` }; },
+        () => { const a=rand(10)+20, b=rand(4)+2; return { text:`${prefix}${a}, ${a-b}, ${a-b*2}, ${a-b*3}, ?`, answer:a-b*4, hint: isRu?`Закономерность уменьшается на ${b} каждый шаг.`:`The pattern decreases by ${b} each step.` }; },
         // skip counting by 5s/10s
-        () => { const start=rand(8)*5, step=[5,10,25][rand(3)-1]; return { text:`${start}, ${start+step}, ${start+step*2}, ${start+step*3}, ?`, answer:start+step*4, hint:`Count by ${step}s.` }; },
+        () => { const start=rand(8)*5, step=[5,10,25][rand(3)-1]; return { text:`${prefix}${start}, ${start+step}, ${start+step*2}, ${start+step*3}, ?`, answer:start+step*4, hint: isRu?`Считай по ${step}.`:`Count by ${step}s.` }; },
       ];
       const pf = patForms[Math.floor(Math.random()*patForms.length)]();
       text=pf.text; answer=pf.answer; hint=pf.hint; break;
     }
 
     case "logic": {
+      const isRu = currentLang === "ru";
       const logicForms = [
-        // three-quantity comparison
+        // three-quantity comparison — P12: previously asked "who has the
+        // most?" with answers encoded as 1=Pip/2=Nori/3=Pebble. That broke
+        // whenever two values tied (indexOf silently picked the first one,
+        // marking an equally-correct answer wrong) and confused players
+        // because the encoded answer (1/2/3) looked like it should be a
+        // fish count. Now it just asks for the actual biggest number —
+        // always well-defined, even with a tie, and the answer choices are
+        // real quantities like every other question in the game.
         () => {
-          const chars = ["Pip","Nori","Pebble"];
+          const chars = isRu ? ["Пип","Нори","Пебл"] : ["Pip","Nori","Pebble"];
           const vals  = [rand(10)+1, rand(10)+1, rand(10)+1];
           const max   = Math.max(...vals);
-          const winner= chars[vals.indexOf(max)];
-          // encode winner as 1=Pip,2=Nori,3=Pebble
-          const ansIdx = vals.indexOf(max)+1;
-          return {
-            text:`${chars[0]} has ${vals[0]} fish. ${chars[1]} has ${vals[1]} fish. ${chars[2]} has ${vals[2]} fish. Who has the most? (1=${chars[0]}, 2=${chars[1]}, 3=${chars[2]})`,
-            answer:ansIdx,
-            hint:`Compare all three numbers and find the biggest.`
-          };
+          return isRu
+            ? { text:`У ${chars[0]} ${vals[0]} рыбок. У ${chars[1]} ${vals[1]} рыбок. У ${chars[2]} ${vals[2]} рыбок. Сколько рыбок у того, у кого их больше всех?`,
+                answer:max, hint:"Сравни все три числа и найди самое большое." }
+            : { text:`${chars[0]} has ${vals[0]} fish. ${chars[1]} has ${vals[1]} fish. ${chars[2]} has ${vals[2]} fish. What is the largest number of fish anyone has?`,
+                answer:max, hint:"Compare all three numbers and find the biggest." };
         },
         // simple puffin logic (original, keep variety)
-        () => { const a=rand(8),b=rand(8); return { text:`Two puffins bring ${a} fish and ${b} fish, then find 2 more. Total?`, answer:a+b+2, hint:"Add all three groups of fish." }; },
-        // ordering
+        () => {
+          const a=rand(8), b=rand(8);
+          return isRu
+            ? { text:`Два тупика принесли ${a} рыб и ${b} рыб, а потом нашли ещё 2. Сколько всего?`, answer:a+b+2, hint:"Сложи все три группы рыб." }
+            : { text:`Two puffins bring ${a} fish and ${b} fish, then find 2 more. Total?`, answer:a+b+2, hint:"Add all three groups of fish." };
+        },
+        // ordering / median
         () => {
           const a=rand(20)+5, b=rand(20)+5, c=rand(20)+5;
           const sorted=[a,b,c].sort((x,y)=>x-y);
-          return { text:`Sausage has ${a} fish, Pip has ${b}, Nori has ${c}. What is the middle (median) amount?`, answer:sorted[1], hint:"Put the numbers in order and find the middle one." };
+          return isRu
+            ? { text:`У Колбаски ${a} рыб, у Пипа ${b}, у Нори ${c}. Какое число посередине (медиана)?`, answer:sorted[1], hint:"Расставь числа по порядку и найди то, что в середине." }
+            : { text:`Sausage has ${a} fish, Pip has ${b}, Nori has ${c}. What is the middle (median) amount?`, answer:sorted[1], hint:"Put the numbers in order and find the middle one." };
         },
       ];
       const lf = logicForms[Math.floor(Math.random()*logicForms.length)]();
@@ -2055,6 +2146,13 @@ function completeMission() {
     building = buildings.find(b => !state.buildings.includes(b.id) && state.stars >= b.cost);
     if (building) {
       state.buildings.push(building.id);
+      // P14: stars are now actually spent on the building, not just checked
+      // as a threshold — previously they never decreased, so every building
+      // became "affordable" the moment total stars passed 24 and stayed
+      // that way forever. Total cost across all 8 buildings is 108, which
+      // comfortably matches ~100-110 correct answers across the campaign,
+      // so no rebalancing was needed — just removing the bug.
+      state.stars -= building.cost;
       // P8: building celebration
       celebrateBuilding(building);
     } else {
@@ -2182,6 +2280,40 @@ const COSTUME_SYMBOLS = {
   goggles:   { costume:null,                  accessory:"accessory-goggles",pet:null },
   pet:       { costume:null,                  accessory:null,               pet:"pet-fish" }
 };
+
+// P12: each costume/accessory occupies a region of the seal's body. Pirate,
+// Astronaut and King are all drawn on the head, same as the Sunny Hat
+// accessory — equipping both at once (e.g. Pirate Seal + Sunny Hat) draws
+// two hats on top of each other. Goggles (face) and Scarf (neck) sit in
+// different regions so they're free to combine with any costume. Tagging
+// the zone here means equipWithZoneCheck() automatically keeps this safe
+// as new costumes/accessories get added later — no per-pair listing needed.
+const ITEM_ZONES = {
+  pirate:"head", astronaut:"head", king:"head", superhero:"back",
+  sunny:"head",  scarf:"neck",     goggles:"face", pet:null
+};
+
+// Equip an item, auto-removing anything already worn in the same visual
+// zone so costumes/accessories never visually collide. Returns the item
+// that got bumped (or null), so callers can let the player know.
+function equipWithZoneCheck(item) {
+  const zone = ITEM_ZONES[item.className];
+  let replaced = null;
+  if (zone) {
+    Object.keys(state.equipped).forEach(slot => {
+      if (slot === item.type) return;
+      const otherId = state.equipped[slot];
+      if (otherId === null || otherId === undefined) return;
+      const otherItem = shop.find(s => s.id === otherId);
+      if (otherItem && ITEM_ZONES[otherItem.className] === zone) {
+        state.equipped[slot] = null;
+        replaced = otherItem;
+      }
+    });
+  }
+  state.equipped[item.type] = item.id;
+  return replaced;
+}
 
 function applySealLook() {
   let costumeSymbol   = null;
@@ -2425,14 +2557,66 @@ function renderTown() {
     return `<article class="item-card ${built?"":"locked"}">${buildingSvg(b.id)}<h3>${b.name}</h3>
       <p>${built ? "Open, animated, and part of Arctic Town." : starsNeeded > 0 ? `Need ${starsNeeded} more stars and mission progress.` : "Keep completing missions to unlock."}</p></article>`;
   }).join("");
+  const lcBtn = $("luckyCatchEntryBtn");
+  if (lcBtn) {
+    lcBtn.disabled = !canAffordLuckyCatch();
+    lcBtn.textContent = currentLang === "ru"
+      ? `🎣 Рыбалка (${LUCKY_CATCH_COST} 🐟)`
+      : `🎣 Go Fishing (${LUCKY_CATCH_COST} 🐟)`;
+  }
 }
+
+const FEED_COST = 2;
+// P14: milestone flavor text shown when a feed count hits a nice round
+// number — purely celebratory, nothing is ever required and nothing ever
+// decays. Feeding (or never feeding) a friend has zero downside either way.
+const FEED_MILESTONES = {
+  5:  { en:"loves the snacks!",                 ru:"обожает рыбные перекусы!" },
+  10: { en:"is your best friend now!",          ru:"теперь твой лучший друг!" },
+  25: { en:"can't imagine the Arctic without you!", ru:"не представляет Арктику без тебя!" },
+};
 
 function renderAlbum() {
   $("albumGrid").innerHTML = animals.map(a => {
     const rescued = state.animals.includes(a.id);
+    const feeds   = (state.animalFeeds && state.animalFeeds[a.id]) || 0;
+    const feedRow = rescued ? `<div class="feed-row">
+        <button class="feed-btn" data-feed="${a.id}" ${state.fish<FEED_COST?"disabled":""} aria-label="Feed ${a.name} — ${FEED_COST} fish">🐟 ${currentLang==="ru"?"Покормить":"Feed"} (${FEED_COST})</button>
+        ${feeds>0 ? `<span class="feed-count">${currentLang==="ru"?"Покормлен":"Fed"} ${feeds}×</span>` : ""}
+      </div>` : "";
     return `<article class="item-card ${rescued?"":"locked"}">${animalSvg(a.id)}<h3>${rescued?a.name:"Hidden Friend"}</h3>
-      <p>${rescued?`${a.species}: ${a.fact}`:"Complete story missions to discover this friend."}</p></article>`;
+      <p>${rescued?`${a.species}: ${a.fact}`:"Complete story missions to discover this friend."}</p>
+      ${feedRow}</article>`;
   }).join("");
+  const albumGrid = $("albumGrid");
+  if (albumGrid && !albumGrid.dataset.bound) {
+    albumGrid.dataset.bound = "1";
+    albumGrid.addEventListener("click", e => {
+      const btn = e.target.closest("[data-feed]");
+      if (!btn || btn.disabled) return;
+      feedAnimal(Number(btn.dataset.feed));
+    });
+  }
+}
+
+function feedAnimal(id) {
+  if (state.fish < FEED_COST) return;
+  const a = animals.find(x => x.id === id);
+  if (!a) return;
+  state.fish -= FEED_COST;
+  state.animalFeeds = state.animalFeeds || {};
+  state.animalFeeds[id] = (state.animalFeeds[id] || 0) + 1;
+  const count     = state.animalFeeds[id];
+  const milestone = FEED_MILESTONES[count];
+  playSound("coin");
+  react("excited");
+  toast(milestone
+    ? (currentLang === "ru" ? `${a.name} ${milestone.ru}` : `${a.name} ${milestone.en}`)
+    : (currentLang === "ru" ? `${a.name} рад рыбке! 🐟` : `${a.name} enjoyed the fish! 🐟`));
+  checkAchievements();
+  save();
+  renderAlbum();
+  renderHeader();
 }
 
 function renderShop() {
@@ -2461,7 +2645,7 @@ function buyItem(id) {
   if (state.coins >= item.cost && !state.shop.includes(item.id)) {
     state.coins -= item.cost;
     state.shop.push(item.id);
-    state.equipped[item.type] = item.id;
+    equipWithZoneCheck(item);
     playSound("coin");
     react("excited");
     toast(`${item.name} ${t("unlockedAndEquipped")}`);
@@ -2515,7 +2699,16 @@ function renderCloset() {
       // S9: clicking an already-equipped item now unequips it (back to bare
       // Sausage for that slot) instead of being a one-way-only action.
       const isActive = state.equipped[item.type] === item.id;
-      state.equipped[item.type] = isActive ? null : item.id;
+      if (isActive) {
+        state.equipped[item.type] = null;
+      } else {
+        const replaced = equipWithZoneCheck(item);
+        if (replaced) {
+          toast(currentLang === "ru"
+            ? `${item.name} и ${replaced.name} занимают одно место — сейчас надет ${item.name}.`
+            : `${item.name} and ${replaced.name} share the same spot — wearing ${item.name} now.`);
+        }
+      }
       react("excited");
       save();
       renderCloset();
@@ -2529,7 +2722,8 @@ function renderAchievements() {
   $("achievementProgress").textContent = `${unlocked.size} of ${achievementNames.length} unlocked`;
   $("achievementGrid").innerHTML = achievementNames.map((name,i) =>
     `<article class="item-card achievement ${unlocked.has(i)?"unlocked":"locked"}">
-      <h3>${name}</h3><p>${unlocked.has(i)?"Unlocked! ⭐":"Keep adventuring to discover this badge."}</p>
+      <span class="achievement-badge">${ACHIEVEMENT_ICONS[i] || "⭐"}</span>
+      <h3>${name}</h3><p>${unlocked.has(i)?"Unlocked!":"Keep adventuring to discover this badge."}</p>
     </article>`
   ).join("");
 }
@@ -2548,7 +2742,7 @@ function renderDaily() {
   $("dailyText").textContent = state.daily.claimed
     ? t("dailyClaimed")
     : narrative.text + ` (${Math.max(0,5-state.daily.solved)} more to go)`;
-  $("dailyBonus").textContent = `Today's treasure: ${state.dailySpecial}. Streak bonus: +${Math.min(20, state.streak.count*3)} fish and coins.`;
+  $("dailyBonus").textContent = `Today's treasure: ${DAILY_SPECIAL_ICONS[state.dailySpecial]||"✨"} ${state.dailySpecial}. Streak bonus: +${Math.min(20, state.streak.count*3)} fish and coins.`;
   $("dailyBtn").disabled      = state.daily.claimed;
 
   // P9: show collected daily specials if any
@@ -2556,7 +2750,7 @@ function renderDaily() {
   if (collectedEl) {
     if (state.specialCosmetics.length > 0) {
       collectedEl.innerHTML = `<p class="daily-collected-label">Your collection (${state.specialCosmetics.length}):</p>
-        <div class="daily-collected-grid">${state.specialCosmetics.map(n=>`<span class="daily-badge">✨ ${n}</span>`).join("")}</div>`;
+        <div class="daily-collected-grid">${state.specialCosmetics.map(n=>`<span class="daily-badge">${DAILY_SPECIAL_ICONS[n]||"✨"} ${n}</span>`).join("")}</div>`;
       collectedEl.hidden = false;
     } else {
       collectedEl.hidden = true;
@@ -2935,6 +3129,134 @@ function startFindPenguin() {
   });
 
   miniGameTimer = setTimeout(() => { if (!done) finishMiniGame(0,"penguin"); }, 30000);
+}
+
+// ─── P14: Lucky Catch — fish-gated math bonus game (the main fish sink) ──────
+// Distinct from the free 5-game mini-game rotation above: this one costs
+// fish to play, so it's the deliberate "save up and spend" loop the
+// economy redesign needed. One question per round; 4 fish swim by, one
+// carries the correct answer. Tapping the right one starts a brief
+// auto-resolving "reeling in" beat (no need to hold a finger down — more
+// forgiving for younger/less precise touch input) before paying out.
+// Payout is coins/stars-weighted with only a small fish trickle back, so
+// each round is a net fish sink even on success.
+const LUCKY_CATCH_COST = 15;
+let _luckyCatchResolved = false;
+
+function canAffordLuckyCatch() { return state.fish >= LUCKY_CATCH_COST; }
+
+function openLuckyCatchEntry() {
+  if (!canAffordLuckyCatch()) {
+    toast(currentLang === "ru"
+      ? `Нужно ${LUCKY_CATCH_COST} 🐟 — у тебя ${state.fish}.`
+      : `You need ${LUCKY_CATCH_COST} 🐟 — you have ${state.fish}.`);
+    return;
+  }
+  state.fish -= LUCKY_CATCH_COST;
+  renderHeader();
+  renderTown();
+  save();
+  startLuckyCatch();
+}
+
+function startLuckyCatch() {
+  const modal = $("luckyCatchModal");
+  if (!modal) return;
+  modal.hidden = false;
+  _luckyCatchResolved = false;
+
+  // Pull the topic from everything unlocked so far, reusing the same
+  // weakness-weighted picker the adaptive world already uses, so this
+  // bonus round is levelled to where the player actually is.
+  const unlockedTopics = [...new Set(worlds.slice(0, state.unlockedWorld+1).flatMap(w => w.topics))]
+    .filter(tp => tp !== "adaptive");
+  const topic   = chooseTopic(unlockedTopics.length ? unlockedTopics : ["add10"]);
+  const problem = generateProblem(topic);
+
+  $("luckyCatchProblem").textContent = problem.text;
+  const resultEl = $("luckyCatchResult");
+  resultEl.hidden = true;
+  resultEl.textContent = "";
+
+  const stage = $("luckyCatchStage");
+  stage.innerHTML = "";
+  const stageW  = stage.offsetWidth || 320;
+  const choices = shuffle([problem.answer, ...wrongAnswers(problem)]);
+
+  choices.forEach((val, i) => {
+    const fish = document.createElement("button");
+    fish.className = "lucky-fish";
+    fish.innerHTML = FISH_SVG + `<span class="lucky-fish-num">${val}</span>`;
+    fish.style.top = `${14 + i * 22}%`;
+    fish.style.setProperty("--swim-dist", `${stageW + 140}px`);
+    fish.style.setProperty("--swim-dur", `${4200 + i * 500}ms`);
+    fish.style.animationDelay = `${i * 0.35}s`;
+    fish.dataset.correct = (val === problem.answer) ? "1" : "0";
+    fish.setAttribute("aria-label", `Catch the fish showing ${val}`);
+    fish.addEventListener("animationend", () => {
+      if (fish.dataset.resolved) return;
+      fish.dataset.resolved = "1";
+      fish.remove();
+      checkLuckyCatchAllGone();
+    });
+    fish.addEventListener("click", () => handleLuckyCatchTap(fish));
+    stage.appendChild(fish);
+  });
+}
+
+function handleLuckyCatchTap(fishEl) {
+  if (_luckyCatchResolved || fishEl.dataset.resolved) return;
+  if (fishEl.dataset.correct === "1") {
+    fishEl.dataset.resolved = "1";
+    _luckyCatchResolved = true;
+    fishEl.classList.add("hooked");
+    setTimeout(() => finishLuckyCatch(true), 650);
+  } else {
+    fishEl.dataset.resolved = "1";
+    fishEl.classList.add("escaped");
+    react("sad");
+    setTimeout(() => { fishEl.remove(); checkLuckyCatchAllGone(); }, 260);
+  }
+}
+
+function checkLuckyCatchAllGone() {
+  if (_luckyCatchResolved) return;
+  const stage = $("luckyCatchStage");
+  if (stage && stage.children.length === 0) finishLuckyCatch(false);
+}
+
+function finishLuckyCatch(success) {
+  _luckyCatchResolved = true;
+  const resultEl = $("luckyCatchResult");
+  if (success) {
+    state.coins += 8;
+    state.stars += 3;
+    state.fish  += 3; // small trickle-back — still a net sink vs the 15-fish entry
+    playSound("perfect");
+    confetti();
+    react("excited");
+    resultEl.textContent = currentLang === "ru"
+      ? "Отличный улов! +8 монет, +3 ⭐, +3 🐟"
+      : "Great catch! +8 coins, +3 ⭐, +3 fish";
+  } else {
+    playSound("wrong");
+    react("sad");
+    resultEl.textContent = currentLang === "ru"
+      ? "Рыба ушла — повезёт в следующий раз!"
+      : "It got away — better luck next time!";
+  }
+  resultEl.hidden = false;
+  checkAchievements();
+  save();
+  renderAll();
+  setTimeout(closeLuckyCatch, 2200);
+}
+
+function closeLuckyCatch() {
+  const modal = $("luckyCatchModal");
+  if (modal) modal.hidden = true;
+  const stage = $("luckyCatchStage");
+  if (stage) stage.innerHTML = "";
 }
 
 function finishMiniGame(caught, type) {
@@ -3354,7 +3676,8 @@ function checkAchievements() {
     state.level>=10, state.perfectTrips>=3, state.wrong>0&&state.correct>=20, state.solved>=150,
     state.animals.length>=5&&state.buildings.length>=5, state.buildings.length>=buildings.length,
     state.animals.length>=animals.length&&state.unlockedWorld>=7,
-    state.streak.longestStreak>=14, state.streak.longestStreak>=30
+    state.streak.longestStreak>=14, state.streak.longestStreak>=30,
+    Object.values(state.animalFeeds||{}).some(c => c >= 10)
   ];
   tests.forEach((ok,i) => {
     if (ok && !state.achievements.includes(i)) {
@@ -3580,6 +3903,35 @@ let _autoSaveInterval = null;
 function startTimer() {
   if (_autoSaveInterval) clearInterval(_autoSaveInterval);
   _autoSaveInterval = setInterval(() => { save(true); renderDashboard(); }, 30000);
+}
+
+// P13: pause/resume the "Time Played" clock based on whether the tab is
+// actually visible and focused, instead of counting wall-clock time
+// unconditionally. Flushes whatever time accrued while active before
+// freezing, and restarts the clock fresh on return (the hidden/unfocused
+// span itself is never counted).
+function pauseTimeTracking() {
+  if (!_pageActive) return;
+  state.timePlayed += Math.max(0, Math.floor((Date.now() - state.startedAt) / 1000));
+  _pageActive = false;
+  save(true);
+}
+
+function resumeTimeTracking() {
+  if (_pageActive) return;
+  _pageActive = true;
+  state.startedAt = Date.now();
+}
+
+let _timeTrackingBound = false;
+function attachTimeTracking() {
+  if (_timeTrackingBound) return;
+  _timeTrackingBound = true;
+  document.addEventListener("visibilitychange", () => {
+    if (document.hidden) pauseTimeTracking(); else resumeTimeTracking();
+  });
+  window.addEventListener("blur",  pauseTimeTracking);
+  window.addEventListener("focus", resumeTimeTracking);
 }
 
 function shuffle(arr) { return arr.sort(()=>Math.random()-.5); }
@@ -3847,7 +4199,7 @@ function importProgress() {
     // Support both old single-state format and new profile format
     const imported = raw.state || raw;
     if (!imported || typeof imported !== "object") throw new Error("Invalid save");
-    state = { ...defaultState(), ...imported };
+    state = { ...defaultState(), ...imported, startedAt: Date.now() };
     const curr = getActiveProfile();
     if (curr) { curr.state = state; saveProfiles(profiles); }
     selectedWorld = Math.min(state.unlockedWorld, worlds.length-1);
@@ -4026,6 +4378,7 @@ const STRINGS = {
     unequip:"Unequip",
     volumeLabel:"Volume",
     equippedOnSausage:"Equipped on Sausage.", ownedEquipInMySeal:"Owned. Equip it in My Seal.",
+    ownedTapToEquip:"Owned. Tap to equip.",
     visibleReward:"A visible reward for Sausage.", unlockedAndEquipped:"unlocked and equipped!",
     // Town
     arcticTown:"Arctic Town", townDesc:"Buildings appear as Sausage earns stars and rescues friends.",
@@ -4127,6 +4480,7 @@ const STRINGS = {
     unequip:"Снять",
     volumeLabel:"Громкость",
     equippedOnSausage:"Надето на Тюленя.", ownedEquipInMySeal:"Куплено. Надень в разделе «Мой Тюлень».",
+    ownedTapToEquip:"Куплено. Нажми, чтобы надеть.",
     visibleReward:"Заметная награда для Тюленя.", unlockedAndEquipped:"открыт и надет!",
     // Town
     arcticTown:"Арктический город", townDesc:"Здания появляются по мере зарабатывания звёзд и спасения друзей.",

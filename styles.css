@@ -300,6 +300,21 @@ button { font: inherit; color: inherit; }
   overflow: hidden;
   background: linear-gradient(#bff5ff 0 45%, #34bfd9 45% 100%);
 }
+/* P15: per-island watermark emblem — sits behind everything, low opacity,
+   purely decorative, reuses the island's own existing map-icon art.
+   Positioned below the back-to-map button and the mission trail strip
+   (both occupy the very top of the scene) and well above the iceberg. */
+.challenge-watermark {
+  position: absolute;
+  top: 58px;
+  left: 14px;
+  width: 90px;
+  height: auto;
+  opacity: .22;
+  z-index: 1;
+  pointer-events: none;
+}
+.challenge-watermark svg { width: 100%; height: 100%; display: block; }
 .iceberg {
   position: absolute;
   width: 210px;
@@ -507,6 +522,63 @@ button { font: inherit; color: inherit; }
 @keyframes miniSwim { to { transform: translateX(var(--swim-dist, 1150px)); } }
 .mini-target { animation-duration: var(--swim-dur, 5500ms); }
 
+/* P14: Lucky Catch bonus game — fish-gated math bonus round (the fish sink) */
+.lucky-catch-overlay {
+  position: fixed; inset: 0; z-index: 65;
+  background: rgba(16,60,100,.5);
+  display: flex; align-items: center; justify-content: center;
+  padding: 16px; backdrop-filter: blur(4px);
+}
+.lucky-catch-overlay[hidden] { display: none !important; pointer-events: none !important; }
+.lucky-catch-box {
+  background: #fff; border-radius: 28px; padding: 24px 20px;
+  width: 100%; max-width: 420px;
+  box-shadow: 0 28px 70px rgba(0,0,0,.22);
+  border: 4px solid #9be8ff;
+  text-align: center; position: relative;
+}
+.lucky-catch-box h2 { margin: 0 0 10px; font-size: 1.3rem; color: var(--deep); }
+.lucky-catch-close {
+  position: absolute; top: 12px; right: 12px;
+  width: 32px; height: 32px; border-radius: 50%;
+  border: 0; background: #eef7fb; color: var(--deep);
+  font-weight: 900; cursor: pointer;
+}
+.lucky-catch-problem { font-weight: 900; font-size: 1.15rem; color: var(--deep); margin: 0 0 12px; }
+.lucky-catch-stage {
+  position: relative; height: 220px; overflow: hidden;
+  border: 3px solid #fff; border-radius: 18px;
+  background: linear-gradient(#9befff 0 42%, #18a9ce 42% 100%);
+  margin-bottom: 10px;
+}
+.lucky-catch-result { font-weight: 900; color: var(--deep); min-height: 1.4em; margin: 6px 0 0; }
+.lucky-fish {
+  position: absolute; left: -90px; width: 64px; height: 34px;
+  border: 0; background: transparent; padding: 0; cursor: pointer;
+  animation: miniSwim linear forwards;
+}
+/* the shorthand above has no duration value, which resets animation-duration
+   to its initial 0s — this rule restores it from the per-fish custom
+   property set in JS, same pattern .mini-target uses for the other
+   mini-games. Without this, every fish "finished swimming" instantly. */
+.lucky-fish { animation-duration: var(--swim-dur, 4500ms); }
+.lucky-fish svg { width: 100%; height: 100%; display: block; position: absolute; inset: 0; }
+.lucky-fish-num {
+  position: absolute; inset: 0; display: flex; align-items: center; justify-content: center;
+  font-weight: 1000; font-size: .95rem; color: #6a3a00; text-shadow: 0 1px 0 rgba(255,255,255,.6);
+}
+.lucky-fish.hooked {
+  animation-play-state: paused;
+  transform: scale(1.3);
+  filter: drop-shadow(0 0 8px #ffd45a);
+  transition: transform .25s;
+}
+.lucky-fish.escaped {
+  opacity: 0; transform: scale(.6);
+  transition: opacity .25s, transform .25s;
+}
+.lucky-catch-entry-btn { margin-top: 10px; }
+
 .section-head { padding: 18px; margin-bottom: 14px; }
 .section-head.compact { margin-top: 16px; }
 .town-grid, .album-grid, .shop-grid, .achievement-grid, .closet-grid {
@@ -668,9 +740,23 @@ button { font: inherit; color: inherit; }
   cursor: pointer;
 }
 .buy-row button:disabled { background: #d6e4ea; cursor: default; }
+/* P14: feed-friends row in the Album */
+.feed-row { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-top: 12px; }
+.feed-btn {
+  border: 0; border-radius: 12px; background: var(--mint);
+  padding: 8px 12px; font-weight: 1000; cursor: pointer; font-size: .92rem;
+}
+.feed-btn:disabled { background: #d6e4ea; cursor: default; }
+.feed-count { font-size: .82rem; font-weight: 800; color: var(--muted); }
 .achievement-grid { grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); }
 .achievement { min-height: 92px; }
 .achievement.unlocked { background: #fff4c9; }
+.achievement-badge {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 40px; height: 40px; border-radius: 50%;
+  background: #eef7fb; font-size: 1.3rem; margin-bottom: 6px;
+}
+.achievement.unlocked .achievement-badge { background: #ffe9a8; }
 
 .daily-wrap { display: grid; grid-template-columns: minmax(260px, 1fr) 1.3fr; gap: 16px; }
 .daily-card { padding: 22px; }
@@ -2338,13 +2424,22 @@ body.learning-mode .problem-box h2 {
 /* Bar chart */
 .topic-bar-chart {
   display: grid;
-  gap: 8px;
+  gap: 10px;
+  /* P12: previously unconstrained — on a wide desktop window the 1fr track
+     below stretched to fill the whole dashboard width, leaving a huge gap
+     before the percentage. Capping the chart keeps bar length proportionate
+     to what it's showing, same as it already looks on mobile. */
+  max-width: 640px;
 }
 .topic-bar-row {
   display: grid;
-  grid-template-columns: 110px 1fr 48px;
+  /* P12: label column was a fixed 110px, which clipped longer topic names
+     ("Subtraction within 100", "Reverse multiplication") regardless of how
+     much spare width the row had. minmax lets it grow on screens with room
+     while still capping so it doesn't crowd out the bar on narrow ones. */
+  grid-template-columns: minmax(130px, 230px) 1fr 50px;
   align-items: center;
-  gap: 8px;
+  gap: 10px;
 }
 .topic-bar-label {
   font-size: .8rem;

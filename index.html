@@ -245,6 +245,7 @@
         <div class="section-head">
           <h2>Arctic Town</h2>
           <p>Buildings appear as Sausage earns stars and rescues friends.</p>
+          <button class="secondary lucky-catch-entry-btn" id="luckyCatchEntryBtn">🎣 Go Fishing</button>
         </div>
         <div class="town-scene" id="townScene"></div>
         <div class="town-grid" id="townGrid"></div>
@@ -380,6 +381,17 @@
 
   <!-- P8: Building celebration overlay -->
   <div class="building-celebration" id="buildingCelebration" hidden aria-live="polite"></div>
+
+  <!-- P14: LUCKY CATCH BONUS GAME — fish-gated bonus round, the main fish sink -->
+  <div class="lucky-catch-overlay" id="luckyCatchModal" hidden role="dialog" aria-labelledby="luckyCatchTitle">
+    <div class="lucky-catch-box">
+      <button class="lucky-catch-close" id="luckyCatchClose" aria-label="Close">✕</button>
+      <h2 id="luckyCatchTitle">🎣 Lucky Catch</h2>
+      <p class="lucky-catch-problem" id="luckyCatchProblem"></p>
+      <div class="lucky-catch-stage" id="luckyCatchStage"></div>
+      <p class="lucky-catch-result" id="luckyCatchResult" hidden></p>
+    </div>
+  </div>
 
   <!-- P3: Onboarding modal -->
   <div class="onboarding-modal" id="onboardingModal" hidden role="dialog" aria-labelledby="onboardTitle">
