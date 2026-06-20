@@ -347,6 +347,27 @@ button { font: inherit; color: inherit; }
   transition: left .6s cubic-bezier(.34,1.56,.64,1);
   filter: drop-shadow(0 2px 4px rgba(0,40,60,.3));
 }
+/* S15: storm boss mode (mission 5, "Calm the Storm") — darkens with mistakes,
+   clears with correct answers, flashes gold when fully calmed. Sits above
+   everything else in the scene but never fully blocks it (max ~65% dark). */
+.storm-overlay {
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(circle at 50% 30%, rgba(60,75,95,.15), rgba(18,28,42,.78));
+  opacity: 0;
+  transition: opacity .6s ease;
+  pointer-events: none;
+  z-index: 3;
+  border-radius: inherit;
+}
+.storm-overlay.calm-flash {
+  animation: storm-clear-flash 1.3s ease forwards;
+}
+@keyframes storm-clear-flash {
+  0%   { opacity: .55; }
+  35%  { opacity: .95; background: radial-gradient(circle at 50% 30%, rgba(255,228,150,.92), rgba(255,228,150,.18)); }
+  100% { opacity: 0; }
+}
 .small-seal { position: absolute; width: 190px; right: 20px; bottom: 24px; animation: bob 2.6s ease-in-out infinite; }
 .fish {
   position: absolute;

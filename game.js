@@ -217,6 +217,9 @@ const animals = [
 
 const buildings = ["Fish Market","Lighthouse","Aquarium","Seal House","Penguin Village","Harbor","Arctic Museum","Ice Castle"]
   .map((name,i) => ({ id:i, name, cost:(i+1)*3 }));
+// S13: RU names — were never translated; the ghost-silhouette badge in Town
+// and now the Build-mission goal icon both show this name to the player.
+const buildingNamesRu = ["Рыбный рынок","Маяк","Океанариум","Дом тюленей","Деревня пингвинов","Гавань","Арктический музей","Ледяной замок"];
 
 const shop = [
   ["Pirate Seal",   20,"costume","pirate"],
@@ -431,7 +434,7 @@ function loadProfileState(profile) {
 let state = defaultState();
 let selectedWorld = 0;
 let currentProblem = null;
-let trip = { active:false, world:0, mission:0, solved:0, needed:3, correct:0, daily:false, mistakes:0 };
+let trip = { active:false, world:0, mission:0, solved:0, needed:3, correct:0, daily:false, mistakes:0, stormIntensity:100 };
 let audioReady = false;
 let audioCtx = null;
 let miniGameTimer = null;
@@ -1257,17 +1260,19 @@ function dialogFor(world, mission) {
   // arc: a faint distant voice, then them speaking for themselves while
   // stranded, then a grateful companion — closing the loop with the
   // "storm scattered everyone" premise from onboarding.
+  const nb = nextBuilding();
+  const buildLabel = nb ? buildingName(nb) : (currentLang === "ru" ? "город" : "the town");
   const linesEn = [
     `${world.character}: I hear something out there, Sausage — almost like a tiny cry on the wind. Let's follow the clues.`,
     `${world.character}: Over here! I'm stuck and so cold... three good answers and that sled will reach me!`,
-    `${world.character}: Phew, thank you! Now let's build something warm for whoever the storm scattered next.`,
+    `${world.character}: Phew, thank you! Let's help build the ${buildLabel} for whoever the storm scattered next.`,
     `${world.character}: I spotted something shiny while I was waiting to be found. Let's dig it out together!`,
     `${world.character}: One more push, Sausage. After this, the storm that scattered us all will finally rest.`
   ];
   const linesRu = [
     `${world.character}: Я что-то слышу, Тюлень — будто тихий зов на ветру. Пойдём по следам.`,
     `${world.character}: Я тут! Застрял и так замёрз... три верных ответа — и нарты доберутся до меня!`,
-    `${world.character}: Уф, спасибо! Теперь построим что-то тёплое для тех, кого буря разбросала вслед за мной.`,
+    `${world.character}: Уф, спасибо! Поможем построить «${buildLabel}» для тех, кого буря разбросала вслед за мной.`,
     `${world.character}: Я заметил что-то блестящее, пока ждал спасения. Давай выкопаем это вместе!`,
     `${world.character}: Ещё немного, Тюлень. После этого буря, что разбросала всех нас, наконец утихнет.`
   ];
@@ -1291,10 +1296,16 @@ function startMission(daily) {
   if (miniGameTimer) { clearTimeout(miniGameTimer); miniGameTimer = null; }
   switchView("adventure");
   const mission = daily ? 0 : nextMission();
-  trip = { active:true, world:selectedWorld, mission, solved:0, needed:5+(mission>2?2:0), correct:0, daily, mistakes:0 };
+  trip = { active:true, world:selectedWorld, mission, solved:0, needed:5+(mission>2?2:0), correct:0, daily, mistakes:0, stormIntensity:100 };
   $("challenge").hidden = false;
   $("miniGame").hidden  = true;
   $("challenge").scrollIntoView({ behavior: "smooth", block: "start" });
+  const stormEl = $("stormOverlay");
+  if (stormEl) {
+    stormEl.classList.remove("calm-flash");
+    stormEl.hidden = mission !== 4;
+    stormEl.style.opacity = mission === 4 ? "1" : "0";
+  }
   // Back-to-map button — recreate fresh each time, overlay on the scene
   const old = $("backToMapBtn");
   if (old) old.remove();
@@ -1317,13 +1328,38 @@ function startMission(daily) {
 // S11: goal icon for the mission trail — mission 1 (Rescue a Friend) shows
 // the actual friend waiting on this island; other mission types get a
 // generic icon matching their theme. Same trail/marker works for all of them.
+function nextBuilding() { return buildings.find(b => !state.buildings.includes(b.id)); }
+function buildingName(b) { return currentLang === "ru" ? (buildingNamesRu[b.id] || b.name) : b.name; }
+
 function missionGoalIcon(world, mission) {
   if (mission === 1) return animalSvg(world.animal);
-  return ["🔍","🏗️","🎁","☀️"][mission] || "🏁";
+  if (mission === 2) { const nb = nextBuilding(); if (nb) return buildingSvg(nb.id); }
+  // S13: was `["🔍","🏗️","🎁","☀️"][mission]` — a plain index lookup that
+  // silently shifted by one for every mission after 1 (which returns above
+  // before reaching this array), so Build showed a gift, Treasure showed a
+  // sun, and Storm fell through to the "🏁" fallback. Explicit keys instead.
+  const icons = { 0:"🔍", 2:"🏗️", 3:"🎁", 4:"☀️" };
+  return icons[mission] || "🏁";
 }
 
 function missionTrailPos(solved, needed) {
   return 8 + Math.min(1, solved / needed) * 84; // % across the track, clear of start/goal icons
+}
+
+// S15: storm boss mode helpers — progress here is driven by stormIntensity
+// (clamped 0-100), not the usual solved/needed ratio, since mistakes can
+// push it back up. Reuses the exact same trail/marker as every other mission.
+function stormTrailPos() {
+  return 8 + Math.min(1, Math.max(0, (100 - trip.stormIntensity) / 100)) * 84;
+}
+function adjustStorm(delta) {
+  trip.stormIntensity = Math.max(0, Math.min(100, trip.stormIntensity + delta));
+  const el = $("stormOverlay");
+  if (el) el.style.opacity = String((trip.stormIntensity / 100) * 0.78);
+  $("missionTrailMarker").style.left = `${stormTrailPos()}%`;
+  $("questionsLeft").textContent = currentLang === "ru"
+    ? `🌪️ Буря: ${Math.round(trip.stormIntensity)}%`
+    : `🌪️ Storm: ${Math.round(trip.stormIntensity)}%`;
 }
 
 function makeProblem() {
@@ -1337,9 +1373,16 @@ function makeProblem() {
     ? `${wName} - ${details.title}<span class="learn-ru">${topicLabelLearn(topic)}</span>`
     : `${wName} - ${details.title}`;
   $("missionTitle").textContent  = trip.daily ? t("dailyRescue") : `${t("missionOf")} ${trip.mission+1}: ${details.title}`;
-  $("questionsLeft").textContent = `${Math.max(0, trip.needed-trip.solved)} ${t("questionsLeft")}`;
+  if (trip.mission === 4) {
+    $("questionsLeft").textContent = currentLang === "ru"
+      ? `🌪️ Буря: ${Math.round(trip.stormIntensity)}%`
+      : `🌪️ Storm: ${Math.round(trip.stormIntensity)}%`;
+    $("missionTrailMarker").style.left = `${stormTrailPos()}%`;
+  } else {
+    $("questionsLeft").textContent = `${Math.max(0, trip.needed-trip.solved)} ${t("questionsLeft")}`;
+    $("missionTrailMarker").style.left = `${missionTrailPos(trip.solved, trip.needed)}%`;
+  }
   $("missionTrailGoal").innerHTML = missionGoalIcon(world, trip.mission);
-  $("missionTrailMarker").style.left = `${missionTrailPos(trip.solved, trip.needed)}%`;
   $("problemText").textContent   = currentProblem.text;
   $("hintText").hidden           = true;
   $("hintText").textContent      = currentProblem.hint;
@@ -1769,15 +1812,21 @@ function answer(value, btn) {
     playSound("correct");
     speak("correct");
     toast(encouragement());
-    $("questionsLeft").textContent = `${Math.max(0, trip.needed-trip.solved)} ${t("questionsLeft")}`;
-    $("missionMeter").style.width  = `${Math.round((trip.solved/trip.needed)*100)}%`;
-    $("missionTrailMarker").style.left = `${missionTrailPos(trip.solved, trip.needed)}%`;
     announceResult(true, currentProblem.answer, currentProblem.topic);
-    setTimeout(() => trip.solved >= trip.needed ? completeMission() : makeProblem(), 860);
+    if (trip.mission === 4) {
+      adjustStorm(-18);
+      setTimeout(() => trip.stormIntensity <= 0 ? clearStorm() : makeProblem(), 860);
+    } else {
+      $("questionsLeft").textContent = `${Math.max(0, trip.needed-trip.solved)} ${t("questionsLeft")}`;
+      $("missionMeter").style.width  = `${Math.round((trip.solved/trip.needed)*100)}%`;
+      $("missionTrailMarker").style.left = `${missionTrailPos(trip.solved, trip.needed)}%`;
+      setTimeout(() => trip.solved >= trip.needed ? completeMission() : makeProblem(), 860);
+    }
   } else {
     state.wrong++;
     state.topics[topic].wrong++;
     trip.mistakes++;
+    if (trip.mission === 4) adjustStorm(9);
     react("sad");
     playSound("wrong");
     speak("wrong");
@@ -1879,6 +1928,20 @@ function gainRewards() {
   }
 }
 
+// S15: storm fully calmed — let the flash play, say something fitting,
+// then fall through to the exact same completeMission() every other
+// mission uses (rewards/unlocks/buildings all stay identical).
+function clearStorm() {
+  const el = $("stormOverlay");
+  if (el) { el.classList.add("calm-flash"); }
+  playSound("perfect");
+  toast(currentLang === "ru" ? "Буря стихла! ☀️" : "The storm has calmed! ☀️");
+  setTimeout(() => {
+    if (el) { el.hidden = true; el.classList.remove("calm-flash"); }
+    completeMission();
+  }, 1100);
+}
+
 function completeMission() {
   $("challenge").hidden = true;
   if (trip.mistakes === 0) state.perfectTrips++;
@@ -1905,7 +1968,12 @@ function completeMission() {
     } else {
       // P8: tell player how many stars they still need
       const next = buildings.find(b => !state.buildings.includes(b.id));
-      if (next) toast(`Need ${Math.max(0, next.cost - state.stars)} more stars to build ${next.name}!`);
+      if (next) {
+        const need = Math.max(0, next.cost - state.stars);
+        toast(currentLang === "ru"
+          ? `Ещё ${need} ⭐ до постройки: ${buildingName(next)}!`
+          : `Need ${need} more stars to build ${buildingName(next)}!`);
+      }
     }
   }
   if (newDone >= 4 && Math.random() < .35) {
@@ -2135,14 +2203,17 @@ function showReward(animal, building, rare) {
 // left, so the scene always promises something instead of just listing it
 // in a separate grid below.
 function townGhostHtml(positions) {
-  const next = buildings.find(b => !state.buildings.includes(b.id));
+  const next = nextBuilding();
   if (!next) return "";
   const [left, top] = positions[next.id];
   const finale = next.id === 7 ? " is-finale" : "";
   const need = Math.max(0, next.cost - state.stars);
+  const badge = currentLang === "ru"
+    ? `⭐ ${need} до постройки: ${buildingName(next)}`
+    : `⭐ ${need} to build ${buildingName(next)}`;
   return `<div class="town-ghost-wrap${finale}" style="left:${left}%;top:${top}%" aria-hidden="true">
     <div class="town-building-ghost">${buildingSvg(next.id)}</div>
-    <div class="town-ghost-badge">⭐ ${need} to build ${next.name}</div>
+    <div class="town-ghost-badge">${badge}</div>
   </div>`;
 }
 
@@ -3211,39 +3282,112 @@ function playSound(type) {
   notes.forEach((freq,i) => setTimeout(()=>tone(freq,.08+i*.01,wave),i*90));
 }
 
-// S10: background music — eight short looping motifs, one per world, matching
-// the `music` mood label already sitting unused on each world object since
-// the game's early design (e.g. "bright bells", "royal horns"). Quiet,
-// procedural, no audio files — same philosophy as the SFX engine.
-const worldMelodies = [
-  { notes:[784,880,988,880],  wave:"sine",     tempo:480 }, // 0 Snow Beach — bright bells
-  { notes:[523,659,523,392],  wave:"triangle", tempo:300 }, // 1 Fish Bay — bouncy marimba
-  { notes:[440,523,392,349],  wave:"sine",     tempo:700 }, // 2 Whale Coast — slow ocean chimes
-  { notes:[330,330,440,330],  wave:"square",   tempo:260 }, // 3 Penguin Islands — tap-dance drums
-  { notes:[294,311,262,233],  wave:"sine",     tempo:520 }, // 4 Octopus Cave — mysterious bubbles
-  { notes:[659,784,880,1046], wave:"triangle", tempo:340 }, // 5 Polar Academy — sparkly classroom
-  { notes:[220,277,330,277],  wave:"square",   tempo:420 }, // 6 Northern Kingdom — royal horns
-  { notes:[523,659,784,1046], wave:"square",   tempo:300 }, // 7 Arctic Champion — victory fanfare
-];
-let musicTimer = null;
-let musicWorld = null;
+// S14: ambient soundscape — replaces the short melodic loop (at speed it
+// read as a tick-tock) with gentle recurring waves plus sparse creature
+// calls that vary per world. Timers reschedule themselves with randomized
+// jitter rather than a fixed interval, so nothing repeats on a metronome.
+function createNoiseBuffer(seconds) {
+  const size   = Math.floor(audioCtx.sampleRate * seconds);
+  const buffer = audioCtx.createBuffer(1, size, audioCtx.sampleRate);
+  const data   = buffer.getChannelData(0);
+  for (let i = 0; i < size; i++) data[i] = Math.random() * 2 - 1;
+  return buffer;
+}
+
+function playWaveSound() {
+  const now = audioCtx.currentTime;
+  const dur = 2 + Math.random() * 1.2;
+  const src = audioCtx.createBufferSource();
+  src.buffer = createNoiseBuffer(dur);
+  const filter = audioCtx.createBiquadFilter();
+  filter.type = "lowpass";
+  filter.frequency.value = 450 + Math.random() * 300;
+  const gain = audioCtx.createGain();
+  gain.gain.setValueAtTime(.0001, now);
+  gain.gain.exponentialRampToValueAtTime(.035, now + dur * 0.4);
+  gain.gain.exponentialRampToValueAtTime(.0001, now + dur);
+  src.connect(filter).connect(gain).connect(audioCtx.destination);
+  src.start(now);
+  src.stop(now + dur + .1);
+}
+
+const worldAmbience = ["gull","gull","whale","penguin","bubble","chime","horn","fanfare"];
+
+function playCritterCall(kind) {
+  const now  = audioCtx.currentTime;
+  const osc  = audioCtx.createOscillator();
+  const gain = audioCtx.createGain();
+  osc.connect(gain).connect(audioCtx.destination);
+  const fire = (vol, len) => {
+    gain.gain.setValueAtTime(.0001, now);
+    gain.gain.exponentialRampToValueAtTime(vol, now + .025);
+    gain.gain.exponentialRampToValueAtTime(.0001, now + len);
+    osc.start(now);
+    osc.stop(now + len + .05);
+  };
+  if (kind === "penguin") {
+    osc.type = "sawtooth";
+    osc.frequency.setValueAtTime(320, now);
+    osc.frequency.exponentialRampToValueAtTime(220, now + .12);
+    osc.frequency.exponentialRampToValueAtTime(300, now + .24);
+    fire(.045, .28);
+  } else if (kind === "whale") {
+    osc.type = "sine";
+    osc.frequency.setValueAtTime(180, now);
+    osc.frequency.exponentialRampToValueAtTime(110, now + 1.1);
+    fire(.05, 1.3);
+  } else if (kind === "bubble") {
+    osc.type = "sine";
+    osc.frequency.setValueAtTime(700, now);
+    osc.frequency.exponentialRampToValueAtTime(1400, now + .15);
+    fire(.04, .18);
+  } else if (kind === "chime") {
+    osc.type = "triangle";
+    osc.frequency.setValueAtTime(1318, now);
+    fire(.045, .5);
+  } else if (kind === "horn") {
+    osc.type = "square";
+    osc.frequency.setValueAtTime(196, now);
+    osc.frequency.exponentialRampToValueAtTime(247, now + .3);
+    fire(.04, .55);
+  } else if (kind === "fanfare") {
+    osc.type = "square";
+    osc.frequency.setValueAtTime(523, now);
+    osc.frequency.exponentialRampToValueAtTime(784, now + .3);
+    fire(.045, .4);
+  } else { // gull — default
+    osc.type = "sine";
+    osc.frequency.setValueAtTime(2100, now);
+    osc.frequency.exponentialRampToValueAtTime(3000, now + .09);
+    osc.frequency.exponentialRampToValueAtTime(1900, now + .2);
+    fire(.05, .22);
+  }
+}
+
+let waveTimer    = null;
+let critterTimer = null;
+let musicWorld   = null;
 
 function startWorldMusic(worldId) {
-  if (musicWorld === worldId && musicTimer) return; // already playing this island's loop
+  if (musicWorld === worldId && (waveTimer || critterTimer)) return; // already ambient for this island
   stopWorldMusic();
   musicWorld = worldId;
   if (!audioReady) return;
-  const m = worldMelodies[worldId] || worldMelodies[0];
-  let step = 0;
-  musicTimer = setInterval(() => {
-    if (state.muted) return;
-    tone(m.notes[step % m.notes.length], (m.tempo/1000)*0.85, m.wave, .045);
-    step++;
-  }, m.tempo);
+  const scheduleWave = () => {
+    if (!state.muted) playWaveSound();
+    waveTimer = setTimeout(scheduleWave, 2400 + Math.random() * 1800);
+  };
+  const scheduleCritter = () => {
+    if (!state.muted) playCritterCall(worldAmbience[worldId] || "gull");
+    critterTimer = setTimeout(scheduleCritter, 11000 + Math.random() * 9000); // periodic, not frequent
+  };
+  waveTimer    = setTimeout(scheduleWave, 600);
+  critterTimer = setTimeout(scheduleCritter, 4000 + Math.random() * 4000);
 }
 
 function stopWorldMusic() {
-  if (musicTimer) { clearInterval(musicTimer); musicTimer = null; }
+  if (waveTimer)    { clearTimeout(waveTimer);    waveTimer = null; }
+  if (critterTimer) { clearTimeout(critterTimer); critterTimer = null; }
   musicWorld = null;
 }
 
