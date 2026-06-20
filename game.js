@@ -241,7 +241,8 @@ const achievementNames = [
   "Master of Subtraction","Master of Multiplication","Division Diver","Pattern Finder","Equation Explorer",
   "Word Problem Wizard","Perfect Trip","Fast Flipper","Daily Visitor","Three Day Streak","Seven Day Streak",
   "Costume Collector","Pet Pal","Coin Spender","Star Saver","Fish Feast","Level 5","Level 10",
-  "No Mistake Run","Comeback Kid","Super Solver","Guardian Helper","Town Complete","Guardian of the Arctic"
+  "No Mistake Run","Comeback Kid","Super Solver","Guardian Helper","Town Complete","Guardian of the Arctic",
+  "Two Week Streak","One Month Streak"
 ];
 
 // ─── Daily special names ─────────────────────────────────────────────────────
@@ -413,6 +414,7 @@ function switchToProfile(id) {
   state = loadProfileState(prof);
   currentLang = prof.lang || "en";
   selectedWorld = Math.min(state.unlockedWorld, worlds.length - 1);
+  parentGateVerified = false; // re-lock the Parent tab for the newly active player
 }
 
 function loadProfileState(profile) {
@@ -434,10 +436,12 @@ function loadProfileState(profile) {
 let state = defaultState();
 let selectedWorld = 0;
 let currentProblem = null;
-let trip = { active:false, world:0, mission:0, solved:0, needed:3, correct:0, daily:false, mistakes:0, stormIntensity:100 };
+let trip = { active:false, world:0, mission:0, solved:0, needed:3, correct:0, daily:false, mistakes:0, stormIntensity:100, combo:0 };
 let audioReady = false;
 let audioCtx = null;
 let miniGameTimer = null;
+let parentGateVerified = false; // re-armed each app load and on profile switch
+let parentGateAnswer = null;
 
 function $(id) { return document.getElementById(id); }
 
@@ -450,10 +454,10 @@ function defaultState() {
     fish:0, coins:0, stars:0, xp:0, level:1, unlockedWorld:0,
     solved:0, correct:0, wrong:0, timePlayed:0, startedAt:Date.now(),
     topics, buildings:[], animals:[], shop:[], achievements:[],
-    muted:false, volume:1.0, streak:{ count:0, last:"", days:[] }, daily:{ date:"", solved:0, claimed:false },
+    muted:false, volume:1.0, streak:{ count:0, last:"", days:[], freezeTokens:1, longestStreak:0 }, daily:{ date:"", solved:0, claimed:false },
     hintsUsed:0, perfectTrips:0, missions:{}, equipped:{ costume:null, accessory:null, pet:null },
     miniGamesPlayed:0, rareTreasures:0, visitors:[], specialCosmetics:[],
-    dialogueHistory:[], dailySpecial:"", doubleRewardsUntil:0, mysteryVisits:0,
+    dialogueHistory:{}, dailySpecial:"", doubleRewardsUntil:0, mysteryVisits:0,
     onboarded: false, gameVersion: GAME_VERSION
   };
 }
@@ -1081,6 +1085,13 @@ function attachEvents() {
   const restoreBtn = $("restoreCodeBtn");
   if (codeBtn)    codeBtn.addEventListener("click",    copySaveCode);
   if (restoreBtn) restoreBtn.addEventListener("click", restoreFromCode);
+  // P11: parental gate (math-problem check before entering Parent dashboard)
+  const gateSubmit = $("parentGateSubmit");
+  const gateCancel = $("parentGateCancel");
+  const gateInput  = $("parentGateInput");
+  if (gateSubmit) gateSubmit.addEventListener("click", submitParentGate);
+  if (gateCancel) gateCancel.addEventListener("click", closeParentGate);
+  if (gateInput)  gateInput.addEventListener("keydown", e => { if (e.key === "Enter") submitParentGate(); });
   // P10: keyboard navigation for answer buttons (delegated)
   $("answers").addEventListener("keydown", e => {
     const btns = [...$("answers").querySelectorAll(".answer:not([disabled])")];
@@ -1101,6 +1112,11 @@ const SECTION_RENDERERS = {
 };
 
 function switchView(id) {
+  // P11: simple parental gate — a quick math problem only an adult/older
+  // child could reliably solve, shown once per app session (or until the
+  // active profile changes). Keeps curious kids from wandering into the
+  // Parent dashboard/reset tools without needing a stored PIN to manage.
+  if (id === "parent" && !parentGateVerified) { showParentGate(); return; }
   document.querySelectorAll(".tab").forEach(t => t.classList.toggle("active", t.dataset.view === id));
   document.querySelectorAll(".view").forEach(v => v.classList.toggle("active", v.id === id));
   if (id === "town") speak("town");
@@ -1109,6 +1125,42 @@ function switchView(id) {
   renderHeader();
   const renderer = SECTION_RENDERERS[id];
   if (renderer) renderer();
+}
+
+function showParentGate() {
+  const a = 6 + Math.floor(Math.random()*4);  // 6-9
+  const b = 7 + Math.floor(Math.random()*5);  // 7-11
+  parentGateAnswer = a * b;
+  const q = $("parentGateQuestion");
+  if (q) q.textContent = currentLang === "ru"
+    ? `Чтобы продолжить, решите: ${a} × ${b} = ?`
+    : `To continue, solve: ${a} × ${b} = ?`;
+  const input = $("parentGateInput");
+  if (input) input.value = "";
+  const err = $("parentGateError");
+  if (err) err.hidden = true;
+  const modal = $("parentGateModal");
+  if (modal) modal.hidden = false;
+  setTimeout(() => $("parentGateInput")?.focus(), 60);
+}
+
+function closeParentGate() {
+  const modal = $("parentGateModal");
+  if (modal) modal.hidden = true;
+}
+
+function submitParentGate() {
+  const input = $("parentGateInput");
+  const val = Number(input ? input.value : NaN);
+  if (val === parentGateAnswer) {
+    parentGateVerified = true;
+    closeParentGate();
+    switchView("parent");
+  } else {
+    const err = $("parentGateError");
+    if (err) err.hidden = false;
+    react("sad");
+  }
 }
 
 // ─── Render ──────────────────────────────────────────────────────────────────
@@ -1310,7 +1362,7 @@ function startMission(daily) {
   if (miniGameTimer) { clearTimeout(miniGameTimer); miniGameTimer = null; }
   switchView("adventure");
   const mission = daily ? 0 : nextMission();
-  trip = { active:true, world:selectedWorld, mission, solved:0, needed:5+(mission>2?2:0), correct:0, daily, mistakes:0, stormIntensity:100 };
+  trip = { active:true, world:selectedWorld, mission, solved:0, needed:5+(mission>2?2:0), correct:0, daily, mistakes:0, stormIntensity:100, combo:0 };
   $("challenge").hidden = false;
   $("miniGame").hidden  = true;
   $("challenge").scrollIntoView({ behavior: "smooth", block: "start" });
@@ -1831,12 +1883,15 @@ function answer(value, btn) {
     state.topics[topic].correct++;
     trip.correct++;
     trip.solved++;
-    gainRewards();
+    trip.combo = (trip.combo || 0) + 1;
+    const reward  = gainRewards();
+    const comboMsg = comboCelebration(trip.combo);
     animateFish();
     react("happy");
     playSound("correct");
     speak("correct");
-    toast(encouragement());
+    if (comboMsg) { toast(comboMsg); playSound("achievement"); }
+    else           toast(encouragement(reward));
     announceResult(true, currentProblem.answer, currentProblem.topic);
     if (trip.mission === 4) {
       adjustStorm(-18);
@@ -1851,6 +1906,7 @@ function answer(value, btn) {
     state.wrong++;
     state.topics[topic].wrong++;
     trip.mistakes++;
+    trip.combo = 0;
     if (trip.mission === 4) adjustStorm(9);
     react("sad");
     playSound("wrong");
@@ -1941,16 +1997,24 @@ function announceResult(correct, answer, topic) {
 
 function gainRewards() {
   const mult = Date.now() < (state.doubleRewardsUntil||0) ? 2 : 1;
-  state.fish  += 4 * mult;
-  state.coins += 2 * mult;
-  state.stars += 1 * mult;
-  state.xp    += 18 * mult;
+  // P11: small randomization (0.8x-1.3x) so identical actions don't pay out
+  // identically every time — keeps rewards feeling alive instead of mechanical.
+  const vary = base => Math.max(1, Math.round(base * (0.8 + Math.random()*0.5))) * mult;
+  const fishGain  = vary(4);
+  const coinsGain = vary(2);
+  const starsGain = vary(1);
+  const xpGain    = vary(18);
+  state.fish  += fishGain;
+  state.coins += coinsGain;
+  state.stars += starsGain;
+  state.xp    += xpGain;
   while (state.xp >= 100) {
     state.xp -= 100;
     state.level++;
     playSound("level");
     toast(`Level ${state.level}! 🎉`);
   }
+  return { fish:fishGain, coins:coinsGain, stars:starsGain, xp:xpGain };
 }
 
 // S15: storm fully calmed — let the flash play, say something fitting,
@@ -2059,8 +2123,28 @@ function celebrateBuilding(building) {
   }, 600);
 }
 
-function encouragement() {
-  return ["Sausage splashes ahead!","Great rescue move!","+4 fish, +2 coins, +1 star","The island gets brighter!","Nice thinking!"][Math.floor(Math.random()*5)];
+function encouragement(reward) {
+  const rewardLine = reward
+    ? (currentLang === "ru"
+        ? `+${reward.fish} рыбок, +${reward.coins} монет, +${reward.stars} ⭐`
+        : `+${reward.fish} fish, +${reward.coins} coins, +${reward.stars} star${reward.stars===1?"":"s"}`)
+    : (currentLang === "ru" ? "+4 рыбки, +2 монеты, +1 звезда" : "+4 fish, +2 coins, +1 star");
+  const lines = currentLang === "ru"
+    ? ["Тюлень плывёт вперёд!","Отличный спасательный ход!", rewardLine, "Остров становится светлее!","Отличная мысль!"]
+    : ["Sausage splashes ahead!","Great rescue move!", rewardLine, "The island gets brighter!","Nice thinking!"];
+  return lines[Math.floor(Math.random()*lines.length)];
+}
+
+// P11: in-session combo feedback — separate from the daily/global streak.
+// Resets on any wrong answer (see answer()); celebrates at 3/5/8/12, then
+// every 5 after that, so a long run keeps getting new feedback instead of
+// going silent.
+function comboCelebration(n) {
+  const tiers = { 3:"🔥", 5:"⭐", 8:"🌟", 12:"💎" };
+  let icon = tiers[n];
+  if (!icon && n > 12 && n % 5 === 0) icon = "💎";
+  if (!icon) return null;
+  return currentLang === "ru" ? `${icon} ${n} подряд!` : `${icon} ${n} in a row!`;
 }
 
 function showHint() {
@@ -2479,9 +2563,25 @@ function renderDaily() {
     }
   }
 
+  // P11: streak grid shows progress through the *current* 7-day cycle so it
+  // stays meaningful past day 7, plus a summary line with the real streak
+  // count, next milestone, and any banked freeze tokens.
+  const dayInCycle = state.streak.count > 0 ? ((state.streak.count - 1) % 7) + 1 : 0;
   $("streakGrid").innerHTML = Array.from({length:7}, (_,i) =>
-    `<div class="day ${i < state.streak.count?"done":""}" aria-label="Day ${i+1}${i<state.streak.count?" - completed":""}">Day<br>${i+1}</div>`
+    `<div class="day ${i < dayInCycle?"done":""}" aria-label="Day ${i+1}${i<dayInCycle?" - completed":""}">Day<br>${i+1}</div>`
   ).join("");
+
+  const milestones     = [7, 14, 30, 60, 100];
+  const nextMilestone  = milestones.find(m => m > state.streak.count);
+  const freezeTokens   = state.streak.freezeTokens || 0;
+  const streakSummaryEl = $("streakSummary");
+  if (streakSummaryEl) {
+    streakSummaryEl.innerHTML = currentLang === "ru"
+      ? `<p>🔥 Серия: ${state.streak.count} ${state.streak.count===1?"день":"дней"}${nextMilestone?` · значок на ${nextMilestone}-й день`:""}</p>
+         <p>❄️ ${freezeTokens} заморозк${freezeTokens===1?"а":"и"} серии в запасе</p>`
+      : `<p>🔥 Streak: ${state.streak.count} day${state.streak.count===1?"":"s"}${nextMilestone?` · next badge at day ${nextMilestone}`:""}</p>
+         <p>❄️ ${freezeTokens} streak freeze${freezeTokens===1?"":"s"} banked — auto-protects one missed day</p>`;
+  }
 }
 
 // ─── Dashboard ────────────────────────────────────────────────────────────────
@@ -3223,10 +3323,16 @@ function speak(kind) {
   const bank = currentLang === "ru" ? dialogueBankRu : dialogueBank;
   const lines = bank[kind] || bank.before;
   const world = worlds[selectedWorld] || worlds[0];
-  const recent = state.dialogueHistory || [];
-  const options = lines.filter(l => !recent.slice(-3).includes(l));
+  // P11: track recently-shown lines per dialogue kind (not one mixed list)
+  // and avoid repeats across roughly half of that kind's bank — previously
+  // this only excluded the last 3 lines across ALL kinds combined, which
+  // barely reduced repeats for any single bank.
+  if (!state.dialogueHistory || Array.isArray(state.dialogueHistory)) state.dialogueHistory = {};
+  const recent     = state.dialogueHistory[kind] || [];
+  const avoidCount = Math.max(3, Math.floor(lines.length / 2));
+  const options = lines.filter(l => !recent.slice(-avoidCount).includes(l));
   const line = (options.length?options:lines)[Math.floor(Math.random()*(options.length?options.length:lines.length))];
-  state.dialogueHistory = [...recent.slice(-8), line];
+  state.dialogueHistory[kind] = [...recent.slice(-(avoidCount+2)), line];
   if ($("dialogBox")) $("dialogBox").textContent = `${world.character}: ${line}`;
 }
 
@@ -3247,7 +3353,8 @@ function checkAchievements() {
     state.shop.includes(7), state.shop.length>=1, state.stars>=50, state.fish>=100, state.level>=5,
     state.level>=10, state.perfectTrips>=3, state.wrong>0&&state.correct>=20, state.solved>=150,
     state.animals.length>=5&&state.buildings.length>=5, state.buildings.length>=buildings.length,
-    state.animals.length>=animals.length&&state.unlockedWorld>=7
+    state.animals.length>=animals.length&&state.unlockedWorld>=7,
+    state.streak.longestStreak>=14, state.streak.longestStreak>=30
   ];
   tests.forEach((ok,i) => {
     if (ok && !state.achievements.includes(i)) {
@@ -3263,13 +3370,38 @@ function updateDaily(correct) {
   if (correct && !state.daily.claimed) state.daily.solved++;
 }
 
+// P11: streak now has one auto-applied "freeze" that bridges a single missed
+// day instead of resetting to 1, and the ladder extends past 7 days with
+// milestone toasts + a bonus freeze token at each one (capped at 3 banked).
 function updateStreak() {
-  const today = todayKey();
+  const today     = todayKey();
   if (state.streak.last === today) return;
-  const yesterday = new Date(Date.now()-86400000).toISOString().slice(0,10);
-  state.streak.count = state.streak.last === yesterday ? state.streak.count+1 : 1;
+  const yesterday  = new Date(Date.now()-86400000).toISOString().slice(0,10);
+  const dayBefore  = new Date(Date.now()-2*86400000).toISOString().slice(0,10);
+  if (!state.streak.freezeTokens) state.streak.freezeTokens = 0;
+
+  if (state.streak.last === yesterday) {
+    state.streak.count++;
+  } else if (state.streak.last === dayBefore && state.streak.freezeTokens > 0 && state.streak.count > 0) {
+    state.streak.freezeTokens--;
+    state.streak.count++;
+    toast(currentLang === "ru"
+      ? "Заморозка серии спасла твою серию! ❄️"
+      : "A streak freeze saved your streak! ❄️");
+  } else {
+    state.streak.count = 1;
+  }
   state.streak.last  = today;
   state.streak.days.push(today);
+  state.streak.longestStreak = Math.max(state.streak.longestStreak||0, state.streak.count);
+
+  const milestones = [14, 30, 60, 100];
+  if (milestones.includes(state.streak.count)) {
+    state.streak.freezeTokens = Math.min(3, state.streak.freezeTokens + 1);
+    toast(currentLang === "ru"
+      ? `${state.streak.count} дней подряд! +1 заморозка серии ❄️`
+      : `${state.streak.count}-day streak! +1 streak freeze ❄️`);
+  }
 }
 
 // ─── Audio ────────────────────────────────────────────────────────────────────

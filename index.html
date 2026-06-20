@@ -75,6 +75,20 @@
     </div>
   </div>
 
+  <!-- ═══ PARENT GATE MODAL (P11) ═══ -->
+  <div id="parentGateModal" class="profile-modal-overlay" hidden role="dialog" aria-labelledby="parentGateTitle">
+    <div class="profile-modal-box">
+      <h2 id="parentGateTitle" class="profile-modal-title">Grown-ups Only</h2>
+      <p class="parent-gate-text" id="parentGateQuestion">To continue, solve: 7 × 8 = ?</p>
+      <input type="number" inputmode="numeric" id="parentGateInput" class="profile-name-input" placeholder="Answer" autocomplete="off"/>
+      <p class="parent-gate-error" id="parentGateError" hidden>Not quite — try again.</p>
+      <div class="profile-modal-actions">
+        <button class="primary" id="parentGateSubmit">Continue</button>
+      </div>
+      <button class="profile-modal-cancel" id="parentGateCancel">Cancel</button>
+    </div>
+  </div>
+
   <div class="snow" aria-hidden="true"></div>
 
   <!-- P10: screen reader live region -->
@@ -268,6 +282,7 @@
             <!-- P9: collected daily specials -->
             <div id="dailyCollected" hidden></div>
           </div>
+          <div id="streakSummary" class="streak-summary" aria-live="polite"></div>
           <div class="streak" id="streakGrid" aria-label="Seven day streak"></div>
         </div>
       </section>
