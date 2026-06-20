@@ -284,32 +284,93 @@ const dailyNarratives = [
 
 // ─── Word problem templates (P4) ─────────────────────────────────────────────
 // Each entry: { make(a,b,char) → { text, answer, hint } }
+// S9: RU name forms for the 9 mascots that can appear as `ch` in word
+// problems. Nominative form is used as a sentence subject; genitive is
+// used after "у" (possessive "X has..."), matching the declension style
+// already established for these characters elsewhere in the game (e.g.
+// "у Колбаски", "у Пипа", "у Нори" in the logic topic). Names that read
+// as foreign loanwords in Russian (Nori, Bluebell, Pebble, Nova) stay
+// indeclinable, same as already done for Nori/Pebble; native-sounding
+// names (Колбаска, Пип, Миска, Тамбл) take regular Russian declension.
+const NAME_RU = {
+  Sausage:          { nom:"Колбаска",      gen:"Колбаски" },
+  Pip:              { nom:"Пип",           gen:"Пипа" },
+  Nori:             { nom:"Нори",          gen:"Нори" },
+  Bluebell:         { nom:"Блюбелл",       gen:"Блюбелл" },
+  Pebble:           { nom:"Пебл",          gen:"Пебл" },
+  "Professor Octo": { nom:"Профессор Окто",gen:"Профессора Окто" },
+  Miska:            { nom:"Миска",         gen:"Миски" },
+  Nova:             { nom:"Нова",          gen:"Нова" },
+  Tumble:           { nom:"Тамбл",         gen:"Тамбла" },
+};
+function ruCh(ch, grammaticalCase) {
+  const forms = NAME_RU[ch];
+  return forms ? forms[grammaticalCase] : ch;
+}
+
 const wordTemplates = [
   // Addition
-  { op:"add", make:(a,b,ch) => ({ text:`Sausage caught ${a} fish and ${ch} caught ${b}. How many fish together?`,                         answer:a+b, hint:"Together means add." }) },
-  { op:"add", make:(a,b,ch) => ({ text:`There are ${a} penguins on one iceberg and ${b} on another. How many penguins in total?`,           answer:a+b, hint:"Count both groups together." }) },
-  { op:"add", make:(a,b,ch) => ({ text:`${ch} found ${a} snowballs on the left hill and ${b} on the right hill. How many altogether?`,     answer:a+b, hint:"Add the two groups." }) },
-  { op:"add", make:(a,b,ch) => ({ text:`${a} seals are swimming and ${b} more jump in. How many seals are in the water now?`,               answer:a+b, hint:"Add the ones that jumped in." }) },
-  { op:"add", make:(a,b,ch) => ({ text:`The boat carries ${a} crates and picks up ${b} more at the dock. How many crates on board?`,        answer:a+b, hint:"Add the new crates to the old ones." }) },
-  { op:"add", make:(a,b,ch) => ({ text:`${a} treasures were found on Monday and ${b} on Tuesday. How many treasures found in total?`,       answer:a+b, hint:"Add both days' totals." }) },
+  { op:"add", make:(a,b,ch,isRu) => isRu
+      ? { text:`У Колбаски было ${a} рыбок, а у ${ruCh(ch,"gen")} было ${b}. Сколько рыбок всего?`, answer:a+b, hint:"Слово «вместе» значит сложить." }
+      : { text:`Sausage caught ${a} fish and ${ch} caught ${b}. How many fish together?`, answer:a+b, hint:"Together means add." } },
+  { op:"add", make:(a,b,ch,isRu) => isRu
+      ? { text:`На одной льдине ${a} пингвинов, а на другой ${b}. Сколько пингвинов всего?`, answer:a+b, hint:"Сосчитай обе группы вместе." }
+      : { text:`There are ${a} penguins on one iceberg and ${b} on another. How many penguins in total?`, answer:a+b, hint:"Count both groups together." } },
+  { op:"add", make:(a,b,ch,isRu) => isRu
+      ? { text:`У ${ruCh(ch,"gen")} было ${a} снежков на левом холме и ${b} на правом. Сколько снежков всего?`, answer:a+b, hint:"Сложи обе группы." }
+      : { text:`${ch} found ${a} snowballs on the left hill and ${b} on the right hill. How many altogether?`, answer:a+b, hint:"Add the two groups." } },
+  { op:"add", make:(a,b,ch,isRu) => isRu
+      ? { text:`В воде плавает ${a} тюленей, и ещё ${b} прыгают в воду. Сколько тюленей в воде теперь?`, answer:a+b, hint:"Прибавь тех, кто прыгнул в воду." }
+      : { text:`${a} seals are swimming and ${b} more jump in. How many seals are in the water now?`, answer:a+b, hint:"Add the ones that jumped in." } },
+  { op:"add", make:(a,b,ch,isRu) => isRu
+      ? { text:`На лодке ${a} ящиков, и ещё ${b} грузят у пристани. Сколько ящиков теперь на лодке?`, answer:a+b, hint:"Прибавь новые ящики к старым." }
+      : { text:`The boat carries ${a} crates and picks up ${b} more at the dock. How many crates on board?`, answer:a+b, hint:"Add the new crates to the old ones." } },
+  { op:"add", make:(a,b,ch,isRu) => isRu
+      ? { text:`В понедельник нашли ${a} сокровищ, а во вторник ${b}. Сколько сокровищ нашли всего?`, answer:a+b, hint:"Сложи количество за оба дня." }
+      : { text:`${a} treasures were found on Monday and ${b} on Tuesday. How many treasures found in total?`, answer:a+b, hint:"Add both days' totals." } },
   // Subtraction
-  { op:"sub", make:(a,b,ch) => ({ text:`${ch} had ${a} fish but shared ${b} with friends. How many fish does ${ch} have left?`,              answer:a-b, hint:"Sharing means taking away." }) },
-  { op:"sub", make:(a,b,ch) => ({ text:`There were ${a} penguins on the ice. ${b} dived into the ocean. How many are left on the ice?`,      answer:a-b, hint:"Subtract the ones that dived away." }) },
-  { op:"sub", make:(a,b,ch) => ({ text:`Sausage had ${a} snowballs. A gust of wind blew away ${b}. How many snowballs are left?`,            answer:a-b, hint:"Take away what the wind stole." }) },
-  { op:"sub", make:(a,b,ch) => ({ text:`The lighthouse had ${a} candles. ${b} burned out during the storm. How many are still lit?`,         answer:a-b, hint:"Subtract the candles that went out." }) },
-  { op:"sub", make:(a,b,ch) => ({ text:`A whale was spotted ${a} times this week, but ${b} sightings were just clouds. Real sightings?`,     answer:a-b, hint:"Take away the false sightings." }) },
+  { op:"sub", make:(a,b,ch,isRu) => isRu
+      ? { text:`У ${ruCh(ch,"gen")} было ${a} рыбок, и ${b} из них достались друзьям. Сколько рыбок осталось у ${ruCh(ch,"gen")}?`, answer:a-b, hint:"Поделиться значит отнять." }
+      : { text:`${ch} had ${a} fish but shared ${b} with friends. How many fish does ${ch} have left?`, answer:a-b, hint:"Sharing means taking away." } },
+  { op:"sub", make:(a,b,ch,isRu) => isRu
+      ? { text:`На льду было ${a} пингвинов. ${b} из них нырнули в океан. Сколько пингвинов осталось на льду?`, answer:a-b, hint:"Отними тех, кто нырнул." }
+      : { text:`There were ${a} penguins on the ice. ${b} dived into the ocean. How many are left on the ice?`, answer:a-b, hint:"Subtract the ones that dived away." } },
+  { op:"sub", make:(a,b,ch,isRu) => isRu
+      ? { text:`У Колбаски было ${a} снежков. Ветер унёс ${b} из них. Сколько снежков осталось?`, answer:a-b, hint:"Отними то, что унёс ветер." }
+      : { text:`Sausage had ${a} snowballs. A gust of wind blew away ${b}. How many snowballs are left?`, answer:a-b, hint:"Take away what the wind stole." } },
+  { op:"sub", make:(a,b,ch,isRu) => isRu
+      ? { text:`На маяке было ${a} свечей. ${b} из них погасли во время бури. Сколько свечей всё ещё горит?`, answer:a-b, hint:"Отними погасшие свечи." }
+      : { text:`The lighthouse had ${a} candles. ${b} burned out during the storm. How many are still lit?`, answer:a-b, hint:"Subtract the candles that went out." } },
+  { op:"sub", make:(a,b,ch,isRu) => isRu
+      ? { text:`На этой неделе кита «видели» ${a} раз, но ${b} из этих раз оказались просто облаками. Сколько раз видели настоящего кита?`, answer:a-b, hint:"Отними ложные наблюдения." }
+      : { text:`A whale was spotted ${a} times this week, but ${b} sightings were just clouds. Real sightings?`, answer:a-b, hint:"Take away the false sightings." } },
   // Multiplication
-  { op:"mul", make:(a,b,ch) => ({ text:`${ch} has ${a} baskets with ${b} fish in each basket. How many fish altogether?`,                    answer:a*b, hint:"Equal groups — multiply!" }) },
-  { op:"mul", make:(a,b,ch) => ({ text:`${a} boats each carry ${b} penguins. How many penguins are on the boats in total?`,                  answer:a*b, hint:"Each boat has the same number." }) },
-  { op:"mul", make:(a,b,ch) => ({ text:`Sausage slides down the hill ${a} times a day for ${b} days. How many slides total?`,                answer:a*b, hint:"Same amount each day." }) },
-  { op:"mul", make:(a,b,ch) => ({ text:`There are ${a} igloos with ${b} seals living in each one. How many seals in total?`,                 answer:a*b, hint:"Multiply to count equal groups." }) },
+  { op:"mul", make:(a,b,ch,isRu) => isRu
+      ? { text:`У ${ruCh(ch,"gen")} есть ${a} корзин, и в каждой по ${b} рыбок. Сколько рыбок всего?`, answer:a*b, hint:"Равные группы — умножай!" }
+      : { text:`${ch} has ${a} baskets with ${b} fish in each basket. How many fish altogether?`, answer:a*b, hint:"Equal groups — multiply!" } },
+  { op:"mul", make:(a,b,ch,isRu) => isRu
+      ? { text:`${a} лодок, и в каждой по ${b} пингвинов. Сколько пингвинов на всех лодках?`, answer:a*b, hint:"В каждой лодке одинаковое количество." }
+      : { text:`${a} boats each carry ${b} penguins. How many penguins are on the boats in total?`, answer:a*b, hint:"Each boat has the same number." } },
+  { op:"mul", make:(a,b,ch,isRu) => isRu
+      ? { text:`Колбаска съезжает с горки ${a} раз в день, и так ${b} дней подряд. Сколько всего раз она съехала?`, answer:a*b, hint:"Каждый день одинаковое количество." }
+      : { text:`Sausage slides down the hill ${a} times a day for ${b} days. How many slides total?`, answer:a*b, hint:"Same amount each day." } },
+  { op:"mul", make:(a,b,ch,isRu) => isRu
+      ? { text:`Есть ${a} иглу, и в каждом живёт по ${b} тюленей. Сколько тюленей всего?`, answer:a*b, hint:"Умножь, чтобы сосчитать равные группы." }
+      : { text:`There are ${a} igloos with ${b} seals living in each one. How many seals in total?`, answer:a*b, hint:"Multiply to count equal groups." } },
   // Division
-  { op:"div", make:(a,b,ch) => ({ text:`${ch} has ${a*b} fish to share equally among ${b} friends. How many fish does each friend get?`,     answer:a, hint:"Divide means sharing equally." }) },
-  { op:"div", make:(a,b,ch) => ({ text:`${a*b} penguins march into rows of ${b}. How many rows are there?`,                                  answer:a, hint:"Think how many groups of ${b} fit." }) },
-  { op:"div", make:(a,b,ch) => ({ text:`Sausage baked ${a*b} snowball treats and put ${b} on each plate. How many plates?`,                  answer:a, hint:"Divide the treats by the plate size." }) }
+  { op:"div", make:(a,b,ch,isRu) => isRu
+      ? { text:`У ${ruCh(ch,"gen")} есть ${a*b} рыбок, чтобы поровну разделить между ${b} друзьями. Сколько рыбок получит каждый друг?`, answer:a, hint:"Разделить значит поделить поровну." }
+      : { text:`${ch} has ${a*b} fish to share equally among ${b} friends. How many fish does each friend get?`, answer:a, hint:"Divide means sharing equally." } },
+  { op:"div", make:(a,b,ch,isRu) => isRu
+      ? { text:`${a*b} пингвинов встают в ряды по ${b}. Сколько получилось рядов?`, answer:a, hint:`Подумай, сколько групп по ${b} получится.` }
+      : { text:`${a*b} penguins march into rows of ${b}. How many rows are there?`, answer:a, hint:`Think how many groups of ${b} fit.` } },
+  { op:"div", make:(a,b,ch,isRu) => isRu
+      ? { text:`Колбаска испекла ${a*b} снежных угощений и разложила по ${b} штук на каждую тарелку. Сколько получилось тарелок?`, answer:a, hint:"Раздели угощения на количество на тарелке." }
+      : { text:`Sausage baked ${a*b} snowball treats and put ${b} on each plate. How many plates?`, answer:a, hint:"Divide the treats by the plate size." } }
 ];
 
 function generateWordProblem(level) {
+  const isRu = currentLang === "ru";
   const char = worlds[selectedWorld] ? worlds[selectedWorld].character : "Pip";
   // Filter ops by level
   let eligible = wordTemplates;
@@ -329,7 +390,7 @@ function generateWordProblem(level) {
     b = 2+Math.floor(Math.random()*8); a = 2+Math.floor(Math.random()*8);
   }
 
-  const prob = tpl.make(a, b, char);
+  const prob = tpl.make(a, b, char, isRu);
   return { topic:"word", text:prob.text, answer:prob.answer, hint:prob.hint };
 }
 
