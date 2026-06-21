@@ -10,20 +10,20 @@
 
   .topbar {
     display: grid;
-    grid-template-columns: auto auto auto 1fr auto auto;
+    grid-template-columns: auto auto 1fr auto auto auto;
     grid-template-rows: auto auto;
     gap: 4px;
     padding: 8px;
     border-radius: 16px;
   }
-  /* Row 1: profile | lang | menu | resources (now spans the freed-up space) */
+  /* Row 1: profile | lang | resources (now spans the space freed up by moving the menu button to row 2) */
   #profileTopbarBtn { grid-column: 1; grid-row: 1; }
   #langBtn          { grid-column: 2; grid-row: 1; }
-  #menuBtn          { grid-column: 3; grid-row: 1; }
-  .resources        { grid-column: 4 / -1; grid-row: 1; justify-content: flex-start; flex-wrap: nowrap; gap: 4px; overflow-x: auto; -webkit-overflow-scrolling: touch; scrollbar-width: none; }
+  .resources        { grid-column: 3 / -1; grid-row: 1; justify-content: flex-start; flex-wrap: nowrap; gap: 4px; overflow-x: auto; -webkit-overflow-scrolling: touch; scrollbar-width: none; }
   .resources::-webkit-scrollbar { display: none; }
-  /* Row 2: brand + the rarely-touched mute/info controls, tucked to the right */
-  .brand            { grid-column: 1 / 5; grid-row: 2; gap: 8px; }
+  /* Row 2: brand + the rarely-touched menu/mute/info controls, tucked to the right */
+  .brand            { grid-column: 1 / 4; grid-row: 2; gap: 8px; }
+  #menuBtn          { grid-column: 4; grid-row: 2; align-self: center; justify-self: end; }
   #muteBtn          { grid-column: 5; grid-row: 2; align-self: center; justify-self: end; }
   #aboutBtn         { grid-column: 6; grid-row: 2; align-self: center; justify-self: end; }
 
