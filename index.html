@@ -765,5 +765,17 @@
   </svg>
 
   <script src="game.js"></script>
+  <script>
+    // Registers sw.js for offline support + proper PWA installability.
+    // Guarded with a feature check since some embedded/wrapped webviews
+    // (e.g. Median.co's Android wrapper) don't need or support this.
+    if ("serviceWorker" in navigator) {
+      window.addEventListener("load", () => {
+        navigator.serviceWorker.register("./sw.js").catch(() => {
+          // Non-fatal — the game still works fully online without it.
+        });
+      });
+    }
+  </script>
 </body>
 </html>
