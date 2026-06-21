@@ -230,8 +230,31 @@ const shop = [
   ["Star Scarf",    16,"accessory","scarf"],
   ["Snow Goggles",  18,"accessory","goggles"],
   ["Tiny Fish Pet", 25,"pet","pet"],
-  ["Guardian Cape", 0, "costume","guardiancape", true]
+  ["Guardian Cape", 0, "costume","guardiancape", true],
+  // P9: economy expansion — 3 new buyable items, one per equip type, priced
+  // above the existing top tier in their type so there's always a next
+  // thing to save for even after owning everything above.
+  ["Wizard Seal",   55,"costume","wizard"],
+  ["Bow Tie",       14,"accessory","bowtie"],
+  ["Snow Owl Pet",  32,"pet","owlpet"]
 ].map((s,i) => ({ id:i, name:s[0], cost:s[1], type:s[2], className:s[3], earnedOnly:!!s[4] }));
+
+// P9: economy expansion — Town Decorations, a second coin sink alongside
+// the costume shop. Purely cosmetic, no zone-collision logic needed (unlike
+// costumes you simply collect them all). Anchored to the scene edges
+// (bottom for ground props, top for the garland) rather than the building
+// cluster — the buildings/friends overlap each other so densely (by
+// design, resolved via z-index/DOM order) that there's no clean gap inside
+// that area to anchor a new prop to without it disappearing behind one.
+const decorations = [
+  ["Snowman",        10, 6,  3, "bottom"],
+  ["Ice Lantern",      8, 88, 4, "bottom"],
+  ["Park Bench",      12, 27, 2, "bottom"],
+  ["Ice Sculpture",   16, 51, 3, "bottom"],
+  ["Garland Flags",   20, 38, 6, "top"],
+].map((d,i) => ({ id:i, name:d[0], cost:d[1], left:d[2], pos:d[3], anchor:d[4] }));
+const decorationNamesRu = ["Снеговик","Ледяной фонарь","Скамейка","Ледяная скульптура","Гирлянда флажков"];
+function decorName(i) { return currentLang === "ru" ? (decorationNamesRu[i] || decorations[i].name) : decorations[i].name; }
 
 const achievementNames = [
   "First Fish","First Correct Answer","10 Correct Answers","25 Correct Answers","50 Correct Answers",
@@ -554,7 +577,7 @@ function defaultState() {
   return {
     fish:0, coins:0, stars:0, xp:0, level:1, unlockedWorld:0,
     solved:0, correct:0, wrong:0, timePlayed:0, startedAt:Date.now(),
-    topics, buildings:[], animals:[], shop:[], achievements:[],
+    topics, buildings:[], animals:[], shop:[], achievements:[], decorations:[],
     muted:false, volume:1.0, streak:{ count:0, last:"", days:[], freezeTokens:1, longestStreak:0 }, daily:{ date:"", solved:0, claimed:false },
     hintsUsed:0, perfectTrips:0, missions:{}, equipped:{ costume:null, accessory:null, pet:null },
     miniGamesPlayed:0, rareTreasures:0, visitors:[], specialCosmetics:[],
@@ -1445,6 +1468,50 @@ const ISLAND_DECOR = [
   `<path d="M90 28 100 52 126 54 106 70 114 96 90 80 66 96 74 70 54 54 80 52Z" fill="#ffd45a" ${ISLAND_DECOR_STROKE}/>`
 ];
 
+// P5 (lite): small ground-level details for the mission scene, tied to each
+// island's theme — the corner watermark above already carries the island's
+// "emblem", this is the cheap, low-opacity texture at snow/water level that
+// was missing (footprints, bubbles, a wave line...). Same budget as the
+// watermark: a handful of simple shapes, no new art assets.
+const ISLAND_GROUND_ACCENT = [
+  // 0 Snow Beach — a trail of paw prints + a tiny shell
+  `<g fill="#d9a35c" opacity=".85">
+     <ellipse cx="35" cy="52" rx="7" ry="9"/><circle cx="29" cy="42" r="3"/><circle cx="38" cy="40" r="3"/>
+     <ellipse cx="62" cy="38" rx="7" ry="9"/><circle cx="56" cy="28" r="3"/><circle cx="65" cy="26" r="3"/>
+     <ellipse cx="89" cy="24" rx="7" ry="9"/><circle cx="83" cy="14" r="3"/><circle cx="92" cy="12" r="3"/>
+   </g>
+   <path d="M250 56Q250 40 262 36Q274 40 274 56Z" fill="#fff" stroke="#ffb74d" stroke-width="2"/>
+   <path d="M262 36V56M256 38V54M268 38V54" stroke="#ffb74d" stroke-width="1.5"/>`,
+  // 1 Fish Bay — rising bubbles + a glinting fish
+  `<circle cx="60" cy="50" r="5" fill="#fff" opacity=".55"/><circle cx="75" cy="32" r="3.5" fill="#fff" opacity=".5"/><circle cx="50" cy="22" r="2.5" fill="#fff" opacity=".45"/>
+   <ellipse cx="240" cy="46" rx="14" ry="8" fill="#ff9f4a" opacity=".75"/><path d="M226 46 214 38 218 46 214 54Z" fill="#ff9f4a" opacity=".75"/>`,
+  // 2 Whale Coast — a gentle waterline + a faint spout
+  `<path d="M0 58Q20 46 40 58T80 58T120 58T160 58T200 58T240 58T280 58T320 58" fill="none" stroke="#fff" stroke-width="3" opacity=".5"/>
+   <circle cx="250" cy="30" r="3" fill="#fff" opacity=".5"/><circle cx="256" cy="20" r="2" fill="#fff" opacity=".4"/>`,
+  // 3 Penguin Islands — a trail of webbed footprints
+  `<path d="M38 52l-5 9h10z" fill="#274263" opacity=".65"/><path d="M55 42l-5 9h10z" fill="#274263" opacity=".65"/>
+   <path d="M72 32l-5 9h10z" fill="#274263" opacity=".65"/><path d="M89 22l-5 9h10z" fill="#274263" opacity=".65"/>`,
+  // 4 Octopus Cave — bubbles + a small starfish
+  `<circle cx="40" cy="40" r="4" fill="#fff" opacity=".5"/><circle cx="55" cy="24" r="3" fill="#fff" opacity=".45"/>
+   <path d="M250 50 255 36 260 50 274 45 262 56 268 70 255 60 242 70 248 56 236 45Z" fill="#ff8a73" opacity=".7"/>`,
+  // 5 Polar Academy — drifting snowflakes
+  `<g stroke="#fff" stroke-width="2.5" opacity=".75"><path d="M250 28v22M239 39h22M242 32l14 14M256 32l-14 14"/></g>
+   <g stroke="#fff" stroke-width="2" opacity=".55"><path d="M55 50v16M47 58h16M50 53l10 10M60 53l-10 10"/></g>`,
+  // 6 Northern Kingdom — a string of royal bunting
+  `<path d="M20 20h280" stroke="#fff" stroke-width="2" opacity=".45"/>
+   <path d="M40 20l10 18 10-18Z" fill="#ff5a7a" opacity=".7"/>
+   <path d="M80 20l10 18 10-18Z" fill="#ffd45a" opacity=".7"/>
+   <path d="M240 20l10 18 10-18Z" fill="#b78cff" opacity=".7"/>
+   <path d="M280 20l10 18 10-18Z" fill="#ffd45a" opacity=".7"/>`,
+  // 7 Arctic Champion — aurora ribbon + sparkles
+  `<path d="M0 50Q40 20 80 50T160 50T240 50T320 50" fill="none" stroke="#7af0c0" stroke-width="3" opacity=".4"/>
+   <path d="M250 26l3 8 8 3-8 3-3 8-3-8-8-3 8-3Z" fill="#ffd45a" opacity=".8"/>
+   <path d="M50 18l2 6 6 2-6 2-2 6-2-6-6-2 6-2Z" fill="#fff" opacity=".7"/>`
+];
+function islandGroundAccentSvg(worldId) {
+  return `<svg viewBox="0 0 320 80" preserveAspectRatio="none" aria-hidden="true">${ISLAND_GROUND_ACCENT[worldId] || ""}</svg>`;
+}
+
 function islandSvg(world, locked) {
   const [c1,c2] = locked ? ["#d6dde0","#aebbc2"] : world.palette;
   const decor = ISLAND_DECOR[world.id];
@@ -1574,6 +1641,19 @@ function startMission(daily) {
       scene.appendChild(wm);
     }
     wm.innerHTML = islandWatermarkSvg(w.id);
+    // P5 (lite): ground-level themed accent (footprints, bubbles, etc.) —
+    // inserted right after .iceberg in DOM order (not appended at the end)
+    // and given no z-index, so it naturally paints above the plain
+    // background but below the seal/fish-stream/storm layers that follow it.
+    let ga = scene.querySelector(".challenge-ground-accent");
+    if (!ga) {
+      ga = document.createElement("div");
+      ga.className = "challenge-ground-accent";
+      const icebergEl = scene.querySelector(".iceberg");
+      if (icebergEl) icebergEl.insertAdjacentElement("afterend", ga);
+      else scene.prepend(ga);
+    }
+    ga.innerHTML = islandGroundAccentSvg(w.id);
   }
   react("swim");
   makeProblem();
@@ -1656,6 +1736,8 @@ function makeProblem() {
   $("correctReveal").hidden = true;
   const oldContinue = $("continueBtn");
   if (oldContinue) oldContinue.remove();
+  // P7: clear any previous second-chance nudge
+  $("retryNudge").hidden = true;
 
   const choices = shuffle([currentProblem.answer, ...wrongAnswers(currentProblem)]);
   $("answers").innerHTML = choices.map((v,i) =>
@@ -2065,8 +2147,26 @@ function wrongAnswers(problem) {
 }
 
 // ─── P2: Answer handling — show correct answer on wrong ──────────────────────
+// P7: the first wrong tap on a given problem is a free, unscored retry — it
+// disables just that option and lets the player reconsider, instead of
+// immediately disabling everything and revealing the answer. Stats, the
+// smart hint, and the full reveal only kick in once the player misses a
+// *second* time on the same problem (or gets it right on the retry).
 function answer(value, btn) {
   const correct = value === currentProblem.answer;
+
+  if (!correct && !currentProblem.attempts) {
+    currentProblem.attempts = 1;
+    btn.disabled = true;
+    btn.classList.add("wrong");
+    showRetryNudge();
+    react("thinking");
+    playSound("wrong");
+    speak("wrong");
+    return;
+  }
+  hideRetryNudge();
+
   const topic   = currentProblem.topic;
   const elapsed = Math.max(1, Math.floor((Date.now() - currentProblem.started) / 1000));
 
@@ -2128,6 +2228,19 @@ function answer(value, btn) {
   save();
   // P1 fix: only re-render header + mission progress, not all 8 sections on every tap
   renderHeader();
+}
+
+// P7: soft nudge shown after the first wrong tap — encourages a retry
+// without revealing the answer or penalizing stats yet.
+function showRetryNudge() {
+  const el = $("retryNudge");
+  if (!el) return;
+  el.textContent = `🤔 ${t("tryAgainNudge")}`;
+  el.hidden = false;
+}
+function hideRetryNudge() {
+  const el = $("retryNudge");
+  if (el) el.hidden = true;
 }
 
 // P2: show the correct answer with explanation + continue button
@@ -2402,10 +2515,13 @@ const COSTUME_SYMBOLS = {
   king:      { costume:"costume-king",        accessory:null,               pet:null },
   superhero: { costume:"costume-superhero",   accessory:null,               pet:null },
   guardiancape: { costume:"costume-guardiancape", accessory:null,           pet:null },
+  wizard:    { costume:"costume-wizard",      accessory:null,               pet:null },
   sunny:     { costume:null,                  accessory:"accessory-sunny",  pet:null },
   scarf:     { costume:null,                  accessory:"accessory-scarf",  pet:null },
   goggles:   { costume:null,                  accessory:"accessory-goggles",pet:null },
-  pet:       { costume:null,                  accessory:null,               pet:"pet-fish" }
+  bowtie:    { costume:null,                  accessory:"accessory-bowtie", pet:null },
+  pet:       { costume:null,                  accessory:null,               pet:"pet-fish" },
+  owlpet:    { costume:null,                  accessory:null,               pet:"pet-owl" }
 };
 
 // P12: each costume/accessory occupies a region of the seal's body. Pirate,
@@ -2417,7 +2533,8 @@ const COSTUME_SYMBOLS = {
 // as new costumes/accessories get added later — no per-pair listing needed.
 const ITEM_ZONES = {
   pirate:"head", astronaut:"head", king:"head", superhero:"back",
-  sunny:"head",  scarf:"neck",     goggles:"face", pet:null, guardiancape:"head"
+  sunny:"head",  scarf:"neck",     goggles:"face", pet:null, guardiancape:"head",
+  wizard:"head", bowtie:"neck",    owlpet:null
 };
 
 // Equip an item, auto-removing anything already worn in the same visual
@@ -2675,6 +2792,10 @@ function renderTown() {
       return `<button class="town-building${finale}" style="left:${left}%;top:${top}%" data-building="${b.id}" aria-label="${b.name}">${buildingSvg(b.id)}</button>`;
     }).join("") +
     townGhostHtml(positions) +
+    decorations.map(d => {
+      if (!state.decorations.includes(d.id)) return "";
+      return `<div class="town-decor" style="left:${d.left}%;${d.anchor}:${d.pos}%" data-decor="${d.id}" aria-hidden="true">${decorationSvg(d.id)}</div>`;
+    }).join("") +
     state.animals.slice(0,9).map((id,i) => {
       const a       = animals.find(x => x.id === id);
       const feeds   = (state.animalFeeds && state.animalFeeds[id]) || 0;
@@ -2707,6 +2828,23 @@ function renderTown() {
     return `<article class="item-card ${built?"":"locked"}">${buildingSvg(b.id)}<h3>${b.name}</h3>
       <p>${built ? "Open, animated, and part of Arctic Town." : starsNeeded > 0 ? `Need ${starsNeeded} more stars and mission progress.` : "Keep completing missions to unlock."}</p></article>`;
   }).join("");
+  // P9: Town Decorations grid — coins-based, same buy-row pattern as the shop
+  $("decorGrid").innerHTML = decorations.map(d => {
+    const owned = state.decorations.includes(d.id);
+    return `<article class="item-card">${decorationSvg(d.id)}<h3>${decorName(d.id)}</h3>
+      <p>${owned ? t("decorOwned") : t("decorAvailable")}</p>
+      <div class="buy-row"><b>${d.cost} ${t("coins")}</b>
+        <button data-decor-buy="${d.id}" ${owned||state.coins<d.cost?"disabled":""} aria-label="${owned?t("owned"):(t("buy")+" "+decorName(d.id)+" — "+d.cost)}">${owned?t("owned"):t("buy")}</button>
+      </div></article>`;
+  }).join("");
+  const decorGrid = $("decorGrid");
+  if (decorGrid && !decorGrid.dataset.bound) {
+    decorGrid.dataset.bound = "1";
+    decorGrid.addEventListener("click", e => {
+      const btn = e.target.closest("[data-decor-buy]");
+      if (btn && !btn.disabled) buyDecoration(Number(btn.dataset.decorBuy));
+    });
+  }
   const lcBtn = $("luckyCatchEntryBtn");
   if (lcBtn) {
     lcBtn.disabled = !canAffordLuckyCatch();
@@ -3016,7 +3154,7 @@ function renderDashboard() {
     [t("missionProgress"),                 `${missionTotal}/40`],
     [t("townProgress"),                    `${state.buildings.length}/8`],
     [t("friendRescue"),                    `${state.animals.length}/9`],
-    [t("collection"),                      `${state.shop.length}/8`],
+    [t("collection"),                      `${state.shop.length}/${shop.filter(s=>!s.earnedOnly).length}`],
     [t("strongTopics"),                    strong],
     [t("weakTopics"),                      weak],
   ].map(s => `<article class="stat-card"><h3>${s[0]}</h3><p>${s[1]}</p></article>`).join("");
@@ -4177,6 +4315,66 @@ function buildingSvg(i) {
   return `<svg viewBox="0 0 120 110" aria-hidden="true">${svgs[i]||svgs[0]}<ellipse cx="60" cy="102" rx="52" ry="6" fill="rgba(0,80,120,.10)"/></svg>`;
 }
 
+// P9: Town Decorations — small cosmetic props, second coin sink alongside
+// the costume shop. Same viewBox/shadow convention as buildingSvg above.
+function decorationSvg(i) {
+  const svgs = [
+    // 0: Snowman — three stacked balls, twig arms, top hat
+    `<ellipse cx="60" cy="86" rx="22" ry="18" fill="#fff" stroke="#cfe0ea" stroke-width="2"/>
+     <ellipse cx="60" cy="56" rx="16" ry="14" fill="#fff" stroke="#cfe0ea" stroke-width="2"/>
+     <ellipse cx="60" cy="32" rx="11" ry="10" fill="#fff" stroke="#cfe0ea" stroke-width="2"/>
+     <circle cx="56" cy="29" r="1.6" fill="#1a1a2e"/><circle cx="64" cy="29" r="1.6" fill="#1a1a2e"/>
+     <path d="M58 34 L62 34 L60 37Z" fill="#ffb840"/>
+     <rect x="50" y="18" width="20" height="6" rx="1" fill="#274263"/><rect x="48" y="12" width="24" height="8" rx="1" fill="#274263"/>
+     <line x1="44" y1="56" x2="28" y2="48" stroke="#7a5a3a" stroke-width="2" stroke-linecap="round"/>
+     <line x1="76" y1="56" x2="92" y2="48" stroke="#7a5a3a" stroke-width="2" stroke-linecap="round"/>
+     <circle cx="60" cy="56" r="2" fill="#274263"/><circle cx="60" cy="48" r="2" fill="#274263"/><circle cx="60" cy="64" r="2" fill="#274263"/>`,
+    // 1: Ice Lantern — glowing lantern on a short post
+    `<rect x="54" y="70" width="12" height="28" rx="2" fill="#a8c8d8"/>
+     <path d="M44 40 Q44 28 60 26 Q76 28 76 40 L76 64 L44 64Z" fill="#bdeaff" opacity="0.85"/>
+     <rect x="44" y="58" width="32" height="8" rx="2" fill="#8fdaf0"/>
+     <ellipse cx="60" cy="46" rx="10" ry="12" fill="#fff7a0" opacity="0.9"/>
+     <path d="M56 26 L60 18 L64 26Z" fill="#8fdaf0"/>`,
+    // 2: Park Bench
+    `<rect x="20" y="64" width="80" height="8" rx="2" fill="#b07a4a"/>
+     <rect x="20" y="76" width="80" height="8" rx="2" fill="#9a6a3e"/>
+     <rect x="26" y="40" width="8" height="26" rx="2" fill="#b07a4a"/>
+     <rect x="46" y="40" width="8" height="26" rx="2" fill="#b07a4a"/>
+     <rect x="66" y="40" width="8" height="26" rx="2" fill="#b07a4a"/>
+     <rect x="86" y="40" width="8" height="26" rx="2" fill="#b07a4a"/>
+     <rect x="22" y="84" width="8" height="16" rx="2" fill="#7a5230"/>
+     <rect x="90" y="84" width="8" height="16" rx="2" fill="#7a5230"/>`,
+    // 3: Ice Sculpture — little seal carved in ice
+    `<path d="M40 96 Q34 60 60 50 Q86 60 80 96Z" fill="#cdf0fb" opacity="0.9" stroke="#8fdaf0" stroke-width="2"/>
+     <circle cx="52" cy="60" r="4" fill="#fff" opacity="0.7"/>
+     <circle cx="68" cy="66" r="3" fill="#fff" opacity="0.6"/>
+     <ellipse cx="60" cy="44" rx="14" ry="12" fill="#dff8ff" stroke="#8fdaf0" stroke-width="2"/>
+     <circle cx="55" cy="42" r="2" fill="#274263"/><circle cx="65" cy="42" r="2" fill="#274263"/>`,
+    // 4: Garland Flags — bunting strung between two poles
+    `<line x1="14" y1="40" x2="106" y2="40" stroke="#8fdaf0" stroke-width="2"/>
+     <rect x="10" y="40" width="4" height="50" fill="#8fdaf0"/>
+     <rect x="106" y="40" width="4" height="50" fill="#8fdaf0"/>
+     <path d="M24 40 l10 16 10-16Z" fill="#ff7b7b"/>
+     <path d="M50 40 l10 16 10-16Z" fill="#ffd45a"/>
+     <path d="M76 40 l10 16 10-16Z" fill="#4fd6a8"/>`
+  ];
+  return `<svg viewBox="0 0 120 110" aria-hidden="true">${svgs[i]||svgs[0]}</svg>`;
+}
+
+function buyDecoration(id) {
+  const d = decorations[id];
+  if (!d || state.decorations.includes(id) || state.coins < d.cost) return;
+  state.coins -= d.cost;
+  state.decorations.push(id);
+  playSound("coin");
+  react("excited");
+  toast(`${decorName(id)} ${t("decorPlaced")}`);
+  checkAchievements();
+  save();
+  renderTown();
+  renderHeader();
+}
+
 // Unique SVG per animal species
 const ANIMAL_SVGS = [
   // 0: Baby seal (Nori) — small round, lighter colour
@@ -4331,6 +4529,15 @@ function costumeSvg(i) {
       break;
     case "pet": // tiny fish swimming alongside
       overlay = `<ellipse cx="97" cy="92" rx="14" ry="9" fill="#ffb840"/><path d="M111 92 Q120 86 120 92 Q120 98 111 92Z" fill="#ffb840"/><circle cx="89" cy="89" r="2" fill="#1a1a2e"/><path d="M93 95 Q96 98 99 95" fill="none" stroke="#c07020" stroke-width="1" stroke-linecap="round"/>`;
+      break;
+    case "wizard": // pointed wizard hat with star
+      overlay = `<ellipse cx="60" cy="31" rx="32" ry="6" fill="#3a2270"/><path d="M40 31 Q45 18 60 14 Q75 18 80 31Z" fill="#5b3aa0"/><path d="M43 29 Q48 19 60 16 Q72 19 77 29Z" fill="#6f4bc0"/><path d="M44 30 Q60 27 76 30" fill="none" stroke="#ffd45a" stroke-width="2" stroke-linecap="round"/><text x="55" y="24" font-size="7" fill="#ffd45a">★</text>`;
+      break;
+    case "bowtie": // bow tie at the neck
+      overlay = `<path d="M60 90 L46 84 Q43 90 46 96 L60 90Z" fill="#e0405a"/><path d="M60 90 L74 84 Q77 90 74 96 L60 90Z" fill="#e0405a"/><circle cx="60" cy="90" r="5" fill="#b82c44"/>`;
+      break;
+    case "owlpet": // tiny snow owl friend
+      overlay = `<ellipse cx="98" cy="88" rx="11" ry="13" fill="#f4f8fb" stroke="#cfe0ea" stroke-width="1.5"/><circle cx="94" cy="84" r="3.5" fill="#fff"/><circle cx="102" cy="84" r="3.5" fill="#fff"/><circle cx="94" cy="84" r="1.8" fill="#1a1a2e"/><circle cx="102" cy="84" r="1.8" fill="#1a1a2e"/><path d="M97 88 L100 88 L98.5 90Z" fill="#ffb840"/>`;
       break;
     default:
       overlay = `<ellipse cx="60" cy="30" r="10" fill="#27c7de"/>`;
@@ -4527,6 +4734,7 @@ const STRINGS = {
     playBonus:"Play Bonus Game",
     // Challenge
     questionsLeft:"questions remaining", showHint:"Show a friendly hint",
+    tryAgainNudge:"Not quite — give it one more try!",
     // Mini-games
     returnToMap:"Return to Map",
     backToMap:"Map",
@@ -4552,6 +4760,8 @@ const STRINGS = {
     guardianBody:"You braved every island and calmed the Great Arctic Storm. Sausage is now the Guardian of the Arctic — and earned an exclusive Guardian Cape, found only here. Go equip it in My Seal!",
     // Town
     arcticTown:"Arctic Town", townDesc:"Buildings appear as Sausage earns stars and rescues friends.",
+    townDecorations:"Town Decorations", townDecorationsDesc:"Spend coins on cosy props for Arctic Town.",
+    decorPlaced:"placed in your town!", decorOwned:"Placed in your town.", decorAvailable:"A cosy prop for Arctic Town.", buyFor:"Buy for",
     // Album
     rescueAlbum:"Rescue Album", albumDesc:"Every rescued friend brings a fun Arctic fact.",
     hiddenFriend:"Hidden Friend", completeStory:"Complete story missions to discover this friend.",
@@ -4639,6 +4849,7 @@ const STRINGS = {
     playBonus:"Мини-игра",
     // Challenge
     questionsLeft:"вопросов осталось", showHint:"Подсказка",
+    tryAgainNudge:"Почти! Попробуй ещё раз.",
     // Mini-games
     returnToMap:"На карту",
     backToMap:"Карта",
@@ -4664,6 +4875,8 @@ const STRINGS = {
     guardianBody:"Ты прошёл все острова и успокоил Великую Арктическую Бурю. Колбаска теперь Хранитель Арктики — и получил эксклюзивный Плащ Хранителя, который больше нигде не получить. Надень его в разделе «Мой Тюлень»!",
     // Town
     arcticTown:"Арктический город", townDesc:"Здания появляются по мере зарабатывания звёзд и спасения друзей.",
+    townDecorations:"Украшения города", townDecorationsDesc:"Трать монеты на уютные мелочи для Арктического города.",
+    decorPlaced:"теперь стоит в твоём городе!", decorOwned:"Стоит в твоём городе.", decorAvailable:"Уютная мелочь для Арктического города.", buyFor:"Купить за",
     // Album
     rescueAlbum:"Альбом спасений", albumDesc:"Каждый спасённый друг приносит интересный факт об Арктике.",
     hiddenFriend:"Скрытый друг", completeStory:"Выполняй миссии, чтобы найти этого друга.",

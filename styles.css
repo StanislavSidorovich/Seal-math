@@ -318,6 +318,18 @@ button { font: inherit; color: inherit; }
   pointer-events: none;
 }
 .challenge-watermark svg { width: 100%; height: 100%; display: block; }
+/* P5 (lite): themed ground-level accent — sits low in the scene, behind the
+   seal/fish-stream but above the plain gradient, so each island reads as a
+   specific place rather than just a different background color. */
+.challenge-ground-accent {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 4px;
+  height: 78px;
+  pointer-events: none;
+}
+.challenge-ground-accent svg { width: 100%; height: 100%; display: block; }
 .iceberg {
   position: absolute;
   width: 210px;
@@ -609,7 +621,7 @@ button { font: inherit; color: inherit; }
 
 .section-head { padding: 18px; margin-bottom: 14px; }
 .section-head.compact { margin-top: 16px; }
-.town-grid, .album-grid, .shop-grid, .achievement-grid, .closet-grid {
+.town-grid, .album-grid, .shop-grid, .achievement-grid, .closet-grid, .decor-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
   gap: 12px;
@@ -730,6 +742,16 @@ button { font: inherit; color: inherit; }
   pointer-events: none;
 }
 .town-critter { width: 46px; z-index: 3; animation: critter-walk 6s ease-in-out infinite; }
+/* P9: Town Decorations — purely cosmetic props bought with coins, sit in
+   the gap band between the buildings row and the friends row. Same pop-in
+   entrance as buildings, but smaller and non-interactive. */
+.town-decor {
+  position: absolute;
+  width: 42px;
+  z-index: 3;
+  pointer-events: none;
+  animation: townPop .5s ease both;
+}
 @keyframes townPop { from { transform: translateY(18px) scale(.9); opacity: 0; } }
 .seal-room {
 
@@ -1531,6 +1553,24 @@ button { font: inherit; color: inherit; }
   font-weight: 700;
   line-height: 1.4;
 }
+
+/* P7: second-chance retry nudge — amber, distinct from the green success
+   reveal and the red wrong flash, so it reads as "almost, try again" rather
+   than "wrong" or "correct". */
+.retry-nudge {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 11px 14px;
+  background: #fff6df;
+  border: 2px solid #ffcf66;
+  border-radius: 14px;
+  font-weight: 800;
+  font-size: 1rem;
+  color: #8a6200;
+  animation: revealPop .3s ease;
+}
+.retry-nudge[hidden] { display: none; }
 
 /* Realistic seal: smooth blink via eye elements */
 .seal-eye-l, .seal-eye-r {

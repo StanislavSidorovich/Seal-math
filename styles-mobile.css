@@ -61,7 +61,7 @@
 
   /* ── Grids ────────────────────────────────────────── */
   .town-grid, .album-grid, .shop-grid,
-  .achievement-grid, .closet-grid {
+  .achievement-grid, .closet-grid, .decor-grid {
     grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
     gap: 10px;
   }
@@ -94,7 +94,7 @@
   .island { width: min(100%, 120px); }
   .seal-svg { width: min(140px, 50%); }
   .town-grid, .album-grid, .shop-grid,
-  .achievement-grid, .closet-grid { grid-template-columns: repeat(2, 1fr); }
+  .achievement-grid, .closet-grid, .decor-grid { grid-template-columns: repeat(2, 1fr); }
 }
 
 /* ── Touch improvements ─────────────────────────────── */

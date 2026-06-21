@@ -224,6 +224,8 @@
             <!-- P2: correct answer reveal -->
             <div class="correct-reveal" id="correctReveal" hidden aria-live="polite"></div>
             <div class="answers" id="answers" role="group" aria-label="Choose your answer"></div>
+            <!-- P7: second-chance nudge shown after the first wrong tap, before the full reveal -->
+            <div class="retry-nudge" id="retryNudge" hidden aria-live="polite"></div>
             <button class="hint" id="hintBtn">Show a friendly hint</button>
             <p class="hint-text" id="hintText" hidden></p>
           </div>
@@ -257,12 +259,17 @@
 
       <section class="view" id="town">
         <div class="section-head">
-          <h2>Arctic Town</h2>
-          <p>Buildings appear as Sausage earns stars and rescues friends.</p>
+          <h2 data-i18n="arcticTown">Arctic Town</h2>
+          <p data-i18n="townDesc">Buildings appear as Sausage earns stars and rescues friends.</p>
         </div>
         <div class="town-scene" id="townScene"></div>
         <button class="secondary lucky-catch-entry-btn" id="luckyCatchEntryBtn">🎣 Go Fishing</button>
         <div class="town-grid" id="townGrid"></div>
+        <div class="section-head compact">
+          <h2 data-i18n="townDecorations">Town Decorations</h2>
+          <p data-i18n="townDecorationsDesc">Spend coins on cosy props for Arctic Town.</p>
+        </div>
+        <div class="decor-grid" id="decorGrid"></div>
       </section>
 
       <section class="view" id="album">
@@ -714,6 +721,41 @@
       <circle cx="197" cy="160" r="1" fill="#fff"/>
       <!-- mouth -->
       <path d="M190 165 Q192 168 194 165" fill="none" stroke="#c07020" stroke-width="1" stroke-linecap="round"/>
+    </symbol>
+
+    <!-- P9: Wizard hat — same brim+cone+band construction as the pirate hat,
+         tall pointed cone instead of a tricorn, deep purple palette so it
+         reads as distinct magic-themed headwear. -->
+    <symbol id="costume-wizard" viewBox="0 0 260 220">
+      <ellipse cx="90" cy="44" rx="48" ry="8" fill="#3a2270"/>
+      <path d="M58 44 Q66 8 90 0 Q114 8 122 44Z" fill="#5b3aa0"/>
+      <path d="M64 40 Q70 12 90 5 Q110 12 116 40Z" fill="#6f4bc0"/>
+      <path d="M62 43 Q90 38 118 43" fill="none" stroke="#ffd45a" stroke-width="3" stroke-linecap="round"/>
+      <text x="84" y="26" font-size="11" fill="#ffd45a">★</text>
+      <text x="98" y="14" font-size="8" fill="#fff" opacity="0.85">✦</text>
+    </symbol>
+
+    <!-- P9: Bow tie — neck-zone accessory, alternative to the Star Scarf. -->
+    <symbol id="accessory-bowtie" viewBox="0 0 260 220">
+      <path d="M90 142 L58 128 Q50 142 58 156 L90 142Z" fill="#e0405a"/>
+      <path d="M90 142 L122 128 Q130 142 122 156 L90 142Z" fill="#e0405a"/>
+      <path d="M58 128 Q50 142 58 156" fill="none" stroke="#b82c44" stroke-width="2"/>
+      <path d="M122 128 Q130 142 122 156" fill="none" stroke="#b82c44" stroke-width="2"/>
+      <circle cx="90" cy="142" r="9" fill="#b82c44"/>
+    </symbol>
+
+    <!-- P9: Snow Owl pet — second pet option alongside the fish, same
+         off-to-the-side placement and scale as pet-fish. -->
+    <symbol id="pet-owl" viewBox="0 0 260 220">
+      <path d="M196 142 L200 130 L204 144Z" fill="#f4f8fb" stroke="#cfe0ea" stroke-width="1.5"/>
+      <path d="M224 142 L220 130 L216 144Z" fill="#f4f8fb" stroke="#cfe0ea" stroke-width="1.5"/>
+      <ellipse cx="210" cy="162" rx="18" ry="21" fill="#f4f8fb" stroke="#cfe0ea" stroke-width="2"/>
+      <path d="M197 170 Q188 175 191 188 Q202 185 204 172Z" fill="#dde9f0"/>
+      <circle cx="203" cy="154" r="6.5" fill="#fff"/>
+      <circle cx="217" cy="154" r="6.5" fill="#fff"/>
+      <circle cx="203" cy="154" r="3.2" fill="#1a1a2e"/>
+      <circle cx="217" cy="154" r="3.2" fill="#1a1a2e"/>
+      <path d="M207 161 L213 161 L210 166Z" fill="#ffb840"/>
     </symbol>
 
     <!-- sausage-full alias -->
