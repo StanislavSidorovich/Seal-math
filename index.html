@@ -89,6 +89,18 @@
     </div>
   </div>
 
+  <!-- ═══ EXIT MISSION MODAL — custom-styled replacement for the native confirm() ═══ -->
+  <div id="exitMissionModal" class="profile-modal-overlay" hidden role="dialog" aria-labelledby="exitMissionTitle">
+    <div class="profile-modal-box">
+      <h2 id="exitMissionTitle" class="profile-modal-title" data-i18n="exitMissionTitle">Leave this mission?</h2>
+      <p class="parent-gate-text" data-i18n="exitMissionConfirm">Exit this mission? Your progress on this question will be lost.</p>
+      <div class="profile-modal-actions">
+        <button class="primary" id="exitMissionConfirmBtn" data-i18n="exitMissionYes">Yes, go to map</button>
+      </div>
+      <button class="profile-modal-cancel" id="exitMissionCancelBtn" data-i18n="keepPlaying">Keep playing</button>
+    </div>
+  </div>
+
   <div class="snow" aria-hidden="true"></div>
 
   <!-- P10: screen reader live region -->
@@ -98,6 +110,7 @@
     <header class="topbar">
       <button class="profile-topbar-btn" id="profileTopbarBtn" aria-label="Switch player" title="Switch player">
         <span class="profile-topbar-emoji" id="profileTopbarEmoji">🦭</span>
+        <span class="guardian-badge" id="guardianBadge" hidden title="Guardian of the Arctic">👑</span>
         <span class="profile-topbar-name" id="profileTopbarName">Player</span>
       </button>
       <button class="lang-btn" id="langBtn" aria-label="Switch language" title="EN/RU/📖">EN</button>
@@ -146,6 +159,7 @@
               <span class="cloud c3"></span>
             </div>
             <div class="ocean" aria-hidden="true"></div>
+            <svg class="island-path-svg" id="islandPathSvg" aria-hidden="true"></svg>
             <div class="map" id="worldMap" aria-label="Arctic world map"></div>
             <div class="travel-seal" id="travelSeal" aria-hidden="true">
               <svg id="travelSealSvg" viewBox="0 0 260 220"><use href="#sausage-body"/><use href="" class="seal-costume-layer" id="travelSealCostume"/><use href="" class="seal-accessory-layer" id="travelSealAccessory"/><use href="" class="seal-pet-layer" id="travelSealPet"/></svg>
@@ -216,12 +230,12 @@
         </section>
 
         <section class="mini-game" id="miniGame" hidden aria-label="Bonus mini-game">
+          <button class="mini-back-btn" id="closeMiniBtn">← Return to Map</button>
           <div class="section-head">
             <h2 id="miniTitle">Catch Fish</h2>
             <p id="miniText">Tap the swimming fish before time runs out.</p>
           </div>
           <div class="mini-stage" id="miniStage"></div>
-          <button class="primary" id="closeMiniBtn">Return to Map</button>
         </section>
       </section>
 
@@ -245,9 +259,9 @@
         <div class="section-head">
           <h2>Arctic Town</h2>
           <p>Buildings appear as Sausage earns stars and rescues friends.</p>
-          <button class="secondary lucky-catch-entry-btn" id="luckyCatchEntryBtn">🎣 Go Fishing</button>
         </div>
         <div class="town-scene" id="townScene"></div>
+        <button class="secondary lucky-catch-entry-btn" id="luckyCatchEntryBtn">🎣 Go Fishing</button>
         <div class="town-grid" id="townGrid"></div>
       </section>
 
@@ -302,17 +316,6 @@
           <button class="secondary danger" id="resetAllBtn">Reset Everything</button>
         </div>
         <textarea id="saveBox" class="save-box" aria-label="Exported or imported save data" placeholder="Exported progress appears here. Paste progress here to import."></textarea>
-
-        <!-- S2: Save Code section -->
-        <div class="save-code-section">
-          <h3 id="saveCodeLabel">Quick Code (partial)</h3>
-          <p id="saveCodeDesc">This short code only restores your level and fish count — not your full progress. For a complete backup, use "Export &amp; Copy" above and save the text somewhere safe.</p>
-          <div class="save-code-row">
-            <input type="text" id="saveCodeBox" class="save-code-input" maxlength="8" placeholder="ABCD1234" aria-label="Save code" autocomplete="off" autocapitalize="characters" spellcheck="false"/>
-            <button class="secondary" id="saveCodeBtn">Copy Code</button>
-            <button class="secondary" id="restoreCodeBtn">Restore</button>
-          </div>
-        </div>
       </section>
     </main>
   </div>
@@ -623,6 +626,31 @@
       <!-- S badge on chest, below the chin -->
       <circle cx="90" cy="144" r="16" fill="#ffd45a" stroke="#c8a020" stroke-width="2"/>
       <text x="90" y="150" text-anchor="middle" font-size="17" font-weight="900" fill="#c01010">S</text>
+    </symbol>
+
+    <!-- Guardian Cape — exclusive reward for completing the Arctic Champion finale.
+         Crown geometry reused from costume-king, cape geometry reused from
+         costume-superhero, just recolored to the Champion island's icy
+         teal/gold palette (#fff8b8 / #2dd6a6) — zero new shapes, only colors. -->
+    <symbol id="costume-guardiancape" viewBox="0 0 260 220">
+      <!-- cape, drawn first so the crown/badge sit on top of it -->
+      <path d="M50 148 Q30 176 36 204 Q68 190 90 196 Q112 190 144 204 Q150 176 130 148 Q112 162 90 164 Q68 162 50 148Z"
+            fill="#17869f"/>
+      <path d="M50 148 Q68 162 90 164 Q112 162 130 148" fill="none" stroke="#0e5567" stroke-width="2"/>
+      <path d="M36 204 Q56 188 90 192 Q90 204 66 208Z" fill="rgba(0,0,0,.12)"/>
+      <!-- crown -->
+      <rect x="48" y="14" width="84" height="12" rx="4" fill="#bdf3ea" stroke="#1a9b7a" stroke-width="1"/>
+      <polygon points="48,14 58,0 68,14" fill="#e8fffb" stroke="#1a9b7a" stroke-width="1"/>
+      <polygon points="80,14 90,0 100,14" fill="#e8fffb" stroke="#1a9b7a" stroke-width="1"/>
+      <polygon points="112,14 122,0 132,14" fill="#e8fffb" stroke="#1a9b7a" stroke-width="1"/>
+      <circle cx="90" cy="3" r="5" fill="#2dd6a6"/>
+      <circle cx="58" cy="4" r="3.5" fill="#60c8ff"/>
+      <circle cx="122" cy="4" r="3.5" fill="#60c8ff"/>
+      <circle cx="74" cy="20" r="3" fill="#fff8b8"/>
+      <circle cx="106" cy="20" r="3" fill="#fff8b8"/>
+      <!-- star badge on chest -->
+      <circle cx="90" cy="144" r="16" fill="#fff8b8" stroke="#2dd6a6" stroke-width="2"/>
+      <text x="90" y="150" text-anchor="middle" font-size="17" font-weight="900" fill="#17869f">★</text>
     </symbol>
 
     <!-- Sunny hat (accessory) -->

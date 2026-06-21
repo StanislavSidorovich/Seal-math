@@ -229,8 +229,9 @@ const shop = [
   ["Sunny Hat",     12,"accessory","sunny"],
   ["Star Scarf",    16,"accessory","scarf"],
   ["Snow Goggles",  18,"accessory","goggles"],
-  ["Tiny Fish Pet", 25,"pet","pet"]
-].map((s,i) => ({ id:i, name:s[0], cost:s[1], type:s[2], className:s[3] }));
+  ["Tiny Fish Pet", 25,"pet","pet"],
+  ["Guardian Cape", 0, "costume","guardiancape", true]
+].map((s,i) => ({ id:i, name:s[0], cost:s[1], type:s[2], className:s[3], earnedOnly:!!s[4] }));
 
 const achievementNames = [
   "First Fish","First Correct Answer","10 Correct Answers","25 Correct Answers","50 Correct Answers",
@@ -534,6 +535,16 @@ let parentGateAnswer = null;
 let _pageActive = true; // P13: tracks whether the tab/window is actually in front of the player
 
 function $(id) { return document.getElementById(id); }
+// Escapes user-typed text (currently: profile names) before it's interpolated
+// into an innerHTML template, so a name containing "<" or "&" can't break the
+// markup or inject elements. Developer-authored strings (animal/building/
+// shop names etc.) come from constant arrays, not player input, so they
+// don't need this.
+function escapeHtml(str) {
+  return String(str).replace(/[&<>"']/g, ch => ({
+    "&":"&amp;", "<":"&lt;", ">":"&gt;", '"':"&quot;", "'":"&#39;"
+  }[ch]));
+}
 
 function defaultState() {
   const topics = {};
@@ -548,7 +559,7 @@ function defaultState() {
     hintsUsed:0, perfectTrips:0, missions:{}, equipped:{ costume:null, accessory:null, pet:null },
     miniGamesPlayed:0, rareTreasures:0, visitors:[], specialCosmetics:[],
     dialogueHistory:{}, dailySpecial:"", doubleRewardsUntil:0, mysteryVisits:0, animalFeeds:{},
-    onboarded: false, gameVersion: GAME_VERSION
+    onboarded: false, gameVersion: GAME_VERSION, guardianCrowned:false
   };
 }
 
@@ -943,15 +954,16 @@ function renderProfileList() {
   }
   list.innerHTML = profiles.map(p => {
     const last = p.lastPlayed ? formatLastPlayed(p.lastPlayed) : "Never";
+    const safeName = escapeHtml(p.name);
     return `<div class="profile-card" data-pid="${p.id}">
-      <button class="profile-play-btn" data-pid="${p.id}" aria-label="Play as ${p.name}">
+      <button class="profile-play-btn" data-pid="${p.id}" aria-label="Play as ${safeName}">
         <span class="profile-card-emoji">${p.emoji}</span>
         <div class="profile-card-info">
-          <strong class="profile-card-name">${p.name}</strong>
+          <strong class="profile-card-name">${safeName}</strong>
           <span class="profile-card-sub">Level ${p.state?.level||1} · ${p.state?.animals?.length||0}/9 friends · ${last}</span>
         </div>
       </button>
-      <button class="profile-edit-btn" data-pid="${p.id}" aria-label="Edit ${p.name}">✏️</button>
+      <button class="profile-edit-btn" data-pid="${p.id}" aria-label="Edit ${safeName}">✏️</button>
     </div>`;
   }).join("");
 
@@ -1191,11 +1203,6 @@ function attachEvents() {
       setLang(next);
     });
   }
-  // S2: save code buttons
-  const codeBtn    = $("saveCodeBtn");
-  const restoreBtn = $("restoreCodeBtn");
-  if (codeBtn)    codeBtn.addEventListener("click",    copySaveCode);
-  if (restoreBtn) restoreBtn.addEventListener("click", restoreFromCode);
   // P11: parental gate (math-problem check before entering Parent dashboard)
   const gateSubmit = $("parentGateSubmit");
   const gateCancel = $("parentGateCancel");
@@ -1203,6 +1210,11 @@ function attachEvents() {
   if (gateSubmit) gateSubmit.addEventListener("click", submitParentGate);
   if (gateCancel) gateCancel.addEventListener("click", closeParentGate);
   if (gateInput)  gateInput.addEventListener("keydown", e => { if (e.key === "Enter") submitParentGate(); });
+  // Exit-mission confirmation (custom modal, replaces native confirm())
+  const exitConfirmBtn = $("exitMissionConfirmBtn");
+  const exitCancelBtn  = $("exitMissionCancelBtn");
+  if (exitConfirmBtn) exitConfirmBtn.addEventListener("click", confirmExitMission);
+  if (exitCancelBtn)  exitCancelBtn.addEventListener("click", closeExitMissionModal);
   // P10: keyboard navigation for answer buttons (delegated)
   $("answers").addEventListener("keydown", e => {
     const btns = [...$("answers").querySelectorAll(".answer:not([disabled])")];
@@ -1296,6 +1308,8 @@ function renderHeader() {
   $("xpMeter").style.width   = `${state.xp % 100}%`;
   $("muteBtn").title          = state.muted ? "Sound off" : "Sound on";
   $("muteBtn").style.opacity  = state.muted ? ".55" : "1";
+  const badge = $("guardianBadge");
+  if (badge) badge.hidden = !state.guardianCrowned;
 }
 
 function missionKey(worldId = selectedWorld) { return `w${worldId}`; }
@@ -1308,13 +1322,16 @@ function renderMap() {
     const done     = completedMissions(world.id);
     const nameKey  = `world${world.id}`;
     const wName    = t(nameKey) || world.name;
-    const missLabel= t("missionsLabel") || "missions - level";
+    const levelBadge = locked
+      ? `<small>${currentLang === "ru" ? "Ур." : "Lv"} ${recommendedLevels[world.id]}</small>`
+      : "";
     return `<button class="island island-${world.id} ${locked?"locked":""} ${world.id===selectedWorld?"selected":""}" data-world="${world.id}" aria-label="${wName}, ${done} of 5 missions complete${locked?" - locked":""}">
-      ${islandSvg(world,locked)}<span>${world.id+1}. ${wName}<small>${done}/5 ${missLabel} ${recommendedLevels[world.id]}</small></span>
+      ${islandSvg(world,locked)}<span>${world.id+1}. ${wName}${levelBadge}</span>
     </button>`;
   }).join("");
   document.querySelectorAll(".island").forEach(btn => btn.addEventListener("click", () => chooseIsland(Number(btn.dataset.world))));
   moveTravelSeal();
+  drawIslandPath();
 }
 
 function chooseIsland(id) {
@@ -1360,6 +1377,31 @@ function moveTravelSeal() {
   const top  = ((islandRect.top  + islandRect.height * 0.78 - panelRect.top) / panelRect.height) * 100;
   seal.style.left = `${left}%`;
   seal.style.top  = `${top}%`;
+}
+
+// S18: dashed trail connecting the islands in order, like the path on a
+// game world-map. Reuses the exact same "read real rendered positions via
+// getBoundingClientRect" approach moveTravelSeal() already relies on above,
+// so it lines up correctly at any screen size instead of guessing fixed
+// percentages. The SVG's own viewBox is set to the panel's actual current
+// pixel size, so the stroke never gets stretched/distorted.
+function drawIslandPath() {
+  const svg   = $("islandPathSvg");
+  const panel = document.querySelector(".map-panel");
+  if (!svg || !panel) return;
+  const panelRect = panel.getBoundingClientRect();
+  if (!panelRect.width || !panelRect.height) return;
+  svg.setAttribute("viewBox", `0 0 ${panelRect.width} ${panelRect.height}`);
+  const points = worlds.map(w => {
+    const btn = document.querySelector(`[data-world="${w.id}"]`);
+    if (!btn) return null;
+    const r = btn.getBoundingClientRect();
+    const x = r.left + r.width * 0.5 - panelRect.left;
+    const y = r.top  + r.height * 0.35 - panelRect.top;
+    return `${x.toFixed(1)},${y.toFixed(1)}`;
+  }).filter(Boolean);
+  svg.innerHTML = points.length < 2 ? "" :
+    `<polyline points="${points.join(" ")}" fill="none" stroke="#ffffff" stroke-opacity=".55" stroke-width="4" stroke-dasharray="9 9" stroke-linecap="round"/>`;
 }
 
 // S17: every decor shape has a dark outline + a fill that's deliberately
@@ -1473,12 +1515,24 @@ function dialogFor(world, mission) {
 
 // ─── Mission ─────────────────────────────────────────────────────────────────
 function exitMission() {
-  if (!confirm(t("exitMissionConfirm"))) return;
+  const modal = $("exitMissionModal");
+  if (modal) modal.hidden = false;
+  else confirmExitMission(); // fallback if the modal markup is ever missing
+}
+
+function confirmExitMission() {
+  const modal = $("exitMissionModal");
+  if (modal) modal.hidden = true;
   trip.active = false;
   $("challenge").hidden = true;
   const old = $("backToMapBtn");
   if (old) old.remove();
   renderQuest();
+}
+
+function closeExitMissionModal() {
+  const modal = $("exitMissionModal");
+  if (modal) modal.hidden = true;
 }
 
 function startMission(daily) {
@@ -1786,8 +1840,8 @@ function generateProblem(topic) {
       const ooForms = [
         () => { const p=rand(9)+1,q=rand(9)+1,r=rand(10); return { text:`${p} × ${q} + ${r} = ?`, answer:p*q+r, hint:"Multiply first, then add." }; },
         () => { const p=rand(9)+1,q=rand(9)+1,r=rand(Math.min(p*q-1,20)); return { text:`${p} × ${q} - ${r} = ?`, answer:p*q-r, hint:"Multiply first, then subtract." }; },
-        () => { const r=rand(6)+2; const ans=rand(10); return { text:`${r*ans} ÷ ${r} + ${rand(10)} = ?`, answer:r*ans/r+0, hint:"Divide first, then add." }; }, // simplified
-        () => { const p=rand(8)+1,q=rand(8)+1,r=rand(9)+1,s=rand(9)+1; return { text:`${p} + ${q} × ${r} = ?`, answer:p+q*r, hint:"Multiply first, then add the rest." }; }
+        () => { const r=rand(6)+2; const q=rand(10); const add=rand(10); return { text:`${r*q} ÷ ${r} + ${add} = ?`, answer:q+add, hint:"Divide first, then add." }; },
+        () => { const p=rand(8)+1,q=rand(8)+1,r=rand(9)+1; return { text:`${p} + ${q} × ${r} = ?`, answer:p+q*r, hint:"Multiply first, then add the rest." }; }
       ];
       let oof = null;
       let oofTries = 0;
@@ -2198,6 +2252,7 @@ function completeMission() {
   let animal   = null;
   let building = null;
   let rare     = false;
+  const isCampaignFinale = trip.world === 7 && newDone >= 5 && !state.guardianCrowned;
 
   if (!state.animals.includes(world.animal) && newDone >= 2) {
     animal = animals[world.animal];
@@ -2235,6 +2290,14 @@ function completeMission() {
   if (newDone >= 5 && trip.world === state.unlockedWorld && state.unlockedWorld < worlds.length-1) {
     state.unlockedWorld++;
   }
+  if (isCampaignFinale) {
+    state.guardianCrowned = true;
+    const cape = shop.find(s => s.className === "guardiancape");
+    if (cape && !state.shop.includes(cape.id)) {
+      state.shop.push(cape.id);
+      equipWithZoneCheck(cape);
+    }
+  }
   if (trip.daily && state.daily.solved >= 5 && !state.daily.claimed) {
     state.daily.claimed = true;
     const streakBonus = Math.min(20, state.streak.count * 3);
@@ -2255,6 +2318,8 @@ function completeMission() {
     const prof      = getActiveProfile();
     const playerName= prof?.name || "Explorer";
     setTimeout(() => showRescueCelebration(trip.world, playerName), 400);
+  } else if (isCampaignFinale) {
+    showGuardianCeremony();
   } else {
     showReward(animal, building, rare);
   }
@@ -2336,6 +2401,7 @@ const COSTUME_SYMBOLS = {
   astronaut: { costume:"costume-astronaut",   accessory:null,               pet:null },
   king:      { costume:"costume-king",        accessory:null,               pet:null },
   superhero: { costume:"costume-superhero",   accessory:null,               pet:null },
+  guardiancape: { costume:"costume-guardiancape", accessory:null,           pet:null },
   sunny:     { costume:null,                  accessory:"accessory-sunny",  pet:null },
   scarf:     { costume:null,                  accessory:"accessory-scarf",  pet:null },
   goggles:   { costume:null,                  accessory:"accessory-goggles",pet:null },
@@ -2351,7 +2417,7 @@ const COSTUME_SYMBOLS = {
 // as new costumes/accessories get added later — no per-pair listing needed.
 const ITEM_ZONES = {
   pirate:"head", astronaut:"head", king:"head", superhero:"back",
-  sunny:"head",  scarf:"neck",     goggles:"face", pet:null
+  sunny:"head",  scarf:"neck",     goggles:"face", pet:null, guardiancape:"head"
 };
 
 // Equip an item, auto-removing anything already worn in the same visual
@@ -2501,6 +2567,17 @@ function showReward(animal, building, rare) {
   } else {
     openModal();
   }
+}
+
+// Campaign finale — reuses the same reward-modal shell as showReward() (no
+// new markup needed) but with dedicated content: announces the Guardian
+// title and the exclusive Guardian Cape, which was already granted +
+// auto-equipped by completeMission() right before this is called.
+function showGuardianCeremony() {
+  const cape = shop.find(s => s.className === "guardiancape");
+  $("rewardTitle").textContent = t("guardianTitle");
+  $("rewardText").innerHTML = `<div class="rescue-card">${cape ? costumeSvg(cape.id) : ""}<p class="rescue-fact">${t("guardianBody")}</p></div>`;
+  $("rewardModal").hidden = false;
 }
 
 // S7: ghost silhouette of the next building Sausage hasn't unlocked yet.
@@ -2694,7 +2771,7 @@ function feedAnimal(id) {
 }
 
 function renderShop() {
-  $("shopGrid").innerHTML = shop.map(s => {
+  $("shopGrid").innerHTML = shop.filter(s => !s.earnedOnly).map(s => {
     const owned    = state.shop.includes(s.id);
     const equipped = state.equipped[s.type] === s.id;
     const statusText = owned ? (equipped ? t("equippedOnSausage") : t("ownedEquipInMySeal")) : t("visibleReward");
@@ -2758,8 +2835,9 @@ function renderCloset() {
   $("closetGrid").innerHTML   = shop.map(item => {
     const owned  = state.shop.includes(item.id);
     const active = state.equipped[item.type] === item.id;
+    const lockedText = item.earnedOnly ? t("earnedOnlyLocked") : `Buy in Rewards for ${item.cost} coins.`;
     return `<article class="item-card ${owned?"":"locked"}">${costumeSvg(item.id)}<h3>${item.name}</h3>
-      <p>${owned?`Slot: ${item.type}`:`Buy in Rewards for ${item.cost} coins.`}</p>
+      <p>${owned?`Slot: ${item.type}`:lockedText}</p>
       <button class="equip-btn ${active?"active":""}" data-equip="${item.id}" ${owned?"":"disabled"} aria-label="${active?t("unequip"):"Equip "+item.name}">${active?t("unequip"):t("equip")}</button></article>`;
   }).join("");
   const closetGrid = $("closetGrid");
@@ -2932,7 +3010,7 @@ function renderDashboard() {
 
   // Stat overview cards
   const statCards = [
-    [t("playerLabel") || "Player",         prof ? `${prof.emoji} ${prof.name}` : "—"],
+    [t("playerLabel") || "Player",         prof ? `${prof.emoji} ${escapeHtml(prof.name)}` : "—"],
     [t("languageLabel") || "Language",     langDisplay],
     [t("currentLevel"),                    state.level],
     [t("missionProgress"),                 `${missionTotal}/40`],
@@ -4238,6 +4316,10 @@ function costumeSvg(i) {
       overlay = { before: `<path d="M38 72 Q21 96 25 116 Q46 105 60 109 Q74 105 95 116 Q99 96 82 72 Q71 84 60 86 Q49 84 38 72Z" fill="#e02020"/>`,
                   after:  `<circle cx="60" cy="90" r="9" fill="#ffd45a" stroke="#c8a020" stroke-width="1.4"/><text x="60" y="94" text-anchor="middle" font-size="10" font-weight="900" fill="#c01010">S</text>` };
       break;
+    case "guardiancape": // icy crown + cape — exclusive Guardian Cape reward
+      overlay = { before: `<path d="M38 72 Q21 96 25 116 Q46 105 60 109 Q74 105 95 116 Q99 96 82 72 Q71 84 60 86 Q49 84 38 72Z" fill="#17869f"/>`,
+                  after:  `<rect x="40" y="29" width="40" height="7" rx="2" fill="#bdf3ea" stroke="#1a9b7a" stroke-width="1"/><polygon points="40,29 46,17 52,29" fill="#e8fffb" stroke="#1a9b7a" stroke-width="1"/><polygon points="54,29 60,15 66,29" fill="#e8fffb" stroke="#1a9b7a" stroke-width="1"/><polygon points="68,29 74,17 80,29" fill="#e8fffb" stroke="#1a9b7a" stroke-width="1"/><circle cx="60" cy="18" r="3" fill="#2dd6a6"/><circle cx="46" cy="19" r="2" fill="#60c8ff"/><circle cx="74" cy="19" r="2" fill="#60c8ff"/><circle cx="60" cy="90" r="9" fill="#fff8b8" stroke="#2dd6a6" stroke-width="1.4"/><text x="60" y="94" text-anchor="middle" font-size="10" font-weight="900" fill="#17869f">★</text>` };
+      break;
     case "sunny": // wide-brim sun hat
       overlay = `<ellipse cx="60" cy="37" rx="34" ry="6" fill="#ffd45a"/><path d="M46 37 Q47 25 60 23 Q73 25 74 37Z" fill="#ffd45a"/><path d="M48 35 Q49 27 60 26 Q71 27 72 35Z" fill="#ffb820"/><path d="M48 37 Q60 34 72 37" fill="none" stroke="#e84040" stroke-width="2" stroke-linecap="round"/>`;
       break;
@@ -4465,6 +4547,9 @@ const STRINGS = {
     equippedOnSausage:"Equipped on Sausage.", ownedEquipInMySeal:"Owned. Equip it in My Seal.",
     ownedTapToEquip:"Owned. Tap to equip.",
     visibleReward:"A visible reward for Sausage.", unlockedAndEquipped:"unlocked and equipped!",
+    earnedOnlyLocked:"🏆 Defeat the Arctic Storm on Arctic Champion to unlock.",
+    guardianTitle:"🏆 Guardian of the Arctic!",
+    guardianBody:"You braved every island and calmed the Great Arctic Storm. Sausage is now the Guardian of the Arctic — and earned an exclusive Guardian Cape, found only here. Go equip it in My Seal!",
     // Town
     arcticTown:"Arctic Town", townDesc:"Buildings appear as Sausage earns stars and rescues friends.",
     // Album
@@ -4509,6 +4594,7 @@ const STRINGS = {
     aheadConfirm:"You haven't reached {name} yet — Sausage usually visits islands in order. It's tuned for level {rec}, and you're level {level}.\n\nExplore it early anyway?",
     underleveledHint:"{character}: This place is level {rec}, but brave explorers may still visit unlocked islands.",
     exitMissionConfirm:"Exit this mission? Your progress on this question will be lost.",
+    exitMissionTitle:"Leave this mission?", exitMissionYes:"Yes, go to map", keepPlaying:"Keep playing",
     stormCovers:"Storm clouds still cover that island.",
     keepExploring:"Keep Exploring",
     missionComplete:"Mission Complete!", rareTreasure:"Rare Treasure!",
@@ -4573,6 +4659,9 @@ const STRINGS = {
     equippedOnSausage:"Надето на Тюленя.", ownedEquipInMySeal:"Куплено. Надень в разделе «Мой Тюлень».",
     ownedTapToEquip:"Куплено. Нажми, чтобы надеть.",
     visibleReward:"Заметная награда для Тюленя.", unlockedAndEquipped:"открыт и надет!",
+    earnedOnlyLocked:"🏆 Открывается за победу над Великой Арктической Бурей на острове Arctic Champion.",
+    guardianTitle:"🏆 Хранитель Арктики!",
+    guardianBody:"Ты прошёл все острова и успокоил Великую Арктическую Бурю. Колбаска теперь Хранитель Арктики — и получил эксклюзивный Плащ Хранителя, который больше нигде не получить. Надень его в разделе «Мой Тюлень»!",
     // Town
     arcticTown:"Арктический город", townDesc:"Здания появляются по мере зарабатывания звёзд и спасения друзей.",
     // Album
@@ -4617,6 +4706,7 @@ const STRINGS = {
     aheadConfirm:"Ты ещё не добрался до острова «{name}» — Тюлень обычно путешествует по порядку. Этот остров рассчитан на уровень {rec}, а у тебя {level}.\n\nИсследовать заранее?",
     underleveledHint:"{character}: Это место для уровня {rec}, но смелые путешественники могут заглянуть и раньше.",
     exitMissionConfirm:"Выйти из миссии? Прогресс по этому вопросу будет потерян.",
+    exitMissionTitle:"Покинуть миссию?", exitMissionYes:"Да, на карту", keepPlaying:"Остаться",
     stormCovers:"Этот остров ещё закрыт бурей.",
     keepExploring:"Продолжить!",
     missionComplete:"Миссия выполнена!", rareTreasure:"Редкое сокровище!",
@@ -4714,7 +4804,7 @@ function applyLangToDOM() {
   const btnMap = {
     startChallengeBtn: t("startMission"),
     miniGameBtn:       t("playBonus"),
-    closeMiniBtn:      t("returnToMap"),
+    closeMiniBtn:      `← ${t("returnToMap")}`,
     dailyBtn:          t("playDaily"),
     exportBtn:         t("exportCopy"),
     importBtn:         t("importProgress"),
@@ -4742,68 +4832,6 @@ function applyLangToDOM() {
       el.textContent = t(el.dataset.i18n);
     });
   }
-}
-
-// ── S2: Portable Save Code ────────────────────────────────────────────────────
-const CODE_CHARS = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789"; // 32 chars, no ambiguous I/O/0/1
-
-function generateSaveCode() {
-  // Encode key progress into ~8 chars: level(2) + fish(2) + missions(2) + achievements(2)
-  const missionTotal = Object.values(state.missions).reduce((a,b)=>a+b,0);
-  const payload = [
-    Math.min(state.level, 99),
-    Math.min(state.fish, 999),
-    Math.min(missionTotal, 99),
-    Math.min(state.achievements.length, 50),
-    state.unlockedWorld,
-    state.coins > 0 ? 1 : 0
-  ];
-  // Pack into base-32 string
-  let num = 0;
-  payload.forEach((v, i) => { num = num * 1000 + v; });
-  let code = "";
-  let n = Math.abs(num) + 1;
-  for (let i=0; i<8; i++) {
-    code = CODE_CHARS[n % 32] + code;
-    n = Math.floor(n / 32);
-  }
-  return code;
-}
-
-function copySaveCode() {
-  const code = generateSaveCode();
-  const box  = $("saveCodeBox");
-  if (box) box.value = code;
-  if (navigator.clipboard) {
-    navigator.clipboard.writeText(code)
-      .then(()=>toast(t("saveCodeCopied")))
-      .catch(()=>toast(t("saveCodeCopied")));
-  } else {
-    toast(t("saveCodeCopied"));
-  }
-}
-
-function restoreFromCode() {
-  const box = $("saveCodeBox");
-  if (!box) return;
-  const code = box.value.toUpperCase().replace(/[^A-Z2-9]/g,"");
-  if (code.length !== 8) { toast(t("saveCodeInvalid")); return; }
-  // Decode
-  let n = 0;
-  for (const ch of code) { n = n * 32 + CODE_CHARS.indexOf(ch); }
-  n -= 1;
-  const achievements_len = n % 1000; n = Math.floor(n/1000);
-  const missionTotal      = n % 1000; n = Math.floor(n/1000);
-  const fish              = n % 1000; n = Math.floor(n/1000);
-  const level             = n % 1000;
-  // Apply as a partial restore — give the player their level + fish back
-  // (full save export/import is still available for complete restore)
-  if (level < 1 || level > 99) { toast(t("saveCodeInvalid")); return; }
-  state.level = Math.max(state.level, level);
-  state.fish  = Math.max(state.fish, fish);
-  state.xp    = 0;
-  save(); renderAll();
-  toast(t("saveCodeRestored"));
 }
 
 init();

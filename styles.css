@@ -186,7 +186,10 @@ button { font: inherit; color: inherit; }
   filter: drop-shadow(0 16px 18px rgba(21,84,112,.23));
   transition: transform .2s ease, filter .2s ease;
 }
-.island:hover, .island.selected { transform: translateY(-6px) scale(1.03); }
+.island:hover { transform: translateY(-6px) scale(1.03); }
+.island-path-svg { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; }
+.island.selected { transform: translateY(-6px) scale(1.03); }
+.island.selected svg { animation: building-glow 2.2s ease-in-out infinite; }
 .island.locked { filter: grayscale(.8) opacity(.65); cursor: not-allowed; }
 .island svg { width: 100%; height: 100%; display: block; }
 .island span {
@@ -443,9 +446,10 @@ button { font: inherit; color: inherit; }
   background: rgba(255,255,255,0.92);
   color: var(--deep);
   font: inherit;
-  font-size: .85rem;
+  font-size: .9rem;
   font-weight: 900;
-  padding: 7px 14px;
+  min-height: 44px;
+  padding: 10px 16px;
   border-radius: 12px;
   cursor: pointer;
   box-shadow: 0 3px 10px rgba(24,84,125,.18);
@@ -453,6 +457,28 @@ button { font: inherit; color: inherit; }
 }
 .back-to-map-btn:hover { background: #fff; }
 .back-to-map-btn:active { opacity: .75; transform: translateY(1px); }
+/* Mini-game's exit button — same pill look as .back-to-map-btn, but sits in
+   normal flow at the top of the section (not an absolute overlay), since the
+   mini-game stage has no fixed "scene" backdrop to float over. */
+.mini-back-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  border: 0;
+  background: rgba(255,255,255,0.92);
+  color: var(--deep);
+  font: inherit;
+  font-size: .9rem;
+  font-weight: 900;
+  min-height: 44px;
+  padding: 10px 16px;
+  border-radius: 12px;
+  cursor: pointer;
+  box-shadow: 0 3px 10px rgba(24,84,125,.18);
+  margin-bottom: 10px;
+}
+.mini-back-btn:hover { background: #fff; }
+.mini-back-btn:active { opacity: .75; transform: translateY(1px); }
 .eyebrow { margin: 0; color: var(--blue); font-weight: 1000; text-transform: uppercase; letter-spacing: .05em; }
 .mission-strip {
   display: flex;
@@ -501,12 +527,13 @@ button { font: inherit; color: inherit; }
 .mini-stage {
   position: relative;
   min-height: clamp(300px, 56vh, 520px);
+  max-width: 720px;
+  margin: 0 auto 14px;
   overflow: hidden;
   border: 4px solid #fff;
   border-radius: 24px;
   background: linear-gradient(#9befff 0 42%, #18a9ce 42% 100%);
   box-shadow: var(--shadow);
-  margin-bottom: 14px;
 }
 .mini-target {
   position: absolute;
@@ -577,7 +604,8 @@ button { font: inherit; color: inherit; }
   opacity: 0; transform: scale(.6);
   transition: opacity .25s, transform .25s;
 }
-.lucky-catch-entry-btn { margin-top: 10px; }
+.lucky-catch-entry-btn { margin-top: 10px; margin-bottom: 14px; }
+.guardian-badge { font-size: 1rem; line-height: 1; }
 
 .section-head { padding: 18px; margin-bottom: 14px; }
 .section-head.compact { margin-top: 16px; }
