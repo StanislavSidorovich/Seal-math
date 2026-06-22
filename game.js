@@ -1516,14 +1516,18 @@ function islandGroundAccentSvg(worldId) {
 }
 
 // ─── Custom per-island mission scenes ──────────────────────────────────────
-// Each island's SVG uses the SAME id, #islandFriendRig, for its friend's
-// position wrapper — safe because only one island's markup is ever mounted
-// in the DOM at a time (they replace each other in #challengeCustomBg).
+// v2 design: the friend (Nori/Pip/Bluebell/Pebble) stays put for the whole
+// mission at #islandFriendSpot — their stranded position, baked directly
+// into each SVG (no JS positioning needed for them anymore). Sausage
+// (#missionSealRig, a separate top-level element — see index.html) is what
+// swims toward them as questions are answered. This matches the existing
+// rescue dialogue ("...that sled will reach me!") better than the earlier
+// version where the friend walked toward a stationary Sausage, and it's
+// simpler too: one moving thing instead of two.
 //
 // To add another island later: build its SVG with the same conventions
-// (viewBox 0 0 800 500, a #islandFriendRig wrapper around the friend, its
-// "arrived" pose as the default position, one continuous pose for the whole
-// path), then add one line to ISLAND_SCENES below.
+// (viewBox 0 0 800 500, the friend drawn directly at their stranded spot,
+// no rig needed for them), then add one line to ISLAND_SCENES below.
 
 const FISH_BAY_SCENE_SVG        = `<svg viewBox="0 0 800 500" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="xMidYMid slice" aria-label="Fish Bay — a wooden dock with a fishing boat, a jumping fish, a blinking lighthouse, and Nori the baby seal waving from the dock" role="img">
 
@@ -1544,6 +1548,14 @@ const FISH_BAY_SCENE_SVG        = `<svg viewBox="0 0 800 500" xmlns="http://www.
        declension already wired up in game.js). Used Nori here so
        this scene stays consistent with the mission dialogue and the
        rescue-card popup the player already sees for this island.
+
+       v3: Nori now stays PUT at #islandFriendSpot — her stranded
+       position near the lighthouse — for the whole mission. Sausage
+       (a separate element, #missionSealRig in index.html) is what
+       swims toward her as questions are answered; see syncMissionSeal()
+       in game.js. Matches the rescue dialogue ("...that sled will
+       reach me!") better than the earlier version where she walked to
+       a stationary Sausage.
        ════════════════════════════════════════════════════════════ -->
 
   <defs>
@@ -1765,7 +1777,7 @@ const FISH_BAY_SCENE_SVG        = `<svg viewBox="0 0 800 500" xmlns="http://www.
          what x she's at. Default position here = "arrived" (next to
          the boat); game.js resets her to the "stranded" end at mission
          start and walks her across as questions are answered. ── -->
-    <g id="islandFriendRig" transform="translate(45,0)">
+    <g id="islandFriendSpot" transform="translate(-141,0)">
     <g class="fb-nori">
       <path d="M203 346 C195 328 197 308 215 300 C233 292 253 298 257 316 C261 332 253 344 237 347 C225 349 211 348 203 346 Z" fill="#eef6fa" stroke="#1d3a4a" stroke-width="2.4"/>
       <ellipse cx="231" cy="338" rx="14" ry="8" fill="#c9e4ef"/>
@@ -1843,11 +1855,13 @@ const SNOW_BEACH_SCENE_SVG      = `<svg viewBox="0 0 800 500" xmlns="http://www.
        directly from the existing ANIMAL_SVGS[1] icon in game.js so
        she matches her own rescue-card/town art exactly.
 
-       FRIEND RIG: #islandFriendRig is the generic hook game.js drives
-       for ANY island (see fish-bay-nori-swim.js v2 / ISLAND_SCENES).
-       Default position here = "arrived" at the shelter; game.js resets
-       her to "stranded" at mission start and walks her across as
-       questions are answered.
+       FRIEND: #islandFriendSpot is Pip's permanent position for the
+       whole mission — she stays put near the driftwood where she
+       washed up. Sausage (a separate top-level element,
+       #missionSealRig in index.html) is what now waddles/swims in
+       toward her as questions are answered; see syncMissionSeal() in
+       game.js. Matches the rescue dialogue better than the earlier
+       version where she walked toward a stationary Sausage.
        ════════════════════════════════════════════════════════════ -->
 
   <defs>
@@ -2049,7 +2063,7 @@ const SNOW_BEACH_SCENE_SVG      = `<svg viewBox="0 0 800 500" xmlns="http://www.
          match ANIMAL_SVGS[1] exactly (dark navy-black #1a2030, belly
          #f0f4f8, beak #f0c060) so she's recognizably "the same Pip"
          seen elsewhere in the game. ── -->
-    <g id="islandFriendRig" transform="translate(370,0)">
+    <g id="islandFriendSpot" transform="translate(60,0)">
     <g class="scn-pip">
       <ellipse cx="60" cy="452" rx="24" ry="11" fill="#f0c060" opacity=".9"/>
       <ellipse cx="60" cy="448" rx="26" ry="30" fill="#1a2030" stroke="#1d3a4a" stroke-width="2.2"/>
@@ -2078,11 +2092,11 @@ const WHALE_COAST_SCENE_SVG     = `<svg viewBox="0 0 800 500" xmlns="http://www.
        Bluebell's colours are pulled directly from ANIMAL_SVGS[5] in
        game.js so she matches her own rescue-card/town art exactly.
 
-       FRIEND RIG: #islandFriendRig, same generic hook as the other
-       islands (see island-scenes.js / ISLAND_SCENES). Unlike Nori and
-       Pip, Bluebell is drawn directly at her "arrived" position, and
-       the rig's resting transform is the identity — game.js supplies
-       a negative offset for "out in the open sea" at mission start.
+       FRIEND: #islandFriendSpot is Bluebell's permanent position for
+       the whole mission — she stays out in the open sea, away from
+       the coast. Sausage (a separate top-level element,
+       #missionSealRig in index.html) is what now swims toward her as
+       questions are answered; see syncMissionSeal() in game.js.
        ════════════════════════════════════════════════════════════ -->
 
   <defs>
@@ -2259,7 +2273,7 @@ const WHALE_COAST_SCENE_SVG     = `<svg viewBox="0 0 800 500" xmlns="http://www.
          match ANIMAL_SVGS[5] exactly (body #4a9ecf, fin accent
          #3a8ebf, belly sheen #7fd0f0) so she's recognizably the same
          Bluebell seen elsewhere in the game. ── -->
-    <g id="islandFriendRig">
+    <g id="islandFriendSpot" transform="translate(-440,0)">
       <g class="scn-bluebell">
         <path d="M480 322 Q490 292 530 290 Q580 286 620 302 Q630 318 610 326 Q560 338 510 334 Q484 332 480 322Z" fill="#4a9ecf" stroke="#1d3a4a" stroke-width="2.6"/>
         <path d="M500 308 Q540 300 600 310 Q560 316 520 316Z" fill="#7fd0f0" opacity=".5"/>
@@ -2306,10 +2320,12 @@ const PENGUIN_ISLANDS_SCENE_SVG = `<svg viewBox="0 0 800 500" xmlns="http://www.
        pose for the full distance was the only way to avoid an
        "walking on water" moment partway through.
 
-       FRIEND RIG: #islandFriendRig — drawn directly at her "arrived"
-       position, same convention as Bluebell (Whale Coast); game.js
-       supplies a negative x offset for "isolated, far from the group"
-       at mission start.
+       FRIEND: #islandFriendSpot is Pebble's permanent position for
+       the whole mission — she stays isolated on the ice, away from
+       the parade. Sausage (a separate top-level element,
+       #missionSealRig in index.html) is what now waddles/swims in
+       toward her as questions are answered; see syncMissionSeal() in
+       game.js.
        ════════════════════════════════════════════════════════════ -->
 
   <defs>
@@ -2478,7 +2494,7 @@ const PENGUIN_ISLANDS_SCENE_SVG = `<svg viewBox="0 0 800 500" xmlns="http://www.
          #1a1a2a body, bright orange #ff8820 beak AND flippers — the
          orange flippers are the easiest "this isn't a penguin" tell
          next to the colony's navy ones). ── -->
-    <g id="islandFriendRig">
+    <g id="islandFriendSpot" transform="translate(-525,0)">
       <g class="scn-pebble">
         <ellipse cx="645" cy="476" rx="22" ry="8" fill="#ff8820" opacity=".85"/>
         <ellipse cx="645" cy="462" rx="22" ry="26" fill="#1a1a2a" stroke="#1d3a4a" stroke-width="2.4"/>
@@ -2498,10 +2514,10 @@ const PENGUIN_ISLANDS_SCENE_SVG = `<svg viewBox="0 0 800 500" xmlns="http://www.
 </svg>`;
 
 const ISLAND_SCENES = {
-  0: { svg: SNOW_BEACH_SCENE_SVG,      startX: 60,   endX: 370 }, // Snow Beach      — Pip,      driftwood → lantern shelter
-  1: { svg: FISH_BAY_SCENE_SVG,        startX: -141, endX: 45  }, // Fish Bay        — Nori,     lighthouse → boat
-  2: { svg: WHALE_COAST_SCENE_SVG,     startX: -440, endX: 0   }, // Whale Coast     — Bluebell, open sea → song-rock at the coast
-  3: { svg: PENGUIN_ISLANDS_SCENE_SVG, startX: -525, endX: 0   }, // Penguin Islands — Pebble,   isolated on the ice → joins the parade
+  0: SNOW_BEACH_SCENE_SVG,      // Snow Beach      — Pip,      stranded near driftwood
+  1: FISH_BAY_SCENE_SVG,        // Fish Bay        — Nori,     stranded near the lighthouse
+  2: WHALE_COAST_SCENE_SVG,     // Whale Coast     — Bluebell, stranded out in the open sea
+  3: PENGUIN_ISLANDS_SCENE_SVG, // Penguin Islands — Pebble,   stranded, isolated on the ice
 };
 
 // Mounts/unmounts the bespoke scene in #challengeCustomBg. Islands with no
@@ -2510,10 +2526,10 @@ const ISLAND_SCENES = {
 function setupIslandScene(scene, worldId) {
   const bg = scene.querySelector("#challengeCustomBg");
   if (!bg) return;
-  const cfg = ISLAND_SCENES[worldId];
-  if (cfg) {
+  const svg = ISLAND_SCENES[worldId];
+  if (svg) {
     if (bg.dataset.world !== String(worldId)) {
-      bg.innerHTML = cfg.svg;
+      bg.innerHTML = svg;
       bg.dataset.world = String(worldId);
     }
     bg.hidden = false;
@@ -2522,25 +2538,44 @@ function setupIslandScene(scene, worldId) {
     bg.innerHTML = "";
     delete bg.dataset.world;
   }
+  // The generic per-island layers would otherwise sit on top of (and
+  // visually clash with) the bespoke art, so hide just those three on
+  // islands that have custom art.
   const iceberg = scene.querySelector(".iceberg");
   const wm      = scene.querySelector(".challenge-watermark");
   const ga      = scene.querySelector(".challenge-ground-accent");
-  if (iceberg) iceberg.style.display = cfg ? "none" : "";
-  if (wm)      wm.style.display      = cfg ? "none" : "";
-  if (ga)      ga.style.display      = cfg ? "none" : "";
+  if (iceberg) iceberg.style.display = svg ? "none" : "";
+  if (wm)      wm.style.display      = svg ? "none" : "";
+  if (ga)      ga.style.display      = svg ? "none" : "";
 }
 
-// Call any time trip.solved or trip.needed changes (mission start, every
-// correct answer) — for any island. No-op on islands with no custom scene.
-function syncIslandFriend() {
+// Sausage swims in from off-screen-left toward his usual spot as
+// trip.solved/trip.needed increases — on EVERY island, not just ones with
+// bespoke scene art, since this is plain CSS positioning independent of the
+// background. Percent-based (not px) so it scales with the actual rendered
+// width of .challenge-scene, which varies a lot (mobile full-width vs the
+// desktop grid column).
+//
+// NOTE — this is an approximation, not pixel-perfect alignment: the
+// background SVGs use their own internal 0–800 coordinate space (scaled to
+// "cover" the container via preserveAspectRatio="...slice", which crops
+// rather than fits), while #missionSealRig is positioned in plain CSS
+// percent relative to .challenge-scene's actual rendered box. The two
+// coordinate systems don't translate 1:1 across every aspect ratio/viewport,
+// so Sausage will land "in the right neighborhood" near the friend rather
+// than exactly on top of them pixel-for-pixel. Good enough for a charming
+// mascot animation; true pixel-perfect sync would need reading the SVG's
+// actual on-screen transform at runtime (getScreenCTM() or similar), which
+// is a fair bit more work — say if that's worth doing later.
+const SEAL_SWIM_START_LEFT_PCT = -12; // just off-screen, about to swim in
+const SEAL_SWIM_END_LEFT_PCT   = 14;  // arrived, near the friend
+function syncMissionSeal() {
   if (!trip) return;
-  const cfg = ISLAND_SCENES[trip.world];
-  if (!cfg) return;
-  const rig = document.querySelector("#islandFriendRig");
+  const rig = document.querySelector("#missionSealRig");
   if (!rig) return;
   const pct = Math.min(1, trip.solved / trip.needed);
-  const x = cfg.startX + (cfg.endX - cfg.startX) * pct;
-  rig.style.transform = `translate(${x.toFixed(1)}px,0)`;
+  const left = SEAL_SWIM_START_LEFT_PCT + (SEAL_SWIM_END_LEFT_PCT - SEAL_SWIM_START_LEFT_PCT) * pct;
+  rig.style.left = `${left.toFixed(1)}%`;
 }
 
 function islandSvg(world, locked) {
@@ -2638,7 +2673,7 @@ function startMission(daily) {
   switchView("adventure");
   const mission = daily ? 0 : nextMission();
   trip = { active:true, world:selectedWorld, mission, solved:0, needed:5+(mission>2?2:0), correct:0, daily, mistakes:0, stormIntensity:100, combo:0 };
-  syncIslandFriend();
+  syncMissionSeal();
   $("challenge").hidden = false;
   $("miniGame").hidden  = true;
   $("challenge").scrollIntoView({ behavior: "smooth", block: "start" });
@@ -2761,7 +2796,7 @@ function makeProblem() {
     $("questionsLeft").textContent = `${Math.max(0, trip.needed-trip.solved)} ${t("questionsLeft")}`;
     $("missionTrailMarker").style.left = `${missionTrailPos(trip.solved, trip.needed)}%`;
   }
-  syncIslandFriend();
+  syncMissionSeal();
   $("missionTrailGoal").innerHTML = missionGoalIcon(world, trip.mission);
   $("problemText").textContent   = currentProblem.text;
   $("hintText").hidden           = true;
@@ -3240,7 +3275,7 @@ function answer(value, btn) {
       $("questionsLeft").textContent = `${Math.max(0, trip.needed-trip.solved)} ${t("questionsLeft")}`;
       $("missionMeter").style.width  = `${Math.round((trip.solved/trip.needed)*100)}%`;
       $("missionTrailMarker").style.left = `${missionTrailPos(trip.solved, trip.needed)}%`;
-      syncIslandFriend();
+      syncMissionSeal();
       setTimeout(() => trip.solved >= trip.needed ? completeMission() : makeProblem(), 860);
     }
   } else {

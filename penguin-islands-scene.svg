@@ -1,0 +1,221 @@
+<svg viewBox="0 0 800 500" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="xMidYMid slice" aria-label="Penguin Islands — an aurora-lit ice platform with a marching penguin parade and a small drum, with Pebble the puffin waddling along the ice to rejoin the group" role="img">
+
+  <!-- ════════════════════════════════════════════════════════════
+       PENGUIN ISLANDS — mission scene background
+       Sausage the Seal: Arctic Math Adventure
+       Same conventions as the other islands (flat vector, no
+       gradients, navy #1d3a4a outlines, viewBox 0 0 800 500).
+
+       A NOTE ON WHO'S WHO: the island's theme/scenery is a penguin
+       colony ("Guide the penguin parade"), but the actual named friend
+       — world.character "Pebble" — is a PUFFIN (animal id 2 in
+       game.js, ANIMAL_SVGS[2]), not one of the penguins. That's not a
+       data error like Octopus Cave's was; nothing else in the data
+       claims Pebble is a penguin. Read here as: Pebble is a puffin who
+       ended up among this penguin colony and is making her way back
+       to the group — so the scene shows BOTH: a background "parade"
+       of generic colony penguins (colours matching the existing
+       ISLAND_DECOR[3] emblem: navy #26364a body, gold #ffb847 beak),
+       and Pebble herself drawn in her own established colours
+       (ANIMAL_SVGS[2]: near-black #1a1a2a body, bright orange #ff8820
+       beak/flippers) so she's clearly a different bird, not a
+       recolour of the same one.
+
+       Pebble's whole path stays on solid ice (no swimming partway and
+       standing the rest) — the rig only moves her sideways, it can't
+       change her pose, so giving her one continuous standing/waddling
+       pose for the full distance was the only way to avoid an
+       "walking on water" moment partway through.
+
+       FRIEND: #islandFriendSpot is Pebble's permanent position for
+       the whole mission — she stays isolated on the ice, away from
+       the parade. Sausage (a separate top-level element,
+       #missionSealRig in index.html) is what now waddles/swims in
+       toward her as questions are answered; see syncMissionSeal() in
+       game.js.
+       ════════════════════════════════════════════════════════════ -->
+
+  <defs>
+    <clipPath id="pi-canvas"><rect x="0" y="0" width="800" height="500"/></clipPath>
+  </defs>
+
+  <style>
+    .scn-cloud-a { animation: scn-drift-a 15s ease-in-out infinite; }
+    .scn-cloud-b { animation: scn-drift-b 12s ease-in-out infinite; }
+    @keyframes scn-drift-a { 0%,100% { transform: translateX(0); } 50% { transform: translateX(14px); } }
+    @keyframes scn-drift-b { 0%,100% { transform: translateX(0); } 50% { transform: translateX(-12px); } }
+
+    /* Aurora ribbons shimmering — this island's stand-in for the
+       lighthouse/lantern/song-rock "blinking light" beat */
+    .scn-aurora-1 { animation: scn-shimmer 4.2s ease-in-out infinite; }
+    .scn-aurora-2 { animation: scn-shimmer 5s   ease-in-out infinite; animation-delay: -1.6s; }
+    .scn-aurora-3 { animation: scn-shimmer 3.6s ease-in-out infinite; animation-delay: -.8s; }
+    @keyframes scn-shimmer { 0%,100% { opacity: .22; } 50% { opacity: .45; } }
+
+    /* A little parade drum, bopping to its own beat */
+    .scn-drum { transform-origin: 700px 462px; animation: scn-bop 1.1s ease-in-out infinite; }
+    @keyframes scn-bop { 0%,100% { transform: scaleY(1); } 40% { transform: scaleY(.88); } 55% { transform: scaleY(1.04); } }
+
+    /* The colony penguins waddling in their parade line */
+    .scn-waddle-mini { animation: scn-waddle-mini 1.6s ease-in-out infinite; }
+    @keyframes scn-waddle-mini { 0%,100% { transform: rotate(-5deg); } 50% { transform: rotate(5deg); } }
+
+    /* Small fish leaping in the little inlet, with a synced splash */
+    .scn-fish   { transform-origin: 750px 452px; animation: scn-jump 3.2s ease-in-out infinite; }
+    .scn-splash { transform-origin: 736px 468px; animation: scn-splash 3.2s ease-in-out infinite; }
+    @keyframes scn-jump {
+      0%   { transform: translate(0,8px)  rotate(-4deg);  opacity: .9; }
+      16%  { transform: translate(-4px,-14px) rotate(-22deg); opacity: 1; }
+      30%  { transform: translate(-7px,-20px) rotate(-14deg); opacity: 1; }
+      46%  { transform: translate(-2px,-4px)  rotate(-4deg);  opacity: 1; }
+      58%  { transform: translate(0,8px)  rotate(-2deg);  opacity: .9; }
+      64%  { opacity: 0; }
+      96%  { opacity: 0; transform: translate(0,8px) rotate(-2deg); }
+      100% { transform: translate(0,8px)  rotate(-4deg);  opacity: .9; }
+    }
+    @keyframes scn-splash {
+      0%, 52% { transform: scale(.4); opacity: 0; }
+      60%     { transform: scale(1);  opacity: .6; }
+      72%     { transform: scale(1.5); opacity: 0; }
+      100%    { transform: scale(.4); opacity: 0; }
+    }
+
+    /* Pebble — idle waddle + a flipper wave (her flippers are orange,
+       unlike the colony penguins', which helps her read as different) */
+    .scn-pebble      { transform-origin: 645px 462px; animation: scn-waddle 2.4s ease-in-out infinite; }
+    .scn-pebble-wave { transform-origin: 665px 446px; animation: scn-wave 1.7s ease-in-out infinite; }
+    @keyframes scn-waddle { 0%,100% { transform: rotate(-3deg); } 50% { transform: rotate(3deg); } }
+    @keyframes scn-wave   { 0%,100% { transform: rotate(-8deg); } 50% { transform: rotate(30deg); } }
+  </style>
+
+  <g clip-path="url(#pi-canvas)">
+
+    <!-- ── Sky ─────────────────────────────────────────────── -->
+    <rect x="0" y="0" width="800" height="190" fill="#f7f7ff"/>
+    <rect x="0" y="140" width="800" height="50" fill="#d8dcf7"/>
+
+    <!-- ── Aurora, shimmering softly ────────────────────────── -->
+    <path class="scn-aurora-1" d="M0,110 Q100,70 200,100 T400,100 T600,100 T800,100 L800,140 Q600,115 400,135 T200,130 T0,140 Z" fill="#9ce8c8"/>
+    <path class="scn-aurora-2" d="M0,95 Q120,60 240,90 T480,88 T720,92 L800,100 L800,130 Q600,100 400,122 T160,118 T0,128 Z" fill="#c9b8f0"/>
+    <path class="scn-aurora-3" d="M0,128 Q140,98 280,118 T560,116 T800,120 L800,150 Q600,128 400,146 T200,142 T0,150 Z" fill="#a8c8f0"/>
+
+    <!-- ── Clouds, sparse — aurora is the sky's main event here ── -->
+    <g fill="#ffffff" stroke="#e4e6fa" stroke-width="2">
+      <g class="scn-cloud-a">
+        <ellipse cx="200" cy="50" rx="22" ry="10"/>
+        <circle cx="190" cy="46" r="9"/><circle cx="206" cy="42" r="11"/>
+      </g>
+      <g class="scn-cloud-b">
+        <ellipse cx="620" cy="55" rx="20" ry="9"/>
+        <circle cx="612" cy="52" r="8"/><circle cx="626" cy="49" r="10"/>
+      </g>
+    </g>
+
+    <!-- ── Distant ice floes near the horizon — the "Islands" part ── -->
+    <g fill="#eef4ff" stroke="#d4dcf2" stroke-width="2">
+      <ellipse cx="530" cy="178" rx="38" ry="12"/>
+      <ellipse cx="715" cy="182" rx="30" ry="10"/>
+    </g>
+
+    <!-- ── Gulls ────────────────────────────────────────────── -->
+    <g fill="none" stroke="#1d3a4a" stroke-width="2.5" stroke-linecap="round">
+      <path d="M540 90q9-10 18 0q9-10 18 0"/>
+      <path d="M295 75q7-8 14 0q7-8 14 0" stroke-width="2"/>
+    </g>
+
+    <!-- ── Sea, a band behind the ice platform ─────────────── -->
+    <rect x="0" y="190" width="800" height="130" fill="#7c8fe8"/>
+    <rect x="0" y="190" width="800" height="40" fill="#a8b8f5"/>
+    <path d="M0,280 Q40,268 80,280 T160,280 T240,280 T320,280 T400,280 T480,280 T560,280 T640,280 T720,280 T800,280" fill="none" stroke="#ffffff" stroke-width="2.5" stroke-linecap="round" opacity=".35"/>
+
+    <!-- ── Ice platform — the whole parade ground, so Pebble's
+         path is solid the entire way (see header note) ──────── -->
+    <path d="M0,500 L0,330 Q100,312 200,326 T400,318 T600,328 T800,316 L800,440 Q760,420 700,440 L700,500 Z" fill="#f7faff" stroke="#dbe4f5" stroke-width="2.5"/>
+    <g stroke="#cdd8ec" stroke-width="2" opacity=".6">
+      <path d="M120 360 Q180 380 250 364" fill="none"/>
+      <path d="M420 340 Q480 360 540 346" fill="none"/>
+      <path d="M260 420 Q310 436 360 424" fill="none"/>
+    </g>
+    <!-- a small open-water inlet at the corner, for the fish to jump in -->
+    <path d="M700,440 Q760,420 800,440 L800,500 L700,500 Z" fill="#7c8fe8"/>
+    <path d="M700,440 Q760,420 800,440" fill="none" stroke="#ffffff" stroke-width="2.5" opacity=".4"/>
+
+    <!-- footprint trail across the ice -->
+    <g fill="#5c6b8a" opacity=".5">
+      <ellipse cx="160" cy="468" rx="6" ry="8"/><circle cx="155" cy="459" r="2.6"/><circle cx="164" cy="457" r="2.6"/>
+      <ellipse cx="230" cy="464" rx="6" ry="8"/><circle cx="225" cy="455" r="2.6"/><circle cx="234" cy="453" r="2.6"/>
+      <ellipse cx="320" cy="460" rx="6" ry="8"/><circle cx="315" cy="451" r="2.6"/><circle cx="324" cy="449" r="2.6"/>
+      <ellipse cx="400" cy="458" rx="6" ry="8"/><circle cx="395" cy="449" r="2.6"/><circle cx="404" cy="447" r="2.6"/>
+      <ellipse cx="490" cy="460" rx="6" ry="8"/><circle cx="485" cy="451" r="2.6"/><circle cx="494" cy="449" r="2.6"/>
+      <ellipse cx="570" cy="462" rx="6" ry="8"/><circle cx="565" cy="453" r="2.6"/><circle cx="574" cy="451" r="2.6"/>
+    </g>
+
+    <!-- small fish leaping in the inlet -->
+    <g class="scn-fish">
+      <ellipse cx="750" cy="452" rx="16" ry="9" fill="#ff9f4a" stroke="#1d3a4a" stroke-width="2.2"/>
+      <path d="M735 452 720 443 723 452 720 461Z" fill="#ff9f4a" stroke="#1d3a4a" stroke-width="2.2" stroke-linejoin="round"/>
+    </g>
+    <g class="scn-splash" fill="none" stroke="#ffffff" stroke-linecap="round">
+      <ellipse cx="736" cy="468" rx="11" ry="3.5" opacity=".5" stroke-width="2.2"/>
+      <ellipse cx="736" cy="468" rx="18" ry="5" opacity=".3" stroke-width="2"/>
+    </g>
+
+    <!-- ── The penguin parade (background colony, generic colours) ── -->
+    <g fill="#26364a" stroke="#1d3a4a" stroke-width="1.8">
+      <g class="scn-waddle-mini" style="transform-origin:420px 460px; animation-delay:-.1s">
+        <ellipse cx="420" cy="460" rx="11" ry="17"/>
+        <ellipse cx="420" cy="463" rx="6" ry="11" fill="#ffffff" stroke="none"/>
+        <path d="M414 446 420 438 426 446Z" fill="#ffb847" stroke="#1d3a4a" stroke-width="1.4"/>
+      </g>
+      <g class="scn-waddle-mini" style="transform-origin:465px 463px; animation-delay:-.5s">
+        <ellipse cx="465" cy="463" rx="11" ry="17"/>
+        <ellipse cx="465" cy="466" rx="6" ry="11" fill="#ffffff" stroke="none"/>
+        <path d="M459 449 465 441 471 449Z" fill="#ffb847" stroke="#1d3a4a" stroke-width="1.4"/>
+      </g>
+      <g class="scn-waddle-mini" style="transform-origin:510px 460px; animation-delay:-.9s">
+        <ellipse cx="510" cy="460" rx="11" ry="17"/>
+        <ellipse cx="510" cy="463" rx="6" ry="11" fill="#ffffff" stroke="none"/>
+        <path d="M504 446 510 438 516 446Z" fill="#ffb847" stroke="#1d3a4a" stroke-width="1.4"/>
+      </g>
+      <g class="scn-waddle-mini" style="transform-origin:555px 463px; animation-delay:-1.3s">
+        <ellipse cx="555" cy="463" rx="11" ry="17"/>
+        <ellipse cx="555" cy="466" rx="6" ry="11" fill="#ffffff" stroke="none"/>
+        <path d="M549 449 555 441 561 449Z" fill="#ffb847" stroke="#1d3a4a" stroke-width="1.4"/>
+      </g>
+      <g class="scn-waddle-mini" style="transform-origin:600px 460px; animation-delay:-1.5s">
+        <ellipse cx="600" cy="460" rx="11" ry="17"/>
+        <ellipse cx="600" cy="463" rx="6" ry="11" fill="#ffffff" stroke="none"/>
+        <path d="M594 446 600 438 606 446Z" fill="#ffb847" stroke="#1d3a4a" stroke-width="1.4"/>
+      </g>
+    </g>
+
+    <!-- small parade drum -->
+    <g class="scn-drum">
+      <path d="M686 462 L686 478 Q700 486 714 478 L714 462Z" fill="#ff6f61" stroke="#1d3a4a" stroke-width="2.2"/>
+      <ellipse cx="700" cy="462" rx="14" ry="7" fill="#fff0d0" stroke="#1d3a4a" stroke-width="2.2"/>
+      <path d="M686 462 Q700 468 714 462" fill="none" stroke="#1d3a4a" stroke-width="1.4" opacity=".5"/>
+    </g>
+
+    <!-- ── Pebble the puffin — waddling along the ice to rejoin the
+         group. Colours match ANIMAL_SVGS[2] exactly (near-black
+         #1a1a2a body, bright orange #ff8820 beak AND flippers — the
+         orange flippers are the easiest "this isn't a penguin" tell
+         next to the colony's navy ones). ── -->
+    <g id="islandFriendSpot" transform="translate(-525,0)">
+      <g class="scn-pebble">
+        <ellipse cx="645" cy="476" rx="22" ry="8" fill="#ff8820" opacity=".85"/>
+        <ellipse cx="645" cy="462" rx="22" ry="26" fill="#1a1a2a" stroke="#1d3a4a" stroke-width="2.4"/>
+        <ellipse cx="645" cy="465" rx="13" ry="18" fill="#f0f0f0"/>
+        <ellipse cx="645" cy="436" rx="16" ry="15" fill="#1a1a2a" stroke="#1d3a4a" stroke-width="2.4"/>
+        <circle cx="638" cy="433" r="4.6" fill="#1a1a2a"/><circle cx="652" cy="433" r="4.6" fill="#1a1a2a"/>
+        <circle cx="639.6" cy="431.4" r="1.5" fill="#fff"/><circle cx="653.6" cy="431.4" r="1.5" fill="#fff"/>
+        <path d="M639 443 Q645 448 651 443 Q649 439 645 437 Q641 439 639 443Z" fill="#ff8820" stroke="#1d3a4a" stroke-width="1.6"/>
+        <ellipse cx="623" cy="455" rx="7" ry="10" fill="#ff8820" stroke="#1d3a4a" stroke-width="1.8"/>
+        <g class="scn-pebble-wave">
+          <ellipse cx="665" cy="448" rx="7" ry="10" fill="#ff8820" stroke="#1d3a4a" stroke-width="1.8"/>
+        </g>
+      </g>
+    </g>
+
+  </g>
+</svg>

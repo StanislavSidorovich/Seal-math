@@ -448,7 +448,21 @@ button { font: inherit; color: inherit; }
 .storm-cloud-3 { width: 115px; height: 38px; top: 4px;  right: 5%; }
 .storm-cloud-3:before { width: 50px; height: 50px; top: -22px; left: 12px; }
 .storm-cloud-3:after  { width: 42px; height: 42px; top: -14px; left: 58px; }
-.small-seal { position: absolute; width: 190px; right: 20px; bottom: 24px; animation: bob 2.6s ease-in-out infinite; }
+/* Reworked: Sausage now swims toward the stranded friend instead of
+   parking in one fixed spot. Position lives on .mission-seal-rig (an
+   outer, non-animated wrapper) so JS can drive it without fighting
+   the swim/bob animation that stays on the SVG itself — same fix as
+   the boat-position bug earlier (an animated `transform` on an
+   element always overrides a JS/attribute `transform` on that same
+   element, so the two need to live on different elements). Also
+   sized down a bit (190px → 150px) so he covers less of the scene. */
+.small-seal { width: 150px; display: block; }
+.mission-seal-rig {
+  position: absolute;
+  left: 75%;
+  bottom: 24px;
+  z-index: 1;
+}
 .fish {
   position: absolute;
   width: 32px;

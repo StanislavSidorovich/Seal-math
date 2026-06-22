@@ -1,0 +1,209 @@
+<svg viewBox="0 0 800 500" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="xMidYMid slice" aria-label="Whale Coast — a rocky sea arch with kelp and a softly glowing song-rock, with Bluebell the whale swimming in from the open sea" role="img">
+
+  <!-- ════════════════════════════════════════════════════════════
+       WHALE COAST — mission scene background
+       Sausage the Seal: Arctic Math Adventure
+       Same conventions as Fish Bay / Snow Beach (flat vector, no
+       gradients, navy #1d3a4a outlines, viewBox 0 0 800 500).
+       Bluebell's colours are pulled directly from ANIMAL_SVGS[5] in
+       game.js so she matches her own rescue-card/town art exactly.
+
+       FRIEND: #islandFriendSpot is Bluebell's permanent position for
+       the whole mission — she stays out in the open sea, away from
+       the coast. Sausage (a separate top-level element,
+       #missionSealRig in index.html) is what now swims toward her as
+       questions are answered; see syncMissionSeal() in game.js.
+       ════════════════════════════════════════════════════════════ -->
+
+  <defs>
+    <clipPath id="wc-canvas"><rect x="0" y="0" width="800" height="500"/></clipPath>
+  </defs>
+
+  <style>
+    .scn-cloud-a { animation: scn-drift-a 15s ease-in-out infinite; }
+    .scn-cloud-b { animation: scn-drift-b 12s ease-in-out infinite; }
+    .scn-cloud-c { animation: scn-drift-c 10s ease-in-out infinite; }
+    .scn-cloud-d { animation: scn-drift-d 9s  ease-in-out infinite; }
+    @keyframes scn-drift-a { 0%,100% { transform: translateX(0); } 50% { transform: translateX(16px); } }
+    @keyframes scn-drift-b { 0%,100% { transform: translateX(0); } 50% { transform: translateX(-13px); } }
+    @keyframes scn-drift-c { 0%,100% { transform: translateX(0); } 50% { transform: translateX(11px); } }
+    @keyframes scn-drift-d { 0%,100% { transform: translateX(0); } 50% { transform: translateX(-8px); } }
+
+    /* The song-rock at the coast — soft cyan pulse, doubling as the
+       "blinking light" beat the other islands have */
+    .scn-songrock { transform-origin: 600px 450px; animation: scn-rock-pulse 2.4s ease-in-out infinite; }
+    .scn-songrock-glow { transform-origin: 600px 450px; animation: scn-rock-glow 2.4s ease-in-out infinite; }
+    @keyframes scn-rock-pulse { 0%,100% { opacity: .8; } 50% { opacity: 1; } }
+    @keyframes scn-rock-glow  { 0%,100% { opacity: .2; transform: scale(1); } 50% { opacity: .5; transform: scale(1.5); } }
+
+    /* Music notes drifting up from the song-rock, fading as they rise */
+    .scn-note-1 { animation: scn-note-rise 4s  ease-in   infinite; }
+    .scn-note-2 { animation: scn-note-rise 4.6s ease-in   infinite; animation-delay: -1.4s; }
+    .scn-note-3 { animation: scn-note-rise 3.6s ease-in   infinite; animation-delay: -2.6s; }
+    @keyframes scn-note-rise {
+      0%   { opacity: 0; transform: translateY(0) scale(.8); }
+      15%  { opacity: .85; }
+      80%  { opacity: .15; }
+      100% { opacity: 0; transform: translateY(-72px) scale(1.05); }
+    }
+
+    /* Kelp swaying gently */
+    .scn-kelp-1 { transform-origin: 652px 500px; animation: scn-sway 3.4s ease-in-out infinite; }
+    .scn-kelp-2 { transform-origin: 670px 500px; animation: scn-sway 3.8s ease-in-out infinite; animation-delay: -1.1s; }
+    .scn-kelp-3 { transform-origin: 685px 500px; animation: scn-sway 3s   ease-in-out infinite; animation-delay: -.6s; }
+    @keyframes scn-sway { 0%,100% { transform: rotate(-4deg); } 50% { transform: rotate(4deg); } }
+
+    /* A small fish leaping further out, with a synced splash */
+    .scn-fish   { transform-origin: 350px 420px; animation: scn-jump 3.2s ease-in-out infinite; }
+    .scn-splash { transform-origin: 332px 440px; animation: scn-splash 3.2s ease-in-out infinite; }
+    @keyframes scn-jump {
+      0%   { transform: translate(0,10px)  rotate(-4deg);  opacity: .9; }
+      16%  { transform: translate(-5px,-16px) rotate(-22deg); opacity: 1; }
+      30%  { transform: translate(-8px,-24px) rotate(-14deg); opacity: 1; }
+      46%  { transform: translate(-3px,-5px)  rotate(-4deg);  opacity: 1; }
+      58%  { transform: translate(0,10px)  rotate(-2deg);  opacity: .9; }
+      64%  { opacity: 0; }
+      96%  { opacity: 0; transform: translate(0,10px) rotate(-2deg); }
+      100% { transform: translate(0,10px)  rotate(-4deg);  opacity: .9; }
+    }
+    @keyframes scn-splash {
+      0%, 52% { transform: scale(.4); opacity: 0; }
+      60%     { transform: scale(1);  opacity: .6; }
+      72%     { transform: scale(1.5); opacity: 0; }
+      100%    { transform: scale(.4); opacity: 0; }
+    }
+
+    /* Bluebell — slow idle bob, and an occasional little spout */
+    .scn-bluebell { transform-origin: 555px 312px; animation: scn-bob 3.6s ease-in-out infinite; }
+    .scn-spout    { transform-origin: 570px 282px; animation: scn-spout-puff 4.2s ease-in-out infinite; }
+    @keyframes scn-bob { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-3px); } }
+    @keyframes scn-spout-puff {
+      0%, 68% { opacity: 0; transform: scale(.6) translateY(0); }
+      78%     { opacity: .8; transform: scale(1) translateY(-6px); }
+      90%     { opacity: .3; transform: scale(1.3) translateY(-16px); }
+      100%    { opacity: 0; transform: scale(1.4) translateY(-20px); }
+    }
+  </style>
+
+  <g clip-path="url(#wc-canvas)">
+
+    <!-- ── Sky ─────────────────────────────────────────────── -->
+    <rect x="0" y="0" width="800" height="200" fill="#e3f0ff"/>
+    <rect x="0" y="150" width="800" height="50" fill="#cfe6fb"/>
+
+    <!-- ── Clouds ───────────────────────────────────────────── -->
+    <g fill="#ffffff" stroke="#d6ebfa" stroke-width="2">
+      <g class="scn-cloud-a">
+        <ellipse cx="160" cy="48" rx="30" ry="13"/>
+        <circle cx="146" cy="43" r="12"/><circle cx="164" cy="38" r="15"/><circle cx="180" cy="46" r="10"/>
+      </g>
+      <g class="scn-cloud-b">
+        <ellipse cx="380" cy="38" rx="24" ry="10"/>
+        <circle cx="370" cy="34" r="9"/><circle cx="386" cy="30" r="12"/>
+      </g>
+      <g class="scn-cloud-c">
+        <ellipse cx="560" cy="62" rx="22" ry="10"/>
+        <circle cx="550" cy="58" r="9"/><circle cx="566" cy="54" r="11"/>
+      </g>
+      <g class="scn-cloud-d">
+        <ellipse cx="450" cy="92" rx="14" ry="6"/>
+        <circle cx="444" cy="90" r="6"/><circle cx="456" cy="88" r="7"/>
+      </g>
+    </g>
+
+    <!-- ── A small distant rock with a tail fluke — hints she has
+         company out there, classic whale-against-sky silhouette ── -->
+    <g opacity=".55">
+      <ellipse cx="250" cy="206" rx="16" ry="7" fill="#cfd8df"/>
+      <path d="M254 200C247 188 239 180 235 170c10 5 17 12 23 20 6-8 13-15 23-20-5 10-15 18-23 32Z" fill="#2c4a63"/>
+    </g>
+
+    <!-- ── Seagulls ─────────────────────────────────────────── -->
+    <g fill="none" stroke="#1d3a4a" stroke-width="2.5" stroke-linecap="round">
+      <path d="M220 70q9-10 18 0q9-10 18 0"/>
+      <path d="M480 52q7-8 14 0q7-8 14 0" stroke-width="2"/>
+      <path d="M620 86q11-12 22 0q11-12 22 0" stroke-width="3"/>
+      <path d="M300 100q6-6 11 0q6-6 11 0" stroke-width="2" opacity=".85"/>
+    </g>
+
+    <!-- ── Sea: three flat tonal bands — lighter near the horizon,
+         deeper toward the bottom ── -->
+    <rect x="0" y="200" width="800" height="300" fill="#5ca6e8"/>
+    <path d="M0,266 Q40,250 80,266 T160,266 T240,266 T320,266 T400,266 T480,266 T560,266 T640,266 T720,266 T800,266 L800,200 L0,200 Z" fill="#8cc6f2"/>
+    <path d="M0,398 Q40,412 80,398 T160,398 T240,398 T320,398 T400,398 T480,398 T560,398 T640,398 T720,398 T800,398 L800,500 L0,500 Z" fill="#2f6fa8"/>
+    <path d="M0,330 Q40,318 80,330 T160,330 T240,330 T320,330 T400,330 T480,330 T560,330 T640,330 T720,330 T800,330" fill="none" stroke="#ffffff" stroke-width="3" stroke-linecap="round" opacity=".35"/>
+    <path d="M0,460 Q40,449 80,460 T160,460 T240,460 T320,460 T400,460 T480,460 T560,460 T640,460 T720,460 T800,460" fill="none" stroke="#ffffff" stroke-width="2.5" stroke-linecap="round" opacity=".2"/>
+
+    <!-- small fish leaping further out, with a splash -->
+    <g class="scn-fish">
+      <ellipse cx="350" cy="420" rx="22" ry="12" fill="#ff9f4a" stroke="#1d3a4a" stroke-width="2.6"/>
+      <path d="M330 420 311 408 315 420 311 432Z" fill="#ff9f4a" stroke="#1d3a4a" stroke-width="2.6" stroke-linejoin="round"/>
+      <circle cx="365" cy="416" r="2.4" fill="#1d3a4a"/>
+    </g>
+    <g class="scn-splash" fill="none" stroke="#ffffff" stroke-linecap="round">
+      <ellipse cx="332" cy="440" rx="15" ry="4.5" opacity=".5" stroke-width="2.6"/>
+      <ellipse cx="332" cy="440" rx="24" ry="6.5" opacity=".3" stroke-width="2.2"/>
+    </g>
+
+    <!-- ── Rocky coastal arch, far right ────────────────────── -->
+    <g fill="#7d8fa0" stroke="#5c6b78" stroke-width="3" stroke-linejoin="round">
+      <path d="M636 500 L644 300 Q650 250 668 232 Q686 248 682 300 L692 500 Z"/>
+      <path d="M726 500 L734 260 Q740 170 766 130 Q793 110 800 130 L800 500 Z"/>
+      <path d="M655 225 Q710 130 780 140 L788 175 Q725 175 675 250 Z"/>
+    </g>
+    <g stroke="#5c6b78" stroke-width="2" opacity=".5">
+      <line x1="652" y1="340" x2="660" y2="420"/>
+      <line x1="672" y1="320" x2="666" y2="400"/>
+      <line x1="748" y1="280" x2="756" y2="380"/>
+      <line x1="772" y1="220" x2="766" y2="300"/>
+    </g>
+
+    <!-- kelp swaying at the foot of the near pillar -->
+    <g fill="#2f9c8a" stroke="#1d3a4a" stroke-width="1.8">
+      <path class="scn-kelp-1" d="M652 500 Q640 458 656 418 Q668 458 660 500Z"/>
+      <path class="scn-kelp-2" d="M670 500 Q662 452 678 412 Q686 456 680 500Z"/>
+      <path class="scn-kelp-3" d="M685 500 Q695 460 684 422 Q674 460 680 500Z"/>
+    </g>
+
+    <!-- the song-rock — soft glow, music notes drifting up -->
+    <circle class="scn-songrock-glow" cx="600" cy="450" r="16" fill="#d9f7ff"/>
+    <ellipse class="scn-songrock" cx="600" cy="450" rx="18" ry="14" fill="#eafdff" stroke="#1d3a4a" stroke-width="2.2"/>
+    <g fill="#ffffff" opacity=".9">
+      <g class="scn-note-1" transform="translate(594,432)">
+        <ellipse cx="0" cy="0" rx="4.5" ry="3.6" transform="rotate(-18)"/>
+        <line x1="4" y1="-1" x2="4" y2="-15" stroke="#ffffff" stroke-width="2"/>
+        <path d="M4 -15q7 1 6 8" fill="none" stroke="#ffffff" stroke-width="2" stroke-linecap="round"/>
+      </g>
+      <g class="scn-note-2" transform="translate(608,436) scale(.85)">
+        <ellipse cx="0" cy="0" rx="4.5" ry="3.6" transform="rotate(-18)"/>
+        <line x1="4" y1="-1" x2="4" y2="-15" stroke="#ffffff" stroke-width="2"/>
+      </g>
+      <g class="scn-note-3" transform="translate(600,440) scale(.7)">
+        <ellipse cx="0" cy="0" rx="4.5" ry="3.6" transform="rotate(-18)"/>
+        <line x1="4" y1="-1" x2="4" y2="-15" stroke="#ffffff" stroke-width="2"/>
+        <path d="M4 -15q7 1 6 8" fill="none" stroke="#ffffff" stroke-width="2" stroke-linecap="round"/>
+      </g>
+    </g>
+
+    <!-- ── Bluebell the whale — swimming in toward the coast. Colours
+         match ANIMAL_SVGS[5] exactly (body #4a9ecf, fin accent
+         #3a8ebf, belly sheen #7fd0f0) so she's recognizably the same
+         Bluebell seen elsewhere in the game. ── -->
+    <g id="islandFriendSpot" transform="translate(-440,0)">
+      <g class="scn-bluebell">
+        <path d="M480 322 Q490 292 530 290 Q580 286 620 302 Q630 318 610 326 Q560 338 510 334 Q484 332 480 322Z" fill="#4a9ecf" stroke="#1d3a4a" stroke-width="2.6"/>
+        <path d="M500 308 Q540 300 600 310 Q560 316 520 316Z" fill="#7fd0f0" opacity=".5"/>
+        <ellipse cx="570" cy="294" rx="5" ry="3" fill="#1a2030"/>
+        <g class="scn-spout" fill="none" stroke="#eafdff" stroke-linecap="round">
+          <path d="M570 280 Q566 270 570 262" stroke-width="3" opacity=".8"/>
+          <path d="M570 280 Q574 268 572 258" stroke-width="2.4" opacity=".6"/>
+          <circle cx="568" cy="256" r="2.4" fill="#eafdff" stroke="none" opacity=".7"/>
+        </g>
+        <circle cx="608" cy="310" r="5" fill="#1a2030"/>
+        <circle cx="609.6" cy="308.4" r="1.6" fill="#ffffff"/>
+        <path d="M598 318 Q608 323 616 317" fill="none" stroke="#f0f8ff" stroke-width="2.2" stroke-linecap="round"/>
+      </g>
+    </g>
+
+  </g>
+</svg>
