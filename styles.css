@@ -303,6 +303,20 @@ button { font: inherit; color: inherit; }
   overflow: hidden;
   background: linear-gradient(#bff5ff 0 45%, #34bfd9 45% 100%);
 }
+/* Bespoke per-island scene art (Snow Beach, Fish Bay, Whale Coast,
+   Penguin Islands...). Sits behind everything else in the scene — the
+   iceberg/watermark/ground-accent layers are display:none'd by
+   setupIslandScene() in game.js whenever this is populated, so there's
+   no double-up between the generic and bespoke art on the same island. */
+.challenge-custom-bg {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  overflow: hidden;
+  border-radius: inherit;
+}
+.challenge-custom-bg svg { width: 100%; height: 100%; display: block; }
 /* P15: per-island watermark emblem — sits behind everything, low opacity,
    purely decorative, reuses the island's own existing map-icon art.
    Positioned below the back-to-map button and the mission trail strip

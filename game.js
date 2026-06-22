@@ -1148,23 +1148,26 @@ function showWelcomeBack() {
   const overlay = $("welcomeBackOverlay");
   if (!overlay) return;
   const world  = worlds[Math.min(state.unlockedWorld, worlds.length-1)];
+  const wName  = t(`world${world.id}`) || world.name;
   const toNext = 100 - (state.xp % 100);
   const streak = state.streak.count;
   const friendCount = state.animals.length;
-  const streakMsg  = streak >= 3 ? `🔥 ${streak}-day streak — keep it up!` :
-                     streak === 1 ? `You came back! Streak started.` : `Come back tomorrow to start a streak!`;
+  const ru = currentLang === "ru";
+  const streakMsg  = streak >= 3 ? (ru ? `🔥 Серия ${streak} дней — продолжай!` : `🔥 ${streak}-day streak — keep it up!`) :
+                     streak === 1 ? (ru ? `Ты вернулся! Серия начата.` : `You came back! Streak started.`) :
+                                     (ru ? `Возвращайся завтра, чтобы начать серию!` : `Come back tomorrow to start a streak!`);
   overlay.innerHTML = `
     <div class="welcome-back-box">
       <div class="wb-seal">${animalSvgLarge(1,"Pip")}</div>
-      <h2 class="wb-title">Welcome back!</h2>
+      <h2 class="wb-title">${ru ? "С возвращением!" : "Welcome back!"}</h2>
       <div class="wb-stats">
-        <div class="wb-stat"><span class="wb-num">${world.name}</span><span class="wb-lbl">current island</span></div>
-        <div class="wb-stat"><span class="wb-num">${state.level}</span><span class="wb-lbl">level</span></div>
-        <div class="wb-stat"><span class="wb-num">${friendCount}/9</span><span class="wb-lbl">friends rescued</span></div>
+        <div class="wb-stat"><span class="wb-num">${wName}</span><span class="wb-lbl">${ru ? "текущий остров" : "current island"}</span></div>
+        <div class="wb-stat"><span class="wb-num">${state.level}</span><span class="wb-lbl">${ru ? "уровень" : "level"}</span></div>
+        <div class="wb-stat"><span class="wb-num">${friendCount}/9</span><span class="wb-lbl">${ru ? "друзей спасено" : "friends rescued"}</span></div>
       </div>
       <p class="wb-streak">${streakMsg}</p>
-      <p class="wb-xp">${toNext} correct answers to level ${state.level+1}!</p>
-      <button class="primary wb-btn" id="wbCloseBtn">Let's go! 🚀</button>
+      <p class="wb-xp">${ru ? `${toNext} правильных ответов до уровня ${state.level+1}!` : `${toNext} correct answers to level ${state.level+1}!`}</p>
+      <button class="primary wb-btn" id="wbCloseBtn">${ru ? "Поехали! 🚀" : "Let's go! 🚀"}</button>
     </div>`;
   overlay.hidden = false;
   const btn = overlay.querySelector("#wbCloseBtn");
@@ -1512,6 +1515,1034 @@ function islandGroundAccentSvg(worldId) {
   return `<svg viewBox="0 0 320 80" preserveAspectRatio="none" aria-hidden="true">${ISLAND_GROUND_ACCENT[worldId] || ""}</svg>`;
 }
 
+// ─── Custom per-island mission scenes ──────────────────────────────────────
+// Each island's SVG uses the SAME id, #islandFriendRig, for its friend's
+// position wrapper — safe because only one island's markup is ever mounted
+// in the DOM at a time (they replace each other in #challengeCustomBg).
+//
+// To add another island later: build its SVG with the same conventions
+// (viewBox 0 0 800 500, a #islandFriendRig wrapper around the friend, its
+// "arrived" pose as the default position, one continuous pose for the whole
+// path), then add one line to ISLAND_SCENES below.
+
+const FISH_BAY_SCENE_SVG        = `<svg viewBox="0 0 800 500" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="xMidYMid slice" aria-label="Fish Bay — a wooden dock with a fishing boat, a jumping fish, a blinking lighthouse, and Nori the baby seal waving from the dock" role="img">
+
+  <!-- ════════════════════════════════════════════════════════════
+       FISH BAY — mission scene background (v2: animated + Nori)
+       Sausage the Seal: Arctic Math Adventure
+       Flat vector, no gradients — tonal depth comes from stacked
+       flat-color bands instead. Self-contained: all motion is plain
+       CSS @keyframes in the embedded <style> block below, so this
+       still animates correctly as a bare <img src="...svg">, a CSS
+       background-image, or inline markup — no JS required.
+
+       NOTE ON THE FRIEND CHARACTER: the brief suggested "Pip the
+       Penguin," but in the existing game data Pip is already the
+       Penguin Islands character (species id 1). Fish Bay's own
+       established friend is "Nori," the baby seal (species id 0,
+       world.character = "Nori", with rescue dialogue and Russian
+       declension already wired up in game.js). Used Nori here so
+       this scene stays consistent with the mission dialogue and the
+       rescue-card popup the player already sees for this island.
+       ════════════════════════════════════════════════════════════ -->
+
+  <defs>
+    <clipPath id="fb-canvas"><rect x="0" y="0" width="800" height="500"/></clipPath>
+  </defs>
+
+  <style>
+    /* Clouds drift — gentle horizontal sway, independent timing per cloud */
+    .fb-cloud-a { animation: fb-drift-a 15s ease-in-out infinite; }
+    .fb-cloud-b { animation: fb-drift-b 12s ease-in-out infinite; }
+    .fb-cloud-c { animation: fb-drift-c 10s ease-in-out infinite; }
+    .fb-cloud-d { animation: fb-drift-d 8s  ease-in-out infinite; }
+    .fb-cloud-e { animation: fb-drift-b 13s ease-in-out infinite; animation-delay: -4s; }
+    .fb-cloud-f { animation: fb-drift-c 9s  ease-in-out infinite; animation-delay: -2s; }
+    @keyframes fb-drift-a { 0%,100% { transform: translateX(0); } 50% { transform: translateX(20px); } }
+    @keyframes fb-drift-b { 0%,100% { transform: translateX(0); } 50% { transform: translateX(-16px); } }
+    @keyframes fb-drift-c { 0%,100% { transform: translateX(0); } 50% { transform: translateX(14px); } }
+    @keyframes fb-drift-d { 0%,100% { transform: translateX(0); } 50% { transform: translateX(-10px); } }
+
+    /* Lighthouse beacon — bright flash with a soft pulsing glow ring */
+    .fb-beacon { transform-origin: 48px 106px; animation: fb-blink 2.6s ease-in-out infinite; }
+    .fb-beacon-glow { transform-origin: 48px 106px; animation: fb-glow 2.6s ease-in-out infinite; }
+    @keyframes fb-blink { 0%,55%,100% { opacity: .55; } 70% { opacity: 1; } 85% { opacity: .55; } }
+    @keyframes fb-glow  { 0%,55%,100% { opacity: 0; transform: scale(1); } 70% { opacity: .55; transform: scale(2.1); } 85% { opacity: 0; transform: scale(1); } }
+
+    /* Boat rocking on the water, slow and easy */
+    .fb-boat { transform-origin: 247px 236px; animation: fb-rock 3.6s ease-in-out infinite; }
+    @keyframes fb-rock { 0%,100% { transform: rotate(-2.4deg) translateY(0); } 50% { transform: rotate(2.6deg) translateY(-2px); } }
+
+    /* Fish leaping out of the water in a loop, with a synced splash */
+    .fb-fish   { transform-origin: 420px 268px; animation: fb-jump 3.2s ease-in-out infinite; }
+    .fb-splash { transform-origin: 392px 312px; animation: fb-splash 3.2s ease-in-out infinite; }
+    @keyframes fb-jump {
+      0%   { transform: translate(0,16px)   rotate(-4deg);  opacity: .9; }
+      16%  { transform: translate(-8px,-26px) rotate(-24deg); opacity: 1; }
+      30%  { transform: translate(-12px,-38px) rotate(-16deg); opacity: 1; }
+      46%  { transform: translate(-4px,-8px)  rotate(-4deg);  opacity: 1; }
+      58%  { transform: translate(0,16px)   rotate(-2deg);  opacity: .9; }
+      64%  { opacity: 0; }
+      96%  { opacity: 0; transform: translate(0,16px) rotate(-2deg); }
+      100% { transform: translate(0,16px)   rotate(-4deg);  opacity: .9; }
+    }
+    @keyframes fb-splash {
+      0%, 52%  { transform: scale(.4); opacity: 0; }
+      60%      { transform: scale(1);  opacity: .6; }
+      72%      { transform: scale(1.5); opacity: 0; }
+      100%     { transform: scale(.4); opacity: 0; }
+    }
+
+    /* Nori — idle bob on the dock, with a friendly flipper wave */
+    .fb-nori     { transform-origin: 231px 330px; animation: fb-bob 3s ease-in-out infinite; }
+    .fb-nori-wave{ transform-origin: 257px 326px; animation: fb-wave 1.7s ease-in-out infinite; }
+    @keyframes fb-bob  { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-3px); } }
+    @keyframes fb-wave { 0%,100% { transform: rotate(-6deg); } 50% { transform: rotate(34deg); } }
+  </style>
+
+  <g clip-path="url(#fb-canvas)">
+
+    <!-- ── Sky ─────────────────────────────────────────────── -->
+    <rect x="0" y="0" width="800" height="230" fill="#eafdff"/>
+    <rect x="0" y="172" width="800" height="58" fill="#d8fff1"/>
+
+    <!-- ── Arctic clouds (now a fuller spread across the whole sky) ── -->
+    <g fill="#ffffff" stroke="#cdeef5" stroke-width="2">
+      <g class="fb-cloud-a">
+        <ellipse cx="95" cy="58" rx="46" ry="20"/>
+        <circle cx="64" cy="50" r="20"/><circle cx="96" cy="40" r="24"/><circle cx="128" cy="48" r="18"/>
+      </g>
+      <g class="fb-cloud-b">
+        <ellipse cx="330" cy="40" rx="34" ry="15"/>
+        <circle cx="312" cy="34" r="14"/><circle cx="338" cy="28" r="17"/><circle cx="358" cy="35" r="12"/>
+      </g>
+      <g class="fb-cloud-f">
+        <ellipse cx="242" cy="112" rx="22" ry="10"/>
+        <circle cx="230" cy="108" r="9"/><circle cx="252" cy="104" r="11"/>
+      </g>
+      <g class="fb-cloud-c">
+        <ellipse cx="560" cy="62" rx="24" ry="11"/>
+        <circle cx="548" cy="58" r="10"/><circle cx="568" cy="54" r="12"/>
+      </g>
+      <g class="fb-cloud-e">
+        <ellipse cx="642" cy="34" rx="20" ry="9"/>
+        <circle cx="632" cy="30" r="8"/><circle cx="650" cy="27" r="10"/>
+      </g>
+      <g class="fb-cloud-d">
+        <ellipse cx="712" cy="42" rx="16" ry="7"/>
+        <circle cx="704" cy="40" r="7"/><circle cx="718" cy="38" r="8"/>
+      </g>
+    </g>
+
+    <!-- ── Distant icebergs, scattered for a less empty horizon ── -->
+    <g stroke="#cfe6ee" stroke-width="2" stroke-linejoin="round" opacity=".9">
+      <path d="M150 226 168 158 196 188 214 170 236 226Z" fill="#eef8fb"/>
+      <path d="M196 226 210 184 232 226Z" fill="#e3f3f8"/>
+    </g>
+    <g stroke="#d8eef3" stroke-width="2" stroke-linejoin="round" opacity=".75">
+      <path d="M368 226 382 200 404 226Z" fill="#eef8fb"/>
+    </g>
+    <g stroke="#d8eef3" stroke-width="2" stroke-linejoin="round" opacity=".7">
+      <path d="M566 228 580 196 602 228Z" fill="#eef8fb"/>
+      <path d="M598 228 608 208 624 228Z" fill="#eef8fb"/>
+    </g>
+    <g stroke="#dcf0f5" stroke-width="1.8" stroke-linejoin="round" opacity=".55">
+      <path d="M732 228 742 210 758 228Z" fill="#eef8fb"/>
+    </g>
+
+    <!-- ── Seagulls (more of them, a few different heights) ──── -->
+    <g fill="none" stroke="#1d3a4a" stroke-width="2.5" stroke-linecap="round">
+      <path d="M292 72q9-10 18 0q9-10 18 0"/>
+      <path d="M352 54q7-8 14 0q7-8 14 0"/>
+      <path d="M180 42q6-7 12 0q6-7 12 0" stroke-width="2"/>
+      <path d="M460 130q11-12 22 0q11-12 22 0" stroke-width="3"/>
+      <path d="M584 50q6-6 11 0q6-6 11 0" stroke-width="2" opacity=".85"/>
+    </g>
+
+    <!-- ── Ocean: three flat tonal bands instead of one — lighter
+         near the horizon, darker toward the bottom, no gradients ── -->
+    <rect x="0" y="230" width="800" height="270" fill="#24bdd2"/>
+    <path d="M0,300 Q40,283 80,300 T160,300 T240,300 T320,300 T400,300 T480,300 T560,300 T640,300 T720,300 T800,300 L800,230 L0,230 Z" fill="#46d6e8"/>
+    <path d="M0,396 Q40,409 80,396 T160,396 T240,396 T320,396 T400,396 T480,396 T560,396 T640,396 T720,396 T800,396 L800,500 L0,500 Z" fill="#117e92"/>
+
+    <!-- Ripple highlight lines, fading with depth -->
+    <path d="M0,355 Q40,343 80,355 T160,355 T240,355 T320,355 T400,355 T480,355 T560,355 T640,355 T720,355 T800,355" fill="none" stroke="#ffffff" stroke-width="3" stroke-linecap="round" opacity=".4"/>
+    <path d="M0,415 Q40,403 80,415 T160,415 T240,415 T320,415 T400,415 T480,415 T560,415 T640,415 T720,415 T800,415" fill="none" stroke="#ffffff" stroke-width="3" stroke-linecap="round" opacity=".25"/>
+    <path d="M0,470 Q40,460 80,470 T160,470 T240,470 T320,470 T400,470 T480,470 T560,470 T640,470 T720,470 T800,470" fill="none" stroke="#ffffff" stroke-width="2.5" stroke-linecap="round" opacity=".18"/>
+
+    <!-- ── Small school of minnow shadows (right side, subtle) ── -->
+    <g fill="#0c5d6d" opacity=".4">
+      <ellipse cx="618" cy="362" rx="9" ry="4"/>
+      <ellipse cx="642" cy="378" rx="7" ry="3.5"/>
+      <ellipse cx="600" cy="388" rx="6" ry="3"/>
+      <ellipse cx="660" cy="356" rx="6" ry="3"/>
+    </g>
+
+    <!-- ── Lighthouse, on a rocky point at the far left ────── -->
+    <g>
+      <path d="M6 232 14 196 34 184 58 188 70 206 78 232Z" fill="#9fb3bb" stroke="#748a92" stroke-width="2.5" stroke-linejoin="round"/>
+      <path d="M14 226 22 206 40 200 30 226Z" fill="#8aa0a8" opacity=".7"/>
+      <rect x="33" y="112" width="30" height="84" rx="4" fill="#ffffff" stroke="#1d3a4a" stroke-width="3"/>
+      <rect x="33" y="132" width="30" height="13" fill="#ff6f61"/>
+      <rect x="33" y="166" width="30" height="13" fill="#ff6f61"/>
+      <rect x="30" y="100" width="36" height="14" rx="2" fill="#1d3a4a"/>
+      <path d="M30 100 48 80 66 100Z" fill="#ff6f61" stroke="#1d3a4a" stroke-width="2.5" stroke-linejoin="round"/>
+      <circle class="fb-beacon-glow" cx="48" cy="106" r="4" fill="#ffe9a0"/>
+      <circle class="fb-beacon" cx="48" cy="106" r="4" fill="#ffd45a"/>
+    </g>
+
+    <!-- ── Wooden fishing dock ─────────────────────────────── -->
+    <g>
+      <g fill="#a8703f" stroke="#6e4423" stroke-width="2">
+        <rect x="16" y="226" width="11" height="64" rx="2"/>
+        <rect x="76" y="226" width="11" height="64" rx="2"/>
+        <rect x="136" y="226" width="11" height="64" rx="2"/>
+        <rect x="196" y="226" width="11" height="64" rx="2"/>
+      </g>
+      <g fill="#ffffff" opacity=".35">
+        <ellipse cx="21" cy="290" rx="10" ry="3.5"/>
+        <ellipse cx="81" cy="290" rx="10" ry="3.5"/>
+        <ellipse cx="141" cy="290" rx="10" ry="3.5"/>
+        <ellipse cx="201" cy="290" rx="10" ry="3.5"/>
+      </g>
+      <g stroke="#8a5a30" stroke-width="4" stroke-linecap="round">
+        <line x1="34" y1="184" x2="34" y2="206"/>
+        <line x1="122" y1="184" x2="122" y2="206"/>
+        <line x1="210" y1="184" x2="210" y2="206"/>
+        <line x1="34" y1="186" x2="210" y2="186"/>
+      </g>
+      <rect x="0" y="204" width="215" height="26" fill="#c98c52" stroke="#8a5a30" stroke-width="2.5"/>
+      <g stroke="#8a5a30" stroke-width="1.6" opacity=".55">
+        <line x1="22" y1="204" x2="22" y2="230"/><line x1="44" y1="204" x2="44" y2="230"/>
+        <line x1="66" y1="204" x2="66" y2="230"/><line x1="88" y1="204" x2="88" y2="230"/>
+        <line x1="110" y1="204" x2="110" y2="230"/><line x1="132" y1="204" x2="132" y2="230"/>
+        <line x1="154" y1="204" x2="154" y2="230"/><line x1="176" y1="204" x2="176" y2="230"/>
+        <line x1="198" y1="204" x2="198" y2="230"/>
+      </g>
+      <!-- tiny crab, peeking out from under the deck's shadow -->
+      <g transform="translate(48,222)">
+        <ellipse cx="0" cy="0" rx="9" ry="6" fill="#ff8a73" stroke="#1d3a4a" stroke-width="2"/>
+        <path d="M-7 -3q-7-5-9-1M7 -3q7-5 9-1" fill="none" stroke="#1d3a4a" stroke-width="2" stroke-linecap="round"/>
+        <path d="M-4 6q-2 5-5 6M4 6q2 5 5 6" fill="none" stroke="#1d3a4a" stroke-width="1.6" stroke-linecap="round"/>
+        <circle cx="-3" cy="-2" r="1.3" fill="#1d3a4a"/><circle cx="3" cy="-2" r="1.3" fill="#1d3a4a"/>
+      </g>
+      <!-- tiny starfish resting on the deck edge -->
+      <path d="M192 200 195 208 203 208 196 213 199 221 192 216 185 221 188 213 181 208 189 208Z" fill="#ffd45a" stroke="#1d3a4a" stroke-width="1.8" stroke-linejoin="round"/>
+    </g>
+
+    <!-- ── Small fishing boat, docked just past the pier's end ── -->
+    <!-- v4 fix: the previous translate(0,9) was on the SAME element as
+         the .fb-boat CSS animation — and an animated \`transform\` always
+         wins over a presentation-attribute \`transform\` on that element,
+         so the offset was silently ignored and the boat never actually
+         moved. Now the static position lives on this outer, non-animated
+         wrapper, and the rocking animation stays on the inner group —
+         the two no longer fight over the same property. Also moved right
+         so it sits in open water past the dock instead of over the posts. -->
+    <g transform="translate(45,9)">
+      <g class="fb-boat">
+        <path d="M186 224 Q188 244 246 248 Q304 244 308 224 Z" fill="#fef4e3" stroke="#1d3a4a" stroke-width="3" stroke-linejoin="round"/>
+        <rect x="188" y="218" width="118" height="9" rx="3" fill="#27c7de" stroke="#1d3a4a" stroke-width="2"/>
+        <rect x="222" y="190" width="44" height="30" rx="6" fill="#ffffff" stroke="#1d3a4a" stroke-width="2.5"/>
+        <circle cx="244" cy="206" r="6" fill="#27c7de" stroke="#1d3a4a" stroke-width="2"/>
+        <line x1="246" y1="190" x2="246" y2="166" stroke="#1d3a4a" stroke-width="2.5" stroke-linecap="round"/>
+        <path d="M246 166 268 174 246 182Z" fill="#ff8a73" stroke="#1d3a4a" stroke-width="2" stroke-linejoin="round"/>
+        <path d="M306 232 Q322 244 318 262" fill="none" stroke="#5c6b73" stroke-width="1.6"/>
+        <circle cx="317" cy="266" r="5" fill="#ff6f61" stroke="#1d3a4a" stroke-width="1.8"/>
+        <path d="M312 266h10" stroke="#ffffff" stroke-width="1.6"/>
+      </g>
+    </g>
+    <path d="M225,252 Q255,242 291,249 Q327,242 359,252 L359,262 L225,262 Z" fill="#46d6e8"/>
+    <path d="M225,252 Q255,242 291,249 Q327,242 359,252" fill="none" stroke="#ffffff" stroke-width="2" opacity=".4"/>
+
+    <!-- ── Nori the baby seal — swimming toward the boat. This group's
+         id is the hook for game.js: it's a plain (non-animated) <g> so
+         JS can safely set its transform directly (translateX) to show
+         her progress, without fighting the CSS bob/wave animations,
+         which live on the nested .fb-nori / .fb-nori-wave groups below.
+         Shifted down 20px from the original sketch so her whole swim
+         path stays clear of the dock-post bottoms (y226–290) no matter
+         what x she's at. Default position here = "arrived" (next to
+         the boat); game.js resets her to the "stranded" end at mission
+         start and walks her across as questions are answered. ── -->
+    <g id="islandFriendRig" transform="translate(45,0)">
+    <g class="fb-nori">
+      <path d="M203 346 C195 328 197 308 215 300 C233 292 253 298 257 316 C261 332 253 344 237 347 C225 349 211 348 203 346 Z" fill="#eef6fa" stroke="#1d3a4a" stroke-width="2.4"/>
+      <ellipse cx="231" cy="338" rx="14" ry="8" fill="#c9e4ef"/>
+      <ellipse cx="212" cy="322" rx="5" ry="3" fill="#ffb9c4" opacity=".55"/>
+      <ellipse cx="248" cy="320" rx="5" ry="3" fill="#ffb9c4" opacity=".55"/>
+      <ellipse cx="220" cy="315" rx="4.6" ry="5.6" fill="#1d3a4a"/>
+      <ellipse cx="240" cy="313" rx="4.6" ry="5.6" fill="#1d3a4a"/>
+      <circle cx="218.4" cy="312.6" r="1.4" fill="#ffffff"/>
+      <circle cx="238.4" cy="310.6" r="1.4" fill="#ffffff"/>
+      <path d="M225 326 Q231 320 237 326 Q235 332 231 334 Q227 332 225 326Z" fill="#ff8fa1"/>
+      <path d="M227 334q4 3 8 0" stroke="#1d3a4a" stroke-width="1.5" fill="none" stroke-linecap="round"/>
+      <g class="fb-nori-wave">
+        <ellipse cx="259" cy="308" rx="9" ry="16" fill="#eef6fa" stroke="#1d3a4a" stroke-width="2.2"/>
+      </g>
+      <g fill="none" stroke="#ffffff" stroke-linecap="round">
+        <ellipse cx="231" cy="350" rx="34" ry="7" opacity=".35" stroke-width="2.5"/>
+        <ellipse cx="231" cy="350" rx="22" ry="5" opacity=".5" stroke-width="2.5"/>
+      </g>
+    </g>
+    </g>
+
+    <!-- ── Jumping orange fish, leaping in a loop, with a synced splash ── -->
+    <!-- v4: nudged right ~35px for clearance from the boat's new spot -->
+    <g transform="translate(35,0)">
+    <g class="fb-fish">
+      <ellipse cx="420" cy="268" rx="34" ry="19" fill="#ff9f4a" stroke="#1d3a4a" stroke-width="3"/>
+      <path d="M388 268 358 250 365 268 358 286Z" fill="#ff9f4a" stroke="#1d3a4a" stroke-width="3" stroke-linejoin="round"/>
+      <path d="M408 256q10-6 20-2" fill="none" stroke="#e8852e" stroke-width="2.5" stroke-linecap="round"/>
+      <circle cx="444" cy="261" r="3.4" fill="#1d3a4a"/>
+    </g>
+    <g class="fb-splash" fill="none" stroke="#ffffff" stroke-linecap="round">
+      <ellipse cx="392" cy="312" rx="22" ry="6" opacity=".5" stroke-width="3"/>
+      <ellipse cx="392" cy="312" rx="34" ry="9" opacity=".3" stroke-width="2.5"/>
+      <circle cx="372" cy="298" r="2.5" fill="#ffffff" opacity=".7" stroke="none"/>
+      <circle cx="412" cy="300" r="3" fill="#ffffff" opacity=".6" stroke="none"/>
+      <circle cx="402" cy="290" r="2" fill="#ffffff" opacity=".6" stroke="none"/>
+    </g>
+    </g>
+
+    <!-- ── Floating buoys ───────────────────────────────────── -->
+    <g>
+      <g transform="translate(126,258)">
+        <path d="M0 -16Q9 -22 9 -12" fill="none" stroke="#1d3a4a" stroke-width="2" stroke-linecap="round"/>
+        <circle cx="0" cy="0" r="15" fill="#ffffff" stroke="#1d3a4a" stroke-width="2.6"/>
+        <rect x="-15" y="-6" width="30" height="6" fill="#ff6f61"/>
+        <rect x="-15" y="4" width="30" height="6" fill="#ff6f61"/>
+        <ellipse cx="0" cy="17" rx="13" ry="4" fill="#ffffff" opacity=".35"/>
+      </g>
+      <g transform="translate(548,332) scale(.75)">
+        <circle cx="0" cy="0" r="15" fill="#ffffff" stroke="#1d3a4a" stroke-width="2.6"/>
+        <rect x="-15" y="-6" width="30" height="6" fill="#ff6f61"/>
+        <rect x="-15" y="4" width="30" height="6" fill="#ff6f61"/>
+        <ellipse cx="0" cy="17" rx="13" ry="4" fill="#ffffff" opacity=".3"/>
+      </g>
+    </g>
+
+    <!-- ── Drifting message bottle (right side, a quiet find) ── -->
+    <g transform="translate(686,408) rotate(8)">
+      <path d="M-7 -22h14v8q7 5 7 16v8q0 6-7 6h-14q-7 0-7-6v-8q0-11 7-16Z" fill="#7fd2a0" stroke="#1d3a4a" stroke-width="2" stroke-linejoin="round" opacity=".92"/>
+      <rect x="-4" y="-28" width="8" height="8" rx="1.5" fill="#c98c52" stroke="#1d3a4a" stroke-width="1.8"/>
+      <rect x="-4" y="-6" width="8" height="14" rx="1" fill="#fff7e6" opacity=".85"/>
+      <ellipse cx="0" cy="20" rx="16" ry="4" fill="#ffffff" opacity=".3"/>
+    </g>
+
+  </g>
+</svg>`;
+const SNOW_BEACH_SCENE_SVG      = `<svg viewBox="0 0 800 500" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="xMidYMid slice" aria-label="Snow Beach — a sunny shoreline scattered with shells and driftwood after a storm, with Pip the penguin waddling toward a cosy driftwood shelter" role="img">
+
+  <!-- ════════════════════════════════════════════════════════════
+       SNOW BEACH — mission scene background
+       Sausage the Seal: Arctic Math Adventure
+       Same conventions as the Fish Bay scene (flat vector, no
+       gradients, navy #1d3a4a outlines, viewBox 0 0 800 500) so the
+       islands read as one consistent world. Pip's colours are pulled
+       directly from the existing ANIMAL_SVGS[1] icon in game.js so
+       she matches her own rescue-card/town art exactly.
+
+       FRIEND RIG: #islandFriendRig is the generic hook game.js drives
+       for ANY island (see fish-bay-nori-swim.js v2 / ISLAND_SCENES).
+       Default position here = "arrived" at the shelter; game.js resets
+       her to "stranded" at mission start and walks her across as
+       questions are answered.
+       ════════════════════════════════════════════════════════════ -->
+
+  <defs>
+    <clipPath id="sb-canvas"><rect x="0" y="0" width="800" height="500"/></clipPath>
+  </defs>
+
+  <style>
+    .scn-cloud-a { animation: scn-drift-a 15s ease-in-out infinite; }
+    .scn-cloud-b { animation: scn-drift-b 12s ease-in-out infinite; }
+    .scn-cloud-c { animation: scn-drift-c 10s ease-in-out infinite; }
+    .scn-cloud-d { animation: scn-drift-d 8s  ease-in-out infinite; }
+    @keyframes scn-drift-a { 0%,100% { transform: translateX(0); } 50% { transform: translateX(18px); } }
+    @keyframes scn-drift-b { 0%,100% { transform: translateX(0); } 50% { transform: translateX(-14px); } }
+    @keyframes scn-drift-c { 0%,100% { transform: translateX(0); } 50% { transform: translateX(12px); } }
+    @keyframes scn-drift-d { 0%,100% { transform: translateX(0); } 50% { transform: translateX(-9px); } }
+
+    /* Lantern at the shelter — warm flicker + soft glow pulse */
+    .scn-lantern      { transform-origin: 480px 408px; animation: scn-flicker 2.1s ease-in-out infinite; }
+    .scn-lantern-glow { transform-origin: 480px 408px; animation: scn-glow 2.1s ease-in-out infinite; }
+    @keyframes scn-flicker { 0%,100% { opacity: .8; } 30% { opacity: 1; } 45% { opacity: .65; } 70% { opacity: 1; } 85% { opacity: .75; } }
+    @keyframes scn-glow    { 0%,100% { opacity: .25; transform: scale(1); } 50% { opacity: .55; transform: scale(1.4); } }
+
+    /* A little barrel bobbing in the shallows, just past the shoreline */
+    .scn-barrel { transform-origin: 560px 258px; animation: scn-rock 3.4s ease-in-out infinite; }
+    @keyframes scn-rock { 0%,100% { transform: rotate(-3deg) translateY(0); } 50% { transform: rotate(3deg) translateY(-2px); } }
+
+    /* A small fish leaping in the shallows, with a synced splash */
+    .scn-fish   { transform-origin: 200px 236px; animation: scn-jump 3.2s ease-in-out infinite; }
+    .scn-splash { transform-origin: 182px 256px; animation: scn-splash 3.2s ease-in-out infinite; }
+    @keyframes scn-jump {
+      0%   { transform: translate(0,10px)  rotate(-4deg);  opacity: .9; }
+      16%  { transform: translate(-5px,-16px) rotate(-22deg); opacity: 1; }
+      30%  { transform: translate(-8px,-24px) rotate(-14deg); opacity: 1; }
+      46%  { transform: translate(-3px,-5px)  rotate(-4deg);  opacity: 1; }
+      58%  { transform: translate(0,10px)  rotate(-2deg);  opacity: .9; }
+      64%  { opacity: 0; }
+      96%  { opacity: 0; transform: translate(0,10px) rotate(-2deg); }
+      100% { transform: translate(0,10px)  rotate(-4deg);  opacity: .9; }
+    }
+    @keyframes scn-splash {
+      0%, 52% { transform: scale(.4); opacity: 0; }
+      60%     { transform: scale(1);  opacity: .6; }
+      72%     { transform: scale(1.5); opacity: 0; }
+      100%    { transform: scale(.4); opacity: 0; }
+    }
+
+    /* Pip — idle waddle + a friendly flipper wave */
+    .scn-pip      { transform-origin: 60px 466px; animation: scn-waddle 2.6s ease-in-out infinite; }
+    .scn-pip-wave { transform-origin: 84px 432px; animation: scn-wave 1.7s ease-in-out infinite; }
+    @keyframes scn-waddle { 0%,100% { transform: rotate(-3deg); } 50% { transform: rotate(3deg); } }
+    @keyframes scn-wave   { 0%,100% { transform: rotate(-8deg); } 50% { transform: rotate(30deg); } }
+  </style>
+
+  <g clip-path="url(#sb-canvas)">
+
+    <!-- ── Sky ─────────────────────────────────────────────── -->
+    <rect x="0" y="0" width="800" height="200" fill="#fff7cf"/>
+    <rect x="0" y="150" width="800" height="50" fill="#ffe9a8"/>
+
+    <!-- ── Sun, warm and calm (this island already passed its storm) ── -->
+    <circle cx="120" cy="90" r="52" fill="#ffe9a8" opacity=".6"/>
+    <g stroke="#ffd45a" stroke-width="4" stroke-linecap="round" opacity=".55">
+      <line x1="166" y1="90" x2="180" y2="90"/>
+      <line x1="143" y1="50" x2="150" y2="38"/>
+      <line x1="97" y1="50" x2="90" y2="38"/>
+      <line x1="74" y1="90" x2="60" y2="90"/>
+      <line x1="97" y1="130" x2="90" y2="142"/>
+      <line x1="143" y1="130" x2="150" y2="142"/>
+    </g>
+    <circle cx="120" cy="90" r="40" fill="#ffd45a"/>
+
+    <!-- ── Clouds, light and few — sunny after the storm ───── -->
+    <g fill="#ffffff" stroke="#ffe9c0" stroke-width="2">
+      <g class="scn-cloud-a">
+        <ellipse cx="400" cy="52" rx="32" ry="14"/>
+        <circle cx="384" cy="46" r="13"/><circle cx="404" cy="40" r="16"/><circle cx="422" cy="48" r="11"/>
+      </g>
+      <g class="scn-cloud-b">
+        <ellipse cx="600" cy="74" rx="26" ry="11"/>
+        <circle cx="588" cy="70" r="10"/><circle cx="606" cy="65" r="13"/>
+      </g>
+      <g class="scn-cloud-c">
+        <ellipse cx="684" cy="42" rx="18" ry="8"/>
+        <circle cx="676" cy="39" r="8"/><circle cx="692" cy="37" r="9"/>
+      </g>
+      <g class="scn-cloud-d">
+        <ellipse cx="500" cy="112" rx="14" ry="6"/>
+        <circle cx="494" cy="110" r="6"/><circle cx="506" cy="108" r="7"/>
+      </g>
+    </g>
+
+    <!-- ── Distant snow dunes along the horizon ────────────── -->
+    <g fill="#ffffff" stroke="#eef0e8" stroke-width="2">
+      <ellipse cx="90" cy="200" rx="68" ry="20"/>
+      <ellipse cx="150" cy="202" rx="46" ry="16"/>
+    </g>
+    <g fill="#f4f6ee" stroke="#e6e9dd" stroke-width="2" opacity=".85">
+      <ellipse cx="690" cy="200" rx="60" ry="18"/>
+      <ellipse cx="745" cy="202" rx="38" ry="14"/>
+    </g>
+
+    <!-- ── Seagulls ─────────────────────────────────────────── -->
+    <g fill="none" stroke="#1d3a4a" stroke-width="2.5" stroke-linecap="round">
+      <path d="M250 62q9-10 18 0q9-10 18 0"/>
+      <path d="M330 46q7-8 14 0q7-8 14 0" stroke-width="2"/>
+      <path d="M550 72q11-12 22 0q11-12 22 0" stroke-width="3"/>
+      <path d="M460 102q6-6 11 0q6-6 11 0" stroke-width="2" opacity=".85"/>
+    </g>
+
+    <!-- ── Sea, just a band — this scene is mostly shore ───── -->
+    <rect x="0" y="200" width="800" height="80" fill="#9eeeff"/>
+    <rect x="0" y="200" width="800" height="28" fill="#c5f3ff"/>
+    <path d="M0,228 Q40,220 80,228 T160,228 T240,228 T320,228 T400,228 T480,228 T560,228 T640,228 T720,228 T800,228" fill="none" stroke="#ffffff" stroke-width="2.5" stroke-linecap="round" opacity=".4"/>
+    <path d="M0,258 Q40,250 80,258 T160,258 T240,258 T320,258 T400,258 T480,258 T560,258 T640,258 T720,258 T800,258" fill="none" stroke="#ffffff" stroke-width="2.5" stroke-linecap="round" opacity=".3"/>
+
+    <!-- small barrel bobbing in the shallows -->
+    <g class="scn-barrel">
+      <rect x="546" y="246" width="28" height="24" rx="6" fill="#c98c52" stroke="#1d3a4a" stroke-width="2.4"/>
+      <rect x="546" y="251" width="28" height="4" fill="#8a5a30"/>
+      <rect x="546" y="262" width="28" height="4" fill="#8a5a30"/>
+      <ellipse cx="560" cy="271" rx="17" ry="4" fill="#ffffff" opacity=".3"/>
+    </g>
+
+    <!-- small fish leaping in the shallows -->
+    <g class="scn-fish">
+      <ellipse cx="200" cy="236" rx="20" ry="11" fill="#ff9f4a" stroke="#1d3a4a" stroke-width="2.4"/>
+      <path d="M182 236 165 225 169 236 165 247Z" fill="#ff9f4a" stroke="#1d3a4a" stroke-width="2.4" stroke-linejoin="round"/>
+      <circle cx="214" cy="232" r="2.2" fill="#1d3a4a"/>
+    </g>
+    <g class="scn-splash" fill="none" stroke="#ffffff" stroke-linecap="round">
+      <ellipse cx="182" cy="256" rx="14" ry="4" opacity=".5" stroke-width="2.4"/>
+      <ellipse cx="182" cy="256" rx="22" ry="6" opacity=".3" stroke-width="2"/>
+    </g>
+
+    <!-- ── Shoreline: wet sand, then the main beach ─────────── -->
+    <rect x="0" y="285" width="800" height="215" fill="#f5ecd6"/>
+    <path d="M0,280 Q40,268 80,280 T160,280 T240,280 T320,280 T400,280 T480,280 T560,280 T640,280 T720,280 T800,280 L800,312 L0,312 Z" fill="#fff8ea"/>
+    <path d="M0,280 Q40,268 80,280 T160,280 T240,280 T320,280 T400,280 T480,280 T560,280 T640,280 T720,280 T800,280" fill="none" stroke="#ffffff" stroke-width="3" opacity=".55"/>
+
+    <!-- footprint trail, leading toward the shelter -->
+    <g fill="#d9a35c" opacity=".65">
+      <ellipse cx="172" cy="448" rx="7" ry="9"/><circle cx="166" cy="438" r="3"/><circle cx="176" cy="436" r="3"/>
+      <ellipse cx="232" cy="440" rx="7" ry="9"/><circle cx="226" cy="430" r="3"/><circle cx="236" cy="428" r="3"/>
+      <ellipse cx="292" cy="434" rx="7" ry="9"/><circle cx="286" cy="424" r="3"/><circle cx="296" cy="422" r="3"/>
+      <ellipse cx="352" cy="428" rx="7" ry="9"/><circle cx="346" cy="418" r="3"/><circle cx="356" cy="416" r="3"/>
+    </g>
+
+    <!-- driftwood, small (near where Pip washed up) -->
+    <g transform="translate(110,463) rotate(8)">
+      <rect x="-34" y="-9" width="68" height="18" rx="9" fill="#a8703f" stroke="#1d3a4a" stroke-width="2.2"/>
+      <line x1="-18" y1="-9" x2="-18" y2="9" stroke="#6e4423" stroke-width="1.6"/>
+      <line x1="6"   y1="-9" x2="6"   y2="9" stroke="#6e4423" stroke-width="1.6"/>
+    </g>
+
+    <!-- driftwood, larger (right side, balance) -->
+    <g transform="translate(645,432) rotate(-6)">
+      <rect x="-46" y="-11" width="92" height="22" rx="11" fill="#a8703f" stroke="#1d3a4a" stroke-width="2.4"/>
+      <line x1="-24" y1="-11" x2="-24" y2="11" stroke="#6e4423" stroke-width="1.8"/>
+      <line x1="4"   y1="-11" x2="4"   y2="11" stroke="#6e4423" stroke-width="1.8"/>
+      <line x1="28"  y1="-11" x2="28"  y2="11" stroke="#6e4423" stroke-width="1.8"/>
+    </g>
+
+    <!-- tiny crab on the sand -->
+    <g transform="translate(200,438)">
+      <ellipse cx="0" cy="0" rx="9" ry="6" fill="#ff8a73" stroke="#1d3a4a" stroke-width="2"/>
+      <path d="M-7 -3q-7-5-9-1M7 -3q7-5 9-1" fill="none" stroke="#1d3a4a" stroke-width="2" stroke-linecap="round"/>
+      <path d="M-4 6q-2 5-5 6M4 6q2 5 5 6" fill="none" stroke="#1d3a4a" stroke-width="1.6" stroke-linecap="round"/>
+      <circle cx="-3" cy="-2" r="1.3" fill="#1d3a4a"/><circle cx="3" cy="-2" r="1.3" fill="#1d3a4a"/>
+    </g>
+
+    <!-- scattered shells -->
+    <g stroke="#1d3a4a" stroke-width="1.8" stroke-linejoin="round">
+      <g transform="translate(330,452)">
+        <path d="M-16 8Q-16 -10 0 -16Q16 -10 16 8Z" fill="#ffb9c4"/>
+        <path d="M0 -16V8M-8 -13V6M8 -13V6" stroke="#ff8fa1" stroke-width="1.6"/>
+      </g>
+      <g transform="translate(560,440) scale(.8)">
+        <path d="M-16 8Q-16 -10 0 -16Q16 -10 16 8Z" fill="#fff0d0"/>
+        <path d="M0 -16V8M-8 -13V6M8 -13V6" stroke="#e8c98a" stroke-width="1.6"/>
+      </g>
+      <g transform="translate(262,468) scale(.55)">
+        <path d="M-16 8Q-16 -10 0 -16Q16 -10 16 8Z" fill="#ffd9b0"/>
+        <path d="M0 -16V8M-8 -13V6M8 -13V6" stroke="#e8a05a" stroke-width="1.6"/>
+      </g>
+      <path transform="translate(608,464)" d="M0 10Q-10 8 -9 -2Q-8 -10 1 -9Q9 -8 7 1Q5 9 0 10Z" fill="#ffd9b0"/>
+    </g>
+
+    <!-- ── Driftwood shelter with a warm lantern — the "safe spot" ── -->
+    <g>
+      <path d="M480 372 L432 460 M480 372 L528 460 M480 372 L468 460 M480 372 L492 460" fill="none" stroke="#a8703f" stroke-width="9" stroke-linecap="round"/>
+      <path d="M480 372 L432 460 M480 372 L528 460 M480 372 L468 460 M480 372 L492 460" fill="none" stroke="#6e4423" stroke-width="2" stroke-linecap="round" opacity=".5"/>
+      <path d="M452 430 L508 430" stroke="#8a5a30" stroke-width="5" stroke-linecap="round"/>
+      <circle class="scn-lantern-glow" cx="480" cy="408" r="10" fill="#ffe9a0"/>
+      <circle class="scn-lantern" cx="480" cy="408" r="9" fill="#ffb347" stroke="#1d3a4a" stroke-width="1.8"/>
+      <path class="scn-lantern" d="M480 401 483 408 480 415 477 408Z" fill="#ff6f1f"/>
+    </g>
+
+    <!-- ── Pip the penguin — waddling toward the shelter. Colours
+         match ANIMAL_SVGS[1] exactly (dark navy-black #1a2030, belly
+         #f0f4f8, beak #f0c060) so she's recognizably "the same Pip"
+         seen elsewhere in the game. ── -->
+    <g id="islandFriendRig" transform="translate(370,0)">
+    <g class="scn-pip">
+      <ellipse cx="60" cy="452" rx="24" ry="11" fill="#f0c060" opacity=".9"/>
+      <ellipse cx="60" cy="448" rx="26" ry="30" fill="#1a2030" stroke="#1d3a4a" stroke-width="2.2"/>
+      <ellipse cx="60" cy="450" rx="17" ry="23" fill="#f0f4f8"/>
+      <ellipse cx="60" cy="420" rx="19" ry="17" fill="#1a2030" stroke="#1d3a4a" stroke-width="2.2"/>
+      <ellipse cx="60" cy="418" rx="12" ry="11" fill="#f0c060"/>
+      <circle cx="53" cy="416" r="4.6" fill="#1a2030"/><circle cx="67" cy="416" r="4.6" fill="#1a2030"/>
+      <circle cx="51.6" cy="414.4" r="1.3" fill="#fff"/><circle cx="65.6" cy="414.4" r="1.3" fill="#fff"/>
+      <path d="M55 423q5 4 10 0" fill="none" stroke="#c08020" stroke-width="2" stroke-linecap="round"/>
+      <ellipse cx="33" cy="438" rx="9" ry="13" fill="#1a2030" stroke="#1d3a4a" stroke-width="2"/>
+      <g class="scn-pip-wave">
+        <ellipse cx="84" cy="432" rx="9" ry="13" fill="#1a2030" stroke="#1d3a4a" stroke-width="2"/>
+      </g>
+    </g>
+    </g>
+
+  </g>
+</svg>`;
+const WHALE_COAST_SCENE_SVG     = `<svg viewBox="0 0 800 500" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="xMidYMid slice" aria-label="Whale Coast — a rocky sea arch with kelp and a softly glowing song-rock, with Bluebell the whale swimming in from the open sea" role="img">
+
+  <!-- ════════════════════════════════════════════════════════════
+       WHALE COAST — mission scene background
+       Sausage the Seal: Arctic Math Adventure
+       Same conventions as Fish Bay / Snow Beach (flat vector, no
+       gradients, navy #1d3a4a outlines, viewBox 0 0 800 500).
+       Bluebell's colours are pulled directly from ANIMAL_SVGS[5] in
+       game.js so she matches her own rescue-card/town art exactly.
+
+       FRIEND RIG: #islandFriendRig, same generic hook as the other
+       islands (see island-scenes.js / ISLAND_SCENES). Unlike Nori and
+       Pip, Bluebell is drawn directly at her "arrived" position, and
+       the rig's resting transform is the identity — game.js supplies
+       a negative offset for "out in the open sea" at mission start.
+       ════════════════════════════════════════════════════════════ -->
+
+  <defs>
+    <clipPath id="wc-canvas"><rect x="0" y="0" width="800" height="500"/></clipPath>
+  </defs>
+
+  <style>
+    .scn-cloud-a { animation: scn-drift-a 15s ease-in-out infinite; }
+    .scn-cloud-b { animation: scn-drift-b 12s ease-in-out infinite; }
+    .scn-cloud-c { animation: scn-drift-c 10s ease-in-out infinite; }
+    .scn-cloud-d { animation: scn-drift-d 9s  ease-in-out infinite; }
+    @keyframes scn-drift-a { 0%,100% { transform: translateX(0); } 50% { transform: translateX(16px); } }
+    @keyframes scn-drift-b { 0%,100% { transform: translateX(0); } 50% { transform: translateX(-13px); } }
+    @keyframes scn-drift-c { 0%,100% { transform: translateX(0); } 50% { transform: translateX(11px); } }
+    @keyframes scn-drift-d { 0%,100% { transform: translateX(0); } 50% { transform: translateX(-8px); } }
+
+    /* The song-rock at the coast — soft cyan pulse, doubling as the
+       "blinking light" beat the other islands have */
+    .scn-songrock { transform-origin: 600px 450px; animation: scn-rock-pulse 2.4s ease-in-out infinite; }
+    .scn-songrock-glow { transform-origin: 600px 450px; animation: scn-rock-glow 2.4s ease-in-out infinite; }
+    @keyframes scn-rock-pulse { 0%,100% { opacity: .8; } 50% { opacity: 1; } }
+    @keyframes scn-rock-glow  { 0%,100% { opacity: .2; transform: scale(1); } 50% { opacity: .5; transform: scale(1.5); } }
+
+    /* Music notes drifting up from the song-rock, fading as they rise */
+    .scn-note-1 { animation: scn-note-rise 4s  ease-in   infinite; }
+    .scn-note-2 { animation: scn-note-rise 4.6s ease-in   infinite; animation-delay: -1.4s; }
+    .scn-note-3 { animation: scn-note-rise 3.6s ease-in   infinite; animation-delay: -2.6s; }
+    @keyframes scn-note-rise {
+      0%   { opacity: 0; transform: translateY(0) scale(.8); }
+      15%  { opacity: .85; }
+      80%  { opacity: .15; }
+      100% { opacity: 0; transform: translateY(-72px) scale(1.05); }
+    }
+
+    /* Kelp swaying gently */
+    .scn-kelp-1 { transform-origin: 652px 500px; animation: scn-sway 3.4s ease-in-out infinite; }
+    .scn-kelp-2 { transform-origin: 670px 500px; animation: scn-sway 3.8s ease-in-out infinite; animation-delay: -1.1s; }
+    .scn-kelp-3 { transform-origin: 685px 500px; animation: scn-sway 3s   ease-in-out infinite; animation-delay: -.6s; }
+    @keyframes scn-sway { 0%,100% { transform: rotate(-4deg); } 50% { transform: rotate(4deg); } }
+
+    /* A small fish leaping further out, with a synced splash */
+    .scn-fish   { transform-origin: 350px 420px; animation: scn-jump 3.2s ease-in-out infinite; }
+    .scn-splash { transform-origin: 332px 440px; animation: scn-splash 3.2s ease-in-out infinite; }
+    @keyframes scn-jump {
+      0%   { transform: translate(0,10px)  rotate(-4deg);  opacity: .9; }
+      16%  { transform: translate(-5px,-16px) rotate(-22deg); opacity: 1; }
+      30%  { transform: translate(-8px,-24px) rotate(-14deg); opacity: 1; }
+      46%  { transform: translate(-3px,-5px)  rotate(-4deg);  opacity: 1; }
+      58%  { transform: translate(0,10px)  rotate(-2deg);  opacity: .9; }
+      64%  { opacity: 0; }
+      96%  { opacity: 0; transform: translate(0,10px) rotate(-2deg); }
+      100% { transform: translate(0,10px)  rotate(-4deg);  opacity: .9; }
+    }
+    @keyframes scn-splash {
+      0%, 52% { transform: scale(.4); opacity: 0; }
+      60%     { transform: scale(1);  opacity: .6; }
+      72%     { transform: scale(1.5); opacity: 0; }
+      100%    { transform: scale(.4); opacity: 0; }
+    }
+
+    /* Bluebell — slow idle bob, and an occasional little spout */
+    .scn-bluebell { transform-origin: 555px 312px; animation: scn-bob 3.6s ease-in-out infinite; }
+    .scn-spout    { transform-origin: 570px 282px; animation: scn-spout-puff 4.2s ease-in-out infinite; }
+    @keyframes scn-bob { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-3px); } }
+    @keyframes scn-spout-puff {
+      0%, 68% { opacity: 0; transform: scale(.6) translateY(0); }
+      78%     { opacity: .8; transform: scale(1) translateY(-6px); }
+      90%     { opacity: .3; transform: scale(1.3) translateY(-16px); }
+      100%    { opacity: 0; transform: scale(1.4) translateY(-20px); }
+    }
+  </style>
+
+  <g clip-path="url(#wc-canvas)">
+
+    <!-- ── Sky ─────────────────────────────────────────────── -->
+    <rect x="0" y="0" width="800" height="200" fill="#e3f0ff"/>
+    <rect x="0" y="150" width="800" height="50" fill="#cfe6fb"/>
+
+    <!-- ── Clouds ───────────────────────────────────────────── -->
+    <g fill="#ffffff" stroke="#d6ebfa" stroke-width="2">
+      <g class="scn-cloud-a">
+        <ellipse cx="160" cy="48" rx="30" ry="13"/>
+        <circle cx="146" cy="43" r="12"/><circle cx="164" cy="38" r="15"/><circle cx="180" cy="46" r="10"/>
+      </g>
+      <g class="scn-cloud-b">
+        <ellipse cx="380" cy="38" rx="24" ry="10"/>
+        <circle cx="370" cy="34" r="9"/><circle cx="386" cy="30" r="12"/>
+      </g>
+      <g class="scn-cloud-c">
+        <ellipse cx="560" cy="62" rx="22" ry="10"/>
+        <circle cx="550" cy="58" r="9"/><circle cx="566" cy="54" r="11"/>
+      </g>
+      <g class="scn-cloud-d">
+        <ellipse cx="450" cy="92" rx="14" ry="6"/>
+        <circle cx="444" cy="90" r="6"/><circle cx="456" cy="88" r="7"/>
+      </g>
+    </g>
+
+    <!-- ── A small distant rock with a tail fluke — hints she has
+         company out there, classic whale-against-sky silhouette ── -->
+    <g opacity=".55">
+      <ellipse cx="250" cy="206" rx="16" ry="7" fill="#cfd8df"/>
+      <path d="M254 200C247 188 239 180 235 170c10 5 17 12 23 20 6-8 13-15 23-20-5 10-15 18-23 32Z" fill="#2c4a63"/>
+    </g>
+
+    <!-- ── Seagulls ─────────────────────────────────────────── -->
+    <g fill="none" stroke="#1d3a4a" stroke-width="2.5" stroke-linecap="round">
+      <path d="M220 70q9-10 18 0q9-10 18 0"/>
+      <path d="M480 52q7-8 14 0q7-8 14 0" stroke-width="2"/>
+      <path d="M620 86q11-12 22 0q11-12 22 0" stroke-width="3"/>
+      <path d="M300 100q6-6 11 0q6-6 11 0" stroke-width="2" opacity=".85"/>
+    </g>
+
+    <!-- ── Sea: three flat tonal bands — lighter near the horizon,
+         deeper toward the bottom ── -->
+    <rect x="0" y="200" width="800" height="300" fill="#5ca6e8"/>
+    <path d="M0,266 Q40,250 80,266 T160,266 T240,266 T320,266 T400,266 T480,266 T560,266 T640,266 T720,266 T800,266 L800,200 L0,200 Z" fill="#8cc6f2"/>
+    <path d="M0,398 Q40,412 80,398 T160,398 T240,398 T320,398 T400,398 T480,398 T560,398 T640,398 T720,398 T800,398 L800,500 L0,500 Z" fill="#2f6fa8"/>
+    <path d="M0,330 Q40,318 80,330 T160,330 T240,330 T320,330 T400,330 T480,330 T560,330 T640,330 T720,330 T800,330" fill="none" stroke="#ffffff" stroke-width="3" stroke-linecap="round" opacity=".35"/>
+    <path d="M0,460 Q40,449 80,460 T160,460 T240,460 T320,460 T400,460 T480,460 T560,460 T640,460 T720,460 T800,460" fill="none" stroke="#ffffff" stroke-width="2.5" stroke-linecap="round" opacity=".2"/>
+
+    <!-- small fish leaping further out, with a splash -->
+    <g class="scn-fish">
+      <ellipse cx="350" cy="420" rx="22" ry="12" fill="#ff9f4a" stroke="#1d3a4a" stroke-width="2.6"/>
+      <path d="M330 420 311 408 315 420 311 432Z" fill="#ff9f4a" stroke="#1d3a4a" stroke-width="2.6" stroke-linejoin="round"/>
+      <circle cx="365" cy="416" r="2.4" fill="#1d3a4a"/>
+    </g>
+    <g class="scn-splash" fill="none" stroke="#ffffff" stroke-linecap="round">
+      <ellipse cx="332" cy="440" rx="15" ry="4.5" opacity=".5" stroke-width="2.6"/>
+      <ellipse cx="332" cy="440" rx="24" ry="6.5" opacity=".3" stroke-width="2.2"/>
+    </g>
+
+    <!-- ── Rocky coastal arch, far right ────────────────────── -->
+    <g fill="#7d8fa0" stroke="#5c6b78" stroke-width="3" stroke-linejoin="round">
+      <path d="M636 500 L644 300 Q650 250 668 232 Q686 248 682 300 L692 500 Z"/>
+      <path d="M726 500 L734 260 Q740 170 766 130 Q793 110 800 130 L800 500 Z"/>
+      <path d="M655 225 Q710 130 780 140 L788 175 Q725 175 675 250 Z"/>
+    </g>
+    <g stroke="#5c6b78" stroke-width="2" opacity=".5">
+      <line x1="652" y1="340" x2="660" y2="420"/>
+      <line x1="672" y1="320" x2="666" y2="400"/>
+      <line x1="748" y1="280" x2="756" y2="380"/>
+      <line x1="772" y1="220" x2="766" y2="300"/>
+    </g>
+
+    <!-- kelp swaying at the foot of the near pillar -->
+    <g fill="#2f9c8a" stroke="#1d3a4a" stroke-width="1.8">
+      <path class="scn-kelp-1" d="M652 500 Q640 458 656 418 Q668 458 660 500Z"/>
+      <path class="scn-kelp-2" d="M670 500 Q662 452 678 412 Q686 456 680 500Z"/>
+      <path class="scn-kelp-3" d="M685 500 Q695 460 684 422 Q674 460 680 500Z"/>
+    </g>
+
+    <!-- the song-rock — soft glow, music notes drifting up -->
+    <circle class="scn-songrock-glow" cx="600" cy="450" r="16" fill="#d9f7ff"/>
+    <ellipse class="scn-songrock" cx="600" cy="450" rx="18" ry="14" fill="#eafdff" stroke="#1d3a4a" stroke-width="2.2"/>
+    <g fill="#ffffff" opacity=".9">
+      <g class="scn-note-1" transform="translate(594,432)">
+        <ellipse cx="0" cy="0" rx="4.5" ry="3.6" transform="rotate(-18)"/>
+        <line x1="4" y1="-1" x2="4" y2="-15" stroke="#ffffff" stroke-width="2"/>
+        <path d="M4 -15q7 1 6 8" fill="none" stroke="#ffffff" stroke-width="2" stroke-linecap="round"/>
+      </g>
+      <g class="scn-note-2" transform="translate(608,436) scale(.85)">
+        <ellipse cx="0" cy="0" rx="4.5" ry="3.6" transform="rotate(-18)"/>
+        <line x1="4" y1="-1" x2="4" y2="-15" stroke="#ffffff" stroke-width="2"/>
+      </g>
+      <g class="scn-note-3" transform="translate(600,440) scale(.7)">
+        <ellipse cx="0" cy="0" rx="4.5" ry="3.6" transform="rotate(-18)"/>
+        <line x1="4" y1="-1" x2="4" y2="-15" stroke="#ffffff" stroke-width="2"/>
+        <path d="M4 -15q7 1 6 8" fill="none" stroke="#ffffff" stroke-width="2" stroke-linecap="round"/>
+      </g>
+    </g>
+
+    <!-- ── Bluebell the whale — swimming in toward the coast. Colours
+         match ANIMAL_SVGS[5] exactly (body #4a9ecf, fin accent
+         #3a8ebf, belly sheen #7fd0f0) so she's recognizably the same
+         Bluebell seen elsewhere in the game. ── -->
+    <g id="islandFriendRig">
+      <g class="scn-bluebell">
+        <path d="M480 322 Q490 292 530 290 Q580 286 620 302 Q630 318 610 326 Q560 338 510 334 Q484 332 480 322Z" fill="#4a9ecf" stroke="#1d3a4a" stroke-width="2.6"/>
+        <path d="M500 308 Q540 300 600 310 Q560 316 520 316Z" fill="#7fd0f0" opacity=".5"/>
+        <ellipse cx="570" cy="294" rx="5" ry="3" fill="#1a2030"/>
+        <g class="scn-spout" fill="none" stroke="#eafdff" stroke-linecap="round">
+          <path d="M570 280 Q566 270 570 262" stroke-width="3" opacity=".8"/>
+          <path d="M570 280 Q574 268 572 258" stroke-width="2.4" opacity=".6"/>
+          <circle cx="568" cy="256" r="2.4" fill="#eafdff" stroke="none" opacity=".7"/>
+        </g>
+        <circle cx="608" cy="310" r="5" fill="#1a2030"/>
+        <circle cx="609.6" cy="308.4" r="1.6" fill="#ffffff"/>
+        <path d="M598 318 Q608 323 616 317" fill="none" stroke="#f0f8ff" stroke-width="2.2" stroke-linecap="round"/>
+      </g>
+    </g>
+
+  </g>
+</svg>`;
+const PENGUIN_ISLANDS_SCENE_SVG = `<svg viewBox="0 0 800 500" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="xMidYMid slice" aria-label="Penguin Islands — an aurora-lit ice platform with a marching penguin parade and a small drum, with Pebble the puffin waddling along the ice to rejoin the group" role="img">
+
+  <!-- ════════════════════════════════════════════════════════════
+       PENGUIN ISLANDS — mission scene background
+       Sausage the Seal: Arctic Math Adventure
+       Same conventions as the other islands (flat vector, no
+       gradients, navy #1d3a4a outlines, viewBox 0 0 800 500).
+
+       A NOTE ON WHO'S WHO: the island's theme/scenery is a penguin
+       colony ("Guide the penguin parade"), but the actual named friend
+       — world.character "Pebble" — is a PUFFIN (animal id 2 in
+       game.js, ANIMAL_SVGS[2]), not one of the penguins. That's not a
+       data error like Octopus Cave's was; nothing else in the data
+       claims Pebble is a penguin. Read here as: Pebble is a puffin who
+       ended up among this penguin colony and is making her way back
+       to the group — so the scene shows BOTH: a background "parade"
+       of generic colony penguins (colours matching the existing
+       ISLAND_DECOR[3] emblem: navy #26364a body, gold #ffb847 beak),
+       and Pebble herself drawn in her own established colours
+       (ANIMAL_SVGS[2]: near-black #1a1a2a body, bright orange #ff8820
+       beak/flippers) so she's clearly a different bird, not a
+       recolour of the same one.
+
+       Pebble's whole path stays on solid ice (no swimming partway and
+       standing the rest) — the rig only moves her sideways, it can't
+       change her pose, so giving her one continuous standing/waddling
+       pose for the full distance was the only way to avoid an
+       "walking on water" moment partway through.
+
+       FRIEND RIG: #islandFriendRig — drawn directly at her "arrived"
+       position, same convention as Bluebell (Whale Coast); game.js
+       supplies a negative x offset for "isolated, far from the group"
+       at mission start.
+       ════════════════════════════════════════════════════════════ -->
+
+  <defs>
+    <clipPath id="pi-canvas"><rect x="0" y="0" width="800" height="500"/></clipPath>
+  </defs>
+
+  <style>
+    .scn-cloud-a { animation: scn-drift-a 15s ease-in-out infinite; }
+    .scn-cloud-b { animation: scn-drift-b 12s ease-in-out infinite; }
+    @keyframes scn-drift-a { 0%,100% { transform: translateX(0); } 50% { transform: translateX(14px); } }
+    @keyframes scn-drift-b { 0%,100% { transform: translateX(0); } 50% { transform: translateX(-12px); } }
+
+    /* Aurora ribbons shimmering — this island's stand-in for the
+       lighthouse/lantern/song-rock "blinking light" beat */
+    .scn-aurora-1 { animation: scn-shimmer 4.2s ease-in-out infinite; }
+    .scn-aurora-2 { animation: scn-shimmer 5s   ease-in-out infinite; animation-delay: -1.6s; }
+    .scn-aurora-3 { animation: scn-shimmer 3.6s ease-in-out infinite; animation-delay: -.8s; }
+    @keyframes scn-shimmer { 0%,100% { opacity: .22; } 50% { opacity: .45; } }
+
+    /* A little parade drum, bopping to its own beat */
+    .scn-drum { transform-origin: 700px 462px; animation: scn-bop 1.1s ease-in-out infinite; }
+    @keyframes scn-bop { 0%,100% { transform: scaleY(1); } 40% { transform: scaleY(.88); } 55% { transform: scaleY(1.04); } }
+
+    /* The colony penguins waddling in their parade line */
+    .scn-waddle-mini { animation: scn-waddle-mini 1.6s ease-in-out infinite; }
+    @keyframes scn-waddle-mini { 0%,100% { transform: rotate(-5deg); } 50% { transform: rotate(5deg); } }
+
+    /* Small fish leaping in the little inlet, with a synced splash */
+    .scn-fish   { transform-origin: 750px 452px; animation: scn-jump 3.2s ease-in-out infinite; }
+    .scn-splash { transform-origin: 736px 468px; animation: scn-splash 3.2s ease-in-out infinite; }
+    @keyframes scn-jump {
+      0%   { transform: translate(0,8px)  rotate(-4deg);  opacity: .9; }
+      16%  { transform: translate(-4px,-14px) rotate(-22deg); opacity: 1; }
+      30%  { transform: translate(-7px,-20px) rotate(-14deg); opacity: 1; }
+      46%  { transform: translate(-2px,-4px)  rotate(-4deg);  opacity: 1; }
+      58%  { transform: translate(0,8px)  rotate(-2deg);  opacity: .9; }
+      64%  { opacity: 0; }
+      96%  { opacity: 0; transform: translate(0,8px) rotate(-2deg); }
+      100% { transform: translate(0,8px)  rotate(-4deg);  opacity: .9; }
+    }
+    @keyframes scn-splash {
+      0%, 52% { transform: scale(.4); opacity: 0; }
+      60%     { transform: scale(1);  opacity: .6; }
+      72%     { transform: scale(1.5); opacity: 0; }
+      100%    { transform: scale(.4); opacity: 0; }
+    }
+
+    /* Pebble — idle waddle + a flipper wave (her flippers are orange,
+       unlike the colony penguins', which helps her read as different) */
+    .scn-pebble      { transform-origin: 645px 462px; animation: scn-waddle 2.4s ease-in-out infinite; }
+    .scn-pebble-wave { transform-origin: 665px 446px; animation: scn-wave 1.7s ease-in-out infinite; }
+    @keyframes scn-waddle { 0%,100% { transform: rotate(-3deg); } 50% { transform: rotate(3deg); } }
+    @keyframes scn-wave   { 0%,100% { transform: rotate(-8deg); } 50% { transform: rotate(30deg); } }
+  </style>
+
+  <g clip-path="url(#pi-canvas)">
+
+    <!-- ── Sky ─────────────────────────────────────────────── -->
+    <rect x="0" y="0" width="800" height="190" fill="#f7f7ff"/>
+    <rect x="0" y="140" width="800" height="50" fill="#d8dcf7"/>
+
+    <!-- ── Aurora, shimmering softly ────────────────────────── -->
+    <path class="scn-aurora-1" d="M0,110 Q100,70 200,100 T400,100 T600,100 T800,100 L800,140 Q600,115 400,135 T200,130 T0,140 Z" fill="#9ce8c8"/>
+    <path class="scn-aurora-2" d="M0,95 Q120,60 240,90 T480,88 T720,92 L800,100 L800,130 Q600,100 400,122 T160,118 T0,128 Z" fill="#c9b8f0"/>
+    <path class="scn-aurora-3" d="M0,128 Q140,98 280,118 T560,116 T800,120 L800,150 Q600,128 400,146 T200,142 T0,150 Z" fill="#a8c8f0"/>
+
+    <!-- ── Clouds, sparse — aurora is the sky's main event here ── -->
+    <g fill="#ffffff" stroke="#e4e6fa" stroke-width="2">
+      <g class="scn-cloud-a">
+        <ellipse cx="200" cy="50" rx="22" ry="10"/>
+        <circle cx="190" cy="46" r="9"/><circle cx="206" cy="42" r="11"/>
+      </g>
+      <g class="scn-cloud-b">
+        <ellipse cx="620" cy="55" rx="20" ry="9"/>
+        <circle cx="612" cy="52" r="8"/><circle cx="626" cy="49" r="10"/>
+      </g>
+    </g>
+
+    <!-- ── Distant ice floes near the horizon — the "Islands" part ── -->
+    <g fill="#eef4ff" stroke="#d4dcf2" stroke-width="2">
+      <ellipse cx="530" cy="178" rx="38" ry="12"/>
+      <ellipse cx="715" cy="182" rx="30" ry="10"/>
+    </g>
+
+    <!-- ── Gulls ────────────────────────────────────────────── -->
+    <g fill="none" stroke="#1d3a4a" stroke-width="2.5" stroke-linecap="round">
+      <path d="M540 90q9-10 18 0q9-10 18 0"/>
+      <path d="M295 75q7-8 14 0q7-8 14 0" stroke-width="2"/>
+    </g>
+
+    <!-- ── Sea, a band behind the ice platform ─────────────── -->
+    <rect x="0" y="190" width="800" height="130" fill="#7c8fe8"/>
+    <rect x="0" y="190" width="800" height="40" fill="#a8b8f5"/>
+    <path d="M0,280 Q40,268 80,280 T160,280 T240,280 T320,280 T400,280 T480,280 T560,280 T640,280 T720,280 T800,280" fill="none" stroke="#ffffff" stroke-width="2.5" stroke-linecap="round" opacity=".35"/>
+
+    <!-- ── Ice platform — the whole parade ground, so Pebble's
+         path is solid the entire way (see header note) ──────── -->
+    <path d="M0,500 L0,330 Q100,312 200,326 T400,318 T600,328 T800,316 L800,440 Q760,420 700,440 L700,500 Z" fill="#f7faff" stroke="#dbe4f5" stroke-width="2.5"/>
+    <g stroke="#cdd8ec" stroke-width="2" opacity=".6">
+      <path d="M120 360 Q180 380 250 364" fill="none"/>
+      <path d="M420 340 Q480 360 540 346" fill="none"/>
+      <path d="M260 420 Q310 436 360 424" fill="none"/>
+    </g>
+    <!-- a small open-water inlet at the corner, for the fish to jump in -->
+    <path d="M700,440 Q760,420 800,440 L800,500 L700,500 Z" fill="#7c8fe8"/>
+    <path d="M700,440 Q760,420 800,440" fill="none" stroke="#ffffff" stroke-width="2.5" opacity=".4"/>
+
+    <!-- footprint trail across the ice -->
+    <g fill="#5c6b8a" opacity=".5">
+      <ellipse cx="160" cy="468" rx="6" ry="8"/><circle cx="155" cy="459" r="2.6"/><circle cx="164" cy="457" r="2.6"/>
+      <ellipse cx="230" cy="464" rx="6" ry="8"/><circle cx="225" cy="455" r="2.6"/><circle cx="234" cy="453" r="2.6"/>
+      <ellipse cx="320" cy="460" rx="6" ry="8"/><circle cx="315" cy="451" r="2.6"/><circle cx="324" cy="449" r="2.6"/>
+      <ellipse cx="400" cy="458" rx="6" ry="8"/><circle cx="395" cy="449" r="2.6"/><circle cx="404" cy="447" r="2.6"/>
+      <ellipse cx="490" cy="460" rx="6" ry="8"/><circle cx="485" cy="451" r="2.6"/><circle cx="494" cy="449" r="2.6"/>
+      <ellipse cx="570" cy="462" rx="6" ry="8"/><circle cx="565" cy="453" r="2.6"/><circle cx="574" cy="451" r="2.6"/>
+    </g>
+
+    <!-- small fish leaping in the inlet -->
+    <g class="scn-fish">
+      <ellipse cx="750" cy="452" rx="16" ry="9" fill="#ff9f4a" stroke="#1d3a4a" stroke-width="2.2"/>
+      <path d="M735 452 720 443 723 452 720 461Z" fill="#ff9f4a" stroke="#1d3a4a" stroke-width="2.2" stroke-linejoin="round"/>
+    </g>
+    <g class="scn-splash" fill="none" stroke="#ffffff" stroke-linecap="round">
+      <ellipse cx="736" cy="468" rx="11" ry="3.5" opacity=".5" stroke-width="2.2"/>
+      <ellipse cx="736" cy="468" rx="18" ry="5" opacity=".3" stroke-width="2"/>
+    </g>
+
+    <!-- ── The penguin parade (background colony, generic colours) ── -->
+    <g fill="#26364a" stroke="#1d3a4a" stroke-width="1.8">
+      <g class="scn-waddle-mini" style="transform-origin:420px 460px; animation-delay:-.1s">
+        <ellipse cx="420" cy="460" rx="11" ry="17"/>
+        <ellipse cx="420" cy="463" rx="6" ry="11" fill="#ffffff" stroke="none"/>
+        <path d="M414 446 420 438 426 446Z" fill="#ffb847" stroke="#1d3a4a" stroke-width="1.4"/>
+      </g>
+      <g class="scn-waddle-mini" style="transform-origin:465px 463px; animation-delay:-.5s">
+        <ellipse cx="465" cy="463" rx="11" ry="17"/>
+        <ellipse cx="465" cy="466" rx="6" ry="11" fill="#ffffff" stroke="none"/>
+        <path d="M459 449 465 441 471 449Z" fill="#ffb847" stroke="#1d3a4a" stroke-width="1.4"/>
+      </g>
+      <g class="scn-waddle-mini" style="transform-origin:510px 460px; animation-delay:-.9s">
+        <ellipse cx="510" cy="460" rx="11" ry="17"/>
+        <ellipse cx="510" cy="463" rx="6" ry="11" fill="#ffffff" stroke="none"/>
+        <path d="M504 446 510 438 516 446Z" fill="#ffb847" stroke="#1d3a4a" stroke-width="1.4"/>
+      </g>
+      <g class="scn-waddle-mini" style="transform-origin:555px 463px; animation-delay:-1.3s">
+        <ellipse cx="555" cy="463" rx="11" ry="17"/>
+        <ellipse cx="555" cy="466" rx="6" ry="11" fill="#ffffff" stroke="none"/>
+        <path d="M549 449 555 441 561 449Z" fill="#ffb847" stroke="#1d3a4a" stroke-width="1.4"/>
+      </g>
+      <g class="scn-waddle-mini" style="transform-origin:600px 460px; animation-delay:-1.5s">
+        <ellipse cx="600" cy="460" rx="11" ry="17"/>
+        <ellipse cx="600" cy="463" rx="6" ry="11" fill="#ffffff" stroke="none"/>
+        <path d="M594 446 600 438 606 446Z" fill="#ffb847" stroke="#1d3a4a" stroke-width="1.4"/>
+      </g>
+    </g>
+
+    <!-- small parade drum -->
+    <g class="scn-drum">
+      <path d="M686 462 L686 478 Q700 486 714 478 L714 462Z" fill="#ff6f61" stroke="#1d3a4a" stroke-width="2.2"/>
+      <ellipse cx="700" cy="462" rx="14" ry="7" fill="#fff0d0" stroke="#1d3a4a" stroke-width="2.2"/>
+      <path d="M686 462 Q700 468 714 462" fill="none" stroke="#1d3a4a" stroke-width="1.4" opacity=".5"/>
+    </g>
+
+    <!-- ── Pebble the puffin — waddling along the ice to rejoin the
+         group. Colours match ANIMAL_SVGS[2] exactly (near-black
+         #1a1a2a body, bright orange #ff8820 beak AND flippers — the
+         orange flippers are the easiest "this isn't a penguin" tell
+         next to the colony's navy ones). ── -->
+    <g id="islandFriendRig">
+      <g class="scn-pebble">
+        <ellipse cx="645" cy="476" rx="22" ry="8" fill="#ff8820" opacity=".85"/>
+        <ellipse cx="645" cy="462" rx="22" ry="26" fill="#1a1a2a" stroke="#1d3a4a" stroke-width="2.4"/>
+        <ellipse cx="645" cy="465" rx="13" ry="18" fill="#f0f0f0"/>
+        <ellipse cx="645" cy="436" rx="16" ry="15" fill="#1a1a2a" stroke="#1d3a4a" stroke-width="2.4"/>
+        <circle cx="638" cy="433" r="4.6" fill="#1a1a2a"/><circle cx="652" cy="433" r="4.6" fill="#1a1a2a"/>
+        <circle cx="639.6" cy="431.4" r="1.5" fill="#fff"/><circle cx="653.6" cy="431.4" r="1.5" fill="#fff"/>
+        <path d="M639 443 Q645 448 651 443 Q649 439 645 437 Q641 439 639 443Z" fill="#ff8820" stroke="#1d3a4a" stroke-width="1.6"/>
+        <ellipse cx="623" cy="455" rx="7" ry="10" fill="#ff8820" stroke="#1d3a4a" stroke-width="1.8"/>
+        <g class="scn-pebble-wave">
+          <ellipse cx="665" cy="448" rx="7" ry="10" fill="#ff8820" stroke="#1d3a4a" stroke-width="1.8"/>
+        </g>
+      </g>
+    </g>
+
+  </g>
+</svg>`;
+
+const ISLAND_SCENES = {
+  0: { svg: SNOW_BEACH_SCENE_SVG,      startX: 60,   endX: 370 }, // Snow Beach      — Pip,      driftwood → lantern shelter
+  1: { svg: FISH_BAY_SCENE_SVG,        startX: -141, endX: 45  }, // Fish Bay        — Nori,     lighthouse → boat
+  2: { svg: WHALE_COAST_SCENE_SVG,     startX: -440, endX: 0   }, // Whale Coast     — Bluebell, open sea → song-rock at the coast
+  3: { svg: PENGUIN_ISLANDS_SCENE_SVG, startX: -525, endX: 0   }, // Penguin Islands — Pebble,   isolated on the ice → joins the parade
+};
+
+// Mounts/unmounts the bespoke scene in #challengeCustomBg. Islands with no
+// entry in ISLAND_SCENES just get the container hidden/cleared — no behavior
+// change for them, they keep using the existing gradient + generic watermark.
+function setupIslandScene(scene, worldId) {
+  const bg = scene.querySelector("#challengeCustomBg");
+  if (!bg) return;
+  const cfg = ISLAND_SCENES[worldId];
+  if (cfg) {
+    if (bg.dataset.world !== String(worldId)) {
+      bg.innerHTML = cfg.svg;
+      bg.dataset.world = String(worldId);
+    }
+    bg.hidden = false;
+  } else {
+    bg.hidden = true;
+    bg.innerHTML = "";
+    delete bg.dataset.world;
+  }
+  const iceberg = scene.querySelector(".iceberg");
+  const wm      = scene.querySelector(".challenge-watermark");
+  const ga      = scene.querySelector(".challenge-ground-accent");
+  if (iceberg) iceberg.style.display = cfg ? "none" : "";
+  if (wm)      wm.style.display      = cfg ? "none" : "";
+  if (ga)      ga.style.display      = cfg ? "none" : "";
+}
+
+// Call any time trip.solved or trip.needed changes (mission start, every
+// correct answer) — for any island. No-op on islands with no custom scene.
+function syncIslandFriend() {
+  if (!trip) return;
+  const cfg = ISLAND_SCENES[trip.world];
+  if (!cfg) return;
+  const rig = document.querySelector("#islandFriendRig");
+  if (!rig) return;
+  const pct = Math.min(1, trip.solved / trip.needed);
+  const x = cfg.startX + (cfg.endX - cfg.startX) * pct;
+  rig.style.transform = `translate(${x.toFixed(1)}px,0)`;
+}
+
 function islandSvg(world, locked) {
   const [c1,c2] = locked ? ["#d6dde0","#aebbc2"] : world.palette;
   const decor = ISLAND_DECOR[world.id];
@@ -1607,6 +2638,7 @@ function startMission(daily) {
   switchView("adventure");
   const mission = daily ? 0 : nextMission();
   trip = { active:true, world:selectedWorld, mission, solved:0, needed:5+(mission>2?2:0), correct:0, daily, mistakes:0, stormIntensity:100, combo:0 };
+  syncIslandFriend();
   $("challenge").hidden = false;
   $("miniGame").hidden  = true;
   $("challenge").scrollIntoView({ behavior: "smooth", block: "start" });
@@ -1631,6 +2663,7 @@ function startMission(daily) {
   const scene = document.querySelector(".challenge-scene");
   if (scene) {
     scene.style.background = `linear-gradient(${w.palette[0]} 0 45%, ${w.palette[1]} 45% 100%)`;
+    setupIslandScene(scene, w.id);
     // P15: faint per-island emblem watermark — cheap reuse of the existing
     // map-icon art, just enough to make the challenge screen feel like it
     // belongs to this specific island instead of only the background color.
@@ -1728,6 +2761,7 @@ function makeProblem() {
     $("questionsLeft").textContent = `${Math.max(0, trip.needed-trip.solved)} ${t("questionsLeft")}`;
     $("missionTrailMarker").style.left = `${missionTrailPos(trip.solved, trip.needed)}%`;
   }
+  syncIslandFriend();
   $("missionTrailGoal").innerHTML = missionGoalIcon(world, trip.mission);
   $("problemText").textContent   = currentProblem.text;
   $("hintText").hidden           = true;
@@ -2206,6 +3240,7 @@ function answer(value, btn) {
       $("questionsLeft").textContent = `${Math.max(0, trip.needed-trip.solved)} ${t("questionsLeft")}`;
       $("missionMeter").style.width  = `${Math.round((trip.solved/trip.needed)*100)}%`;
       $("missionTrailMarker").style.left = `${missionTrailPos(trip.solved, trip.needed)}%`;
+      syncIslandFriend();
       setTimeout(() => trip.solved >= trip.needed ? completeMission() : makeProblem(), 860);
     }
   } else {
