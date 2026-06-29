@@ -462,6 +462,10 @@ button { font: inherit; color: inherit; }
   left: 75%;
   bottom: 24px;
   z-index: 1;
+  transform: scaleX(-1); /* native #sausage-body art faces left; rig
+    always swims left→right toward the friend, so flip here — on the
+    wrapper, not the animated .seal-avatar.swim child, per the same
+    rule noted above */
 }
 .fish {
   position: absolute;
