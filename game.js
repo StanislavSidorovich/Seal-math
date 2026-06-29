@@ -22,7 +22,7 @@ const worlds = [
   { name: "Fish Bay",        topics: ["add100","sub100","carryBorrow"],                  subtitle: "Repair the fish docks",                  subtitleRu: "Отремонтируй рыбные пристани",            palette: ["#d8fff1","#24bdd2"],   character: "Nori",          animal: 0, music: "bouncy marimba" },
   { name: "Whale Coast",     topics: ["multiply","divide","reverseMul"],                 subtitle: "Follow Bluebell's song",                 subtitleRu: "Следуй за песней Блюбелл",                palette: ["#e3f0ff","#5ca6e8"],   character: "Bluebell",      animal: 5, music: "slow ocean chimes" },
   { name: "Penguin Islands", topics: ["mixed","add3","twoStep"],                         subtitle: "Guide the penguin parade",               subtitleRu: "Проведи парад пингвинов",                 palette: ["#f7f7ff","#7c8fe8"],   character: "Pebble",        animal: 2, music: "tap-dance drums" },
-  { name: "Octopus Cave",    topics: ["missing","patterns","brackets","logic"],          subtitle: "Solve Professor Octo's riddles",         subtitleRu: "Разгадай загадки Профессора Окто",        palette: ["#f4e8ff","#35c9c0"],   character: "Professor Octo",animal: 4, music: "mysterious bubbles" },
+  { name: "Octopus Cave",    topics: ["missing","patterns","brackets","logic"],          subtitle: "Solve Professor Octo's riddles",         subtitleRu: "Разгадай загадки Профессора Окто",        palette: ["#f4e8ff","#35c9c0"],   character: "Professor Octo",animal: 9, music: "mysterious bubbles" },
   { name: "Polar Academy",   topics: ["equations","advEquations","orderOfOps"],          subtitle: "Train with Miska",                       subtitleRu: "Тренируйся с Миской",                     palette: ["#ffffff","#8bd5ff"],   character: "Miska",         animal: 3, music: "sparkly classroom" },
   { name: "Northern Kingdom",topics: ["word","fractions","fracCompare"],                 subtitle: "Carry supplies to the castle",           subtitleRu: "Доставь припасы в замок",                 palette: ["#ffe5ee","#b78cff"],   character: "Nova",          animal: 6, music: "royal horns" },
   { name: "Arctic Champion", topics: ["adaptive"],                                       subtitle: "Become Guardian of the Arctic",          subtitleRu: "Стань Хранителем Арктики",                palette: ["#fff8b8","#2dd6a6"],   character: "Tumble",        animal: 8, music: "victory fanfare" }
@@ -212,7 +212,8 @@ const animals = [
   ["Whale","Bluebell","Some whales sing songs that travel for miles."],
   ["Narwhal","Nova","A narwhal's tusk is a long tooth."],
   ["Arctic fox","Frost","Arctic foxes change coat color with the seasons."],
-  ["Sea otter","Tumble","Sea otters often float on their backs."]
+  ["Sea otter","Tumble","Sea otters often float on their backs."],
+  ["Octopus","Octo","Octopuses have three hearts and can change color."]
 ].map((a,i) => ({ id:i, species:a[0], name:a[1], fact:a[2] }));
 
 const buildings = ["Fish Market","Lighthouse","Aquarium","Seal House","Penguin Village","Harbor","Arctic Museum","Ice Castle"]
@@ -983,7 +984,7 @@ function renderProfileList() {
         <span class="profile-card-emoji">${p.emoji}</span>
         <div class="profile-card-info">
           <strong class="profile-card-name">${safeName}</strong>
-          <span class="profile-card-sub">Level ${p.state?.level||1} · ${p.state?.animals?.length||0}/9 friends · ${last}</span>
+          <span class="profile-card-sub">Level ${p.state?.level||1} · ${p.state?.animals?.length||0}/${animals.length} friends · ${last}</span>
         </div>
       </button>
       <button class="profile-edit-btn" data-pid="${p.id}" aria-label="Edit ${safeName}">✏️</button>
@@ -1163,7 +1164,7 @@ function showWelcomeBack() {
       <div class="wb-stats">
         <div class="wb-stat"><span class="wb-num">${wName}</span><span class="wb-lbl">${ru ? "текущий остров" : "current island"}</span></div>
         <div class="wb-stat"><span class="wb-num">${state.level}</span><span class="wb-lbl">${ru ? "уровень" : "level"}</span></div>
-        <div class="wb-stat"><span class="wb-num">${friendCount}/9</span><span class="wb-lbl">${ru ? "друзей спасено" : "friends rescued"}</span></div>
+        <div class="wb-stat"><span class="wb-num">${friendCount}/${animals.length}</span><span class="wb-lbl">${ru ? "друзей спасено" : "friends rescued"}</span></div>
       </div>
       <p class="wb-streak">${streakMsg}</p>
       <p class="wb-xp">${ru ? `${toNext} правильных ответов до уровня ${state.level+1}!` : `${toNext} correct answers to level ${state.level+1}!`}</p>
@@ -2513,11 +2514,219 @@ const PENGUIN_ISLANDS_SCENE_SVG = `<svg viewBox="0 0 800 500" xmlns="http://www.
   </g>
 </svg>`;
 
+const OCTOPUS_CAVE_SCENE_SVG    = `<svg viewBox="0 0 800 500" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="xMidYMid slice" aria-label="Octopus Cave — an underwater grotto lit by shafts of light from above, with glowing coral, a drifting jellyfish, and Professor Octo the octopus wedged near a carved riddle-stone" role="img">
+
+  <!-- ════════════════════════════════════════════════════════════
+       OCTOPUS CAVE — mission scene background
+       Sausage the Seal: Arctic Math Adventure
+       Same conventions as the other islands (flat vector, no
+       gradients, navy #1d3a4a outlines, viewBox 0 0 800 500) — but
+       the first fully UNDERWATER scene, since this island is a cave
+       grotto rather than a surface/beach/ice location. Depth comes
+       from three flat water bands instead of sky+sea, plus a pair of
+       translucent light shafts standing in for the "sky" beat.
+
+       DATA FIX: worlds[4].animal now correctly points at id 9
+       (Octopus, ANIMAL_SVGS[9]) instead of id 4 (Walrus) — see the
+       game.js diff that added the Octopus species. Professor Octo's
+       colours here are pulled directly from ANIMAL_SVGS[9] (mantle
+       #35c9c0, dark tentacles #2aa89c, highlight #6fe0d4) so he
+       matches his own rescue-card/town art exactly, same rule as
+       every other friend. The round glasses are new here (not part
+       of the small ANIMAL_SVGS icon) — a nod to his "*adjusts
+       glasses*" rescue dialogue line, so the visual personality and
+       the text personality reinforce each other.
+
+       FRIEND: #islandFriendSpot is Octo's permanent position for the
+       whole mission — wedged by the cave wall with one tentacle
+       pinned under a fallen rock (why he's stuck, not just resting).
+       Sausage (a separate top-level element, #missionSealRig in
+       index.html) is what swims toward him as questions are
+       answered; see syncMissionSeal() in game.js.
+       ════════════════════════════════════════════════════════════ -->
+
+  <defs>
+    <clipPath id="oc-canvas"><rect x="0" y="0" width="800" height="500"/></clipPath>
+  </defs>
+
+  <style>
+    /* Light shafts from the cave opening above — this island's stand-in
+       for the other islands' sky/aurora beat, same slow shimmer trick */
+    .scn-ray-a { animation: scn-shimmer 7s ease-in-out infinite; }
+    .scn-ray-b { animation: scn-shimmer 5.4s ease-in-out infinite; animation-delay: -2s; }
+    @keyframes scn-shimmer { 0%,100% { opacity: .8; } 50% { opacity: 1; } }
+
+    /* Small fish school drifting slowly side to side, deeper in the cave */
+    .scn-fish-a { animation: scn-fish-drift 5s ease-in-out infinite; }
+    .scn-fish-b { animation: scn-fish-drift 4.2s ease-in-out infinite; animation-delay: -1.4s; }
+    .scn-fish-c { animation: scn-fish-drift 4.6s ease-in-out infinite; animation-delay: -2.6s; }
+    @keyframes scn-fish-drift { 0%,100% { transform: translateX(0); } 50% { transform: translateX(14px); } }
+
+    /* Kelp swaying at the cave floor — same proven sway as Whale Coast */
+    .scn-kelp-1 { transform-origin: 178px 500px; animation: scn-sway 3.6s ease-in-out infinite; }
+    .scn-kelp-2 { transform-origin: 202px 500px; animation: scn-sway 3.1s ease-in-out infinite; animation-delay: -1s; }
+    @keyframes scn-sway { 0%,100% { transform: rotate(-4deg); } 50% { transform: rotate(4deg); } }
+
+    /* Bioluminescent coral and the carved riddle-stone — same soft
+       pulse-glow as the song-rock/aurora beats on other islands */
+    .scn-glow-halo { animation: scn-rock-glow 2.6s ease-in-out infinite; }
+    .scn-glow-tip  { animation: scn-rock-pulse 2.6s ease-in-out infinite; }
+    @keyframes scn-rock-glow  { 0%,100% { opacity: .18; transform: scale(1); } 50% { opacity: .4; transform: scale(1.3); } }
+    @keyframes scn-rock-pulse { 0%,100% { opacity: .7; } 50% { opacity: 1; } }
+
+    /* Jellyfish — bell pulses, tentacles trail behind. Origins are in
+       the LOCAL coordinate space of each path (this group already
+       sits inside its own translate(660,210) wrapper) — each tentacle
+       pivots from where it actually meets the bell. */
+    .scn-jelly-bell { transform-origin: 0px 0px;   animation: scn-pulse 2.2s ease-in-out infinite; }
+    .scn-jelly-t1 { transform-origin: -14px 0px; animation: scn-sway 2.6s ease-in-out infinite; }
+    .scn-jelly-t2 { transform-origin: 0px 0px;   animation: scn-sway 2.9s ease-in-out infinite; animation-delay: -.9s; }
+    .scn-jelly-t3 { transform-origin: 14px 0px;  animation: scn-sway 2.4s ease-in-out infinite; animation-delay: -.4s; }
+    @keyframes scn-pulse { 0%,100% { transform: scaleY(1); } 50% { transform: scaleY(.82); } }
+
+    /* Bubbles rising from the cave floor, fading as they go */
+    .scn-bubble-1 { animation: scn-bubble-rise 3.6s ease-in infinite; }
+    .scn-bubble-2 { animation: scn-bubble-rise 4.2s ease-in infinite; animation-delay: -1.4s; }
+    .scn-bubble-3 { animation: scn-bubble-rise 3s   ease-in infinite; animation-delay: -.7s; }
+    .scn-bubble-4 { animation: scn-bubble-rise 4.6s ease-in infinite; animation-delay: -2.3s; }
+    .scn-bubble-5 { animation: scn-bubble-rise 3.3s ease-in infinite; animation-delay: -1.9s; }
+    @keyframes scn-bubble-rise {
+      0%   { opacity: 0; transform: translateY(0) scale(.7); }
+      12%  { opacity: .6; }
+      85%  { opacity: .15; }
+      100% { opacity: 0; transform: translateY(-90px) scale(1.1); }
+    }
+
+    /* Professor Octo — idle bob, plus one tentacle giving a slow
+       thoughtful curl (his "thinking it over" tell) */
+    .scn-octo         { transform-origin: 0px 32px;  animation: scn-bob 3.4s ease-in-out infinite; }
+    .scn-octo-tentacle{ transform-origin: 26px 52px; animation: scn-think 3.8s ease-in-out infinite; }
+    @keyframes scn-bob   { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-4px); } }
+    @keyframes scn-think { 0%,100% { transform: rotate(0deg); } 50% { transform: rotate(10deg); } }
+  </style>
+
+  <g clip-path="url(#oc-canvas)">
+
+    <!-- ── Water depth bands — darkest at the floor, lightest near
+         the cave opening, standing in for the sky/sea split the
+         surface islands use ── -->
+    <rect x="0" y="0"   width="800" height="500" fill="#163f4d"/>
+    <rect x="0" y="0"   width="800" height="190" fill="#2f6f7a"/>
+    <rect x="0" y="150" width="800" height="170" fill="#225a68"/>
+
+    <!-- ── Light shafts from the cave opening above ─────────────── -->
+    <g fill="#f4e8ff">
+      <path class="scn-ray-a" d="M460 0 L620 500 L520 500 L420 0Z" opacity=".16"/>
+      <path class="scn-ray-b" d="M510 0 L600 500 L530 500 L470 0Z" opacity=".16"/>
+    </g>
+    <path d="M440 0 L560 500 L500 500 L410 0Z" fill="#ffffff" opacity=".1"/>
+
+    <!-- ── Cave walls framing both sides, plus a few ceiling
+         stalactites ── -->
+    <g fill="#2c2440" stroke="#1d3a4a" stroke-width="3" stroke-linejoin="round">
+      <path d="M0,0 L0,500 L130,500 Q150,360 110,260 Q150,170 95,70 Q120,30 70,0Z"/>
+      <path d="M800,0 L800,500 L660,500 Q645,380 690,290 Q650,190 705,90 Q675,40 730,0Z"/>
+    </g>
+    <g fill="#2c2440" stroke="#1d3a4a" stroke-width="2.5" stroke-linejoin="round">
+      <path d="M260,0 L284,0 L272,58Z"/>
+      <path d="M340,0 L358,0 L349,40Z"/>
+      <path d="M540,0 L562,0 L551,46Z"/>
+    </g>
+
+    <!-- ── Small fish school drifting deeper in the cave ────────── -->
+    <g fill="#bfe8e0" stroke="#1d3a4a" stroke-width="2">
+      <g class="scn-fish-a"><ellipse cx="300" cy="130" rx="11" ry="6"/><path d="M291 130 280 124 283 130 280 136Z"/><circle cx="307" cy="128" r="1.3" fill="#1d3a4a"/></g>
+      <g class="scn-fish-b"><ellipse cx="330" cy="148" rx="9" ry="5"/><path d="M323 148 314 143 316 148 314 153Z"/><circle cx="336" cy="146.5" r="1.1" fill="#1d3a4a"/></g>
+      <g class="scn-fish-c"><ellipse cx="270" cy="158" rx="8" ry="4.5"/><path d="M264 158 256 154 258 158 256 162Z"/><circle cx="275" cy="157" r="1" fill="#1d3a4a"/></g>
+    </g>
+
+    <!-- ── Kelp at the cave floor ────────────────────────────────── -->
+    <g fill="#2a9c88" stroke="#1d3a4a" stroke-width="1.8">
+      <path class="scn-kelp-1" d="M170 500 Q158 450 178 404 Q192 450 182 500Z"/>
+      <path class="scn-kelp-2" d="M190 500 Q182 442 202 398 Q210 446 200 500Z"/>
+    </g>
+
+    <!-- ── Bioluminescent coral cluster ──────────────────────────── -->
+    <g>
+      <circle class="scn-glow-halo" cx="565" cy="438" r="22" fill="#9ce8d8"/>
+      <path d="M556 460 Q553 432 565 414 Q577 432 574 460Z" fill="#35c9c0"/>
+      <path d="M546 460 Q546 438 556 424 Q564 440 562 460Z" fill="#2aa89c"/>
+      <path d="M576 460 Q578 440 569 426 Q561 440 564 460Z" fill="#2aa89c"/>
+      <circle class="scn-glow-tip" cx="565" cy="416" r="4" fill="#d8f8f0"/>
+    </g>
+
+    <!-- ── Carved riddle-stone, lit by the shaft above — a nod to
+         "Solve Professor Octo's riddles" ── -->
+    <g>
+      <ellipse cx="430" cy="476" rx="60" ry="22" fill="#1a3540" stroke="#1d3a4a" stroke-width="2.6"/>
+      <g class="scn-glow-tip" stroke="#bdf6ec" stroke-width="2.4" fill="none" stroke-linecap="round">
+        <circle cx="402" cy="470" r="8"/>
+        <path d="M425 462 Q436 466 432 476 Q428 484 418 480 Q412 474 420 466"/>
+        <path d="M450 478 L458 470 M450 478 L458 486"/>
+      </g>
+    </g>
+
+    <!-- ── Jellyfish drifting ────────────────────────────────────── -->
+    <g transform="translate(660,210)" opacity=".6">
+      <path class="scn-jelly-bell" d="M-22 0 Q-22 -20 0 -20 Q22 -20 22 0Z" fill="#d8b8f8"/>
+      <path class="scn-jelly-t1" d="M-14 0 Q-12 22 -16 40" fill="none" stroke="#d8b8f8" stroke-width="2.5" stroke-linecap="round"/>
+      <path class="scn-jelly-t2" d="M0 0 Q2 24 -2 44" fill="none" stroke="#d8b8f8" stroke-width="2.5" stroke-linecap="round"/>
+      <path class="scn-jelly-t3" d="M14 0 Q16 20 12 38" fill="none" stroke="#d8b8f8" stroke-width="2.5" stroke-linecap="round"/>
+    </g>
+
+    <!-- ── Bubbles rising from the floor ─────────────────────────── -->
+    <g fill="#cdf3ff">
+      <circle class="scn-bubble-1" cx="500" cy="420" r="5"/>
+      <circle class="scn-bubble-2" cx="515" cy="380" r="3.5"/>
+      <circle class="scn-bubble-3" cx="490" cy="340" r="4"/>
+      <circle class="scn-bubble-4" cx="160" cy="300" r="4.5"/>
+      <circle class="scn-bubble-5" cx="700" cy="350" r="4"/>
+    </g>
+
+    <!-- ── Cave floor ────────────────────────────────────────────── -->
+    <path d="M0,460 Q120,440 240,458 T480,458 T720,452 L800,460 L800,500 L0,500Z" fill="#10303c"/>
+
+    <!-- ── Professor Octo the octopus — wedged by the wall, colours
+         match ANIMAL_SVGS[9] exactly (mantle #35c9c0, dark tentacles
+         #2aa89c, highlight #6fe0d4) so he's recognizably the same
+         Octo seen on his rescue card. Round glasses are this scene's
+         own touch, tying back to his "*adjusts glasses*" line. ── -->
+    <g id="islandFriendSpot">
+      <g transform="translate(95,330)">
+        <g class="scn-octo">
+          <path d="M-30 50 Q-44 60 -40 76 Q-32 84 -24 74 Q-18 62 -26 52Z" fill="#2aa89c"/>
+          <g class="scn-octo-tentacle">
+            <path d="M30 50 Q44 60 40 76 Q32 84 24 74 Q18 62 26 52Z" fill="#2aa89c"/>
+          </g>
+          <ellipse cx="0" cy="32" rx="34" ry="30" fill="#35c9c0" stroke="#1d3a4a" stroke-width="3"/>
+          <ellipse cx="-10" cy="16" rx="17" ry="13" fill="#6fe0d4" opacity=".55"/>
+          <path d="M-16 56 Q-24 70 -18 84 Q-10 88 -7 76 Q-6 64 -12 56Z" fill="#35c9c0" stroke="#1d3a4a" stroke-width="2.6"/>
+          <path d="M16 56 Q24 70 18 84 Q10 88 7 76 Q6 64 12 56Z" fill="#35c9c0" stroke="#1d3a4a" stroke-width="2.6"/>
+          <circle cx="-12" cy="28" r="7.5" fill="#1a2030"/><circle cx="-9.8" cy="25.8" r="2.3" fill="#fff"/>
+          <circle cx="12" cy="28" r="7.5" fill="#1a2030"/><circle cx="14.2" cy="25.8" r="2.3" fill="#fff"/>
+          <g fill="none" stroke="#eafdff" stroke-width="2.2" opacity=".9">
+            <circle cx="-12" cy="28" r="11"/><circle cx="12" cy="28" r="11"/><line x1="-1" y1="28" x2="1" y2="28"/>
+          </g>
+          <path d="M-9 42 Q0 48 9 42" fill="none" stroke="#1a8a80" stroke-width="2.2" stroke-linecap="round"/>
+        </g>
+      </g>
+      <!-- the rock pinning him, deliberately OUTSIDE .scn-octo so it
+           stays put on the floor while he bobs -->
+      <g stroke="#1a3540" stroke-width="1.6" opacity=".5">
+        <ellipse cx="135" cy="412" rx="16" ry="11" fill="#22404c" stroke="#1d3a4a" stroke-width="2.5"/>
+        <line x1="125" y1="408" x2="140" y2="406"/>
+      </g>
+    </g>
+
+  </g>
+</svg>`;
+
 const ISLAND_SCENES = {
   0: SNOW_BEACH_SCENE_SVG,      // Snow Beach      — Pip,      stranded near driftwood
   1: FISH_BAY_SCENE_SVG,        // Fish Bay        — Nori,     stranded near the lighthouse
   2: WHALE_COAST_SCENE_SVG,     // Whale Coast     — Bluebell, stranded out in the open sea
   3: PENGUIN_ISLANDS_SCENE_SVG, // Penguin Islands — Pebble,   stranded, isolated on the ice
+  4: OCTOPUS_CAVE_SCENE_SVG,    // Octopus Cave    — Professor Octo, wedged by the wall, tentacle pinned under a rock
 };
 
 // Mounts/unmounts the bespoke scene in #challengeCustomBg. Islands with no
@@ -4223,7 +4432,7 @@ function renderDashboard() {
     [t("currentLevel"),                    state.level],
     [t("missionProgress"),                 `${missionTotal}/40`],
     [t("townProgress"),                    `${state.buildings.length}/8`],
-    [t("friendRescue"),                    `${state.animals.length}/9`],
+    [t("friendRescue"),                    `${state.animals.length}/${animals.length}`],
     [t("collection"),                      `${state.shop.length}/${shop.filter(s=>!s.earnedOnly).length}`],
     [t("strongTopics"),                    strong],
     [t("weakTopics"),                      weak],
@@ -5028,7 +5237,7 @@ function checkAchievements() {
   const tests = [
     state.fish>=1, state.correct>=1, state.correct>=10, state.correct>=25, state.correct>=50,
     state.correct>=100, state.buildings.length>=1, state.buildings.length>=2, state.buildings.length>=5,
-    state.animals.length>=1, state.animals.length>=5, state.animals.length>=9, state.stars>=1,
+    state.animals.length>=1, state.animals.length>=5, state.animals.length>=animals.length, state.stars>=1,
     state.coins>=25, state.coins>=75, state.hintsUsed>=1, state.wrong>=1, completedMissions(0)>=5,
     completedMissions(1)>=5, completedMissions(2)>=5, completedMissions(3)>=5, completedMissions(4)>=5,
     completedMissions(5)>=5, completedMissions(6)>=5, completedMissions(7)>=5||state.correct>=80,
@@ -5547,7 +5756,20 @@ const ANIMAL_SVGS = [
    <circle cx="71" cy="47" r="6" fill="#1a2030"/><circle cx="73" cy="45" r="2" fill="#fff"/>
    <ellipse cx="60" cy="58" rx="8" ry="5" fill="#5c3a28"/>
    <path d="M53 63 Q60 68 67 63" fill="none" stroke="#3a2018" stroke-width="2" stroke-linecap="round"/>
-   <rect x="48" y="78" width="24" height="14" rx="7" fill="#e8c070"/>`
+   <rect x="48" y="78" width="24" height="14" rx="7" fill="#e8c070"/>`,
+
+  // 9: Octopus (Octo) — teal mantle, two front tentacles + two back, big curious eyes
+  `<path d="M30 70 Q16 80 20 96 Q28 104 36 94 Q42 82 34 72Z" fill="#2aa89c"/>
+   <path d="M90 70 Q104 80 100 96 Q92 104 84 94 Q78 82 86 72Z" fill="#2aa89c"/>
+   <ellipse cx="60" cy="52" rx="34" ry="30" fill="#35c9c0"/>
+   <ellipse cx="50" cy="36" rx="17" ry="13" fill="#6fe0d4" opacity="0.55"/>
+   <path d="M44 76 Q36 90 42 104 Q50 108 53 96 Q54 84 48 76Z" fill="#35c9c0"/>
+   <path d="M76 76 Q84 90 78 104 Q70 108 67 96 Q66 84 72 76Z" fill="#35c9c0"/>
+   <ellipse cx="47" cy="93" rx="3" ry="2" fill="#1a8a80" opacity="0.4"/>
+   <ellipse cx="73" cy="93" rx="3" ry="2" fill="#1a8a80" opacity="0.4"/>
+   <circle cx="48" cy="48" r="7.5" fill="#1a2030"/><circle cx="50.2" cy="45.8" r="2.3" fill="#fff"/>
+   <circle cx="72" cy="48" r="7.5" fill="#1a2030"/><circle cx="74.2" cy="45.8" r="2.3" fill="#fff"/>
+   <path d="M51 62 Q60 68 69 62" fill="none" stroke="#1a8a80" stroke-width="2.2" stroke-linecap="round"/>`
 ];
 
 function animalSvg(i) {
