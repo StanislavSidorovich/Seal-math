@@ -2514,6 +2514,149 @@ const PENGUIN_ISLANDS_SCENE_SVG = `<svg viewBox="0 0 800 500" xmlns="http://www.
   </g>
 </svg>`;
 
+const POLAR_ACADEMY_SCENE_SVG   = `<svg viewBox="0 0 800 500" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="xMidYMid slice" aria-label="Polar Academy — a snowy ice-domed schoolhouse with falling snowflakes, where Miska the polar bear is stuck in a snowdrift on her way to the door" role="img">
+
+  <!-- ════════════════════════════════════════════════════════════
+       POLAR ACADEMY — mission scene background
+       Sausage the Seal: Arctic Math Adventure
+       Same conventions as the other islands (flat vector, no
+       gradients, navy/slate outlines, viewBox 0 0 800 500). Palette
+       pulled straight from worlds[5].palette (#ffffff / #8bd5ff) —
+       crisp snow-and-sky-blue, distinct from every other island's
+       warmer or deeper tones so far.
+
+       The academy building (ice dome + flag + a little stack of
+       slate "books" by the door) sits right-of-centre as the
+       DESTINATION Miska can't reach — not where she's stuck. She's
+       out front in a snowdrift instead, which both explains why
+       she's stuck (buried, can't walk) and keeps her near
+       #islandFriendSpot's usual left-side position so Sausage's
+       swim-in distance matches every other island.
+
+       FRIEND: #islandFriendSpot is Miska's permanent position for
+       the whole mission — pinned in the snowdrift partway to the
+       academy door. Sausage (a separate top-level element,
+       #missionSealRig in index.html) is what swims/waddles in as
+       questions are answered; see syncMissionSeal() in game.js.
+       Colours match ANIMAL_SVGS[3] exactly (body #f4f0e8, eyes
+       #1a2030, nose #2a1a14) so she's recognizably the same Miska
+       seen on her rescue card.
+       ════════════════════════════════════════════════════════════ -->
+
+  <defs>
+    <clipPath id="pa-canvas"><rect x="0" y="0" width="800" height="500"/></clipPath>
+  </defs>
+
+  <style>
+    /* Snowflakes drifting down, each at a slightly different speed/
+       delay so they don't fall in visible lockstep */
+    .scn-flake-1 { animation: scn-fall 6s linear infinite; }
+    .scn-flake-2 { animation: scn-fall 7.4s linear infinite; animation-delay: -2.4s; }
+    .scn-flake-3 { animation: scn-fall 5.6s linear infinite; animation-delay: -1.1s; }
+    .scn-flake-4 { animation: scn-fall 6.8s linear infinite; animation-delay: -3.6s; }
+    @keyframes scn-fall {
+      0%   { transform: translateY(0) rotate(0deg);   opacity: .85; }
+      100% { transform: translateY(380px) rotate(70deg); opacity: .2; }
+    }
+
+    /* The academy's round windows give a faint warm pulse, like a
+       lamp inside — small life/welcome cue on an otherwise empty
+       building */
+    .scn-window { animation: scn-window-glow 3.2s ease-in-out infinite; }
+    @keyframes scn-window-glow { 0%,100% { opacity: 1; } 50% { opacity: .6; } }
+
+    /* Miska — idle bob, same proven trick as every other friend */
+    .scn-miska { transform-origin: 0px 2px; animation: scn-bob 3.6s ease-in-out infinite; }
+    @keyframes scn-bob { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-3px); } }
+
+    /* The flag on the academy roof, a light flutter */
+    .scn-flag { transform-origin: 0px 0px; animation: scn-flutter 2.4s ease-in-out infinite; }
+    @keyframes scn-flutter { 0%,100% { transform: scaleX(1); } 50% { transform: scaleX(.85); } }
+  </style>
+
+  <g clip-path="url(#pa-canvas)">
+
+    <!-- ── Sky ───────────────────────────────────────────────────── -->
+    <rect width="800" height="320" fill="#cdeeff"/>
+    <rect y="280" width="800" height="220" fill="#eaf6ff"/>
+
+    <!-- ── Distant snowy peaks ───────────────────────────────────── -->
+    <g fill="#d8eefc">
+      <path d="M380 300 L470 200 L560 300Z"/>
+      <path d="M0 300 L70 220 L150 300Z"/>
+    </g>
+    <g fill="#bfe2f5">
+      <path d="M420 300 L490 230 L570 300Z" opacity=".7"/>
+      <path d="M20 300 L80 240 L160 300Z" opacity=".7"/>
+    </g>
+
+    <!-- ── The academy: an ice-domed schoolhouse ────────────────── -->
+    <g transform="translate(160,0)">
+      <path d="M300 300 L300 230 Q400 160 500 230 L500 300Z" fill="#eaf8ff" stroke="#7fb8d8" stroke-width="3"/>
+      <rect x="300" y="280" width="200" height="60" fill="#d8eefc" stroke="#7fb8d8" stroke-width="3"/>
+      <path d="M380 340 L380 290 Q400 278 420 290 L420 340Z" fill="#bfe2f5" stroke="#7fb8d8" stroke-width="2.5"/>
+      <circle class="scn-window" cx="350" cy="255" r="16" fill="#8bd5ff" stroke="#7fb8d8" stroke-width="2.5"/>
+      <circle class="scn-window" cx="450" cy="255" r="16" fill="#8bd5ff" stroke="#7fb8d8" stroke-width="2.5"/>
+      <g fill="#eaf8ff" stroke="#9cd0ec" stroke-width="1.5">
+        <path d="M305 228 L313 228 L309 248Z"/>
+        <path d="M325 226 L334 226 L329 252Z"/>
+        <path d="M466 226 L475 226 L470 250Z"/>
+        <path d="M487 228 L495 228 L491 246Z"/>
+      </g>
+      <line x1="400" y1="160" x2="400" y2="130" stroke="#7fb8d8" stroke-width="3"/>
+      <path class="scn-flag" d="M400 130 L430 138 L400 146Z" fill="#8bd5ff"/>
+      <!-- a stack of ice-slate "books" by the door — small worldbuilding -->
+      <rect x="440" y="318" width="34" height="8" rx="2" fill="#bfe2f5" stroke="#7fb8d8" stroke-width="1.5"/>
+      <rect x="443" y="310" width="28" height="8" rx="2" fill="#d8eefc" stroke="#7fb8d8" stroke-width="1.5"/>
+      <rect x="441" y="302" width="32" height="8" rx="2" fill="#eaf8ff" stroke="#7fb8d8" stroke-width="1.5"/>
+    </g>
+
+    <!-- ── Snowdrift floor ───────────────────────────────────────── -->
+    <path d="M0,400 Q150,378 300,398 T600,396 T800,392 L800,500 L0,500Z" fill="#ffffff"/>
+    <path d="M0,400 Q150,378 300,398 T600,396 T800,392" fill="none" stroke="#d4ecfa" stroke-width="3" opacity=".8"/>
+
+    <!-- ── Small standalone icicle cluster for texture, away from
+         the academy ── -->
+    <g fill="#eaf8ff" stroke="#bfe2f5" stroke-width="1.5">
+      <path d="M610 460 L622 460 L616 488Z"/>
+      <path d="M626 458 L636 458 L631 482Z"/>
+    </g>
+
+    <!-- ── Falling snowflakes ────────────────────────────────────── -->
+    <g stroke="#fff" stroke-width="2" fill="none">
+      <path class="scn-flake-1" d="M120 60v16M112 68h16M115 63l10 10M125 63l-10 10"/>
+      <path class="scn-flake-2" d="M540 40v14M533 47h14M536 42l8 8M544 42l-8 8"/>
+      <path class="scn-flake-3" d="M700 70v16M692 78h16M695 73l10 10M705 73l-10 10"/>
+      <path class="scn-flake-4" d="M260 50v12M254 56h12M256 52l8 8M262 52l-8 8"/>
+    </g>
+
+    <!-- ── MISKA — stuck in a snowdrift partway to the academy door,
+         blocked by the storm. Colours match ANIMAL_SVGS[3] exactly. ── -->
+    <g id="islandFriendSpot">
+      <g transform="translate(95,330)">
+        <g class="scn-miska">
+          <ellipse cx="0" cy="58" rx="40" ry="14" fill="#fff" opacity=".9"/>
+          <ellipse cx="0" cy="2" rx="40" ry="32" fill="#f4f0e8" stroke="#d8d0c0" stroke-width="2.5"/>
+          <path d="M-38 8 Q-52 5 -48 25 Q-32 28 -30 14Z" fill="#ece8e0" stroke="#d8d0c0" stroke-width="2.2"/>
+          <path d="M38 8 Q52 5 48 25 Q32 28 30 14Z" fill="#ece8e0" stroke="#d8d0c0" stroke-width="2.2"/>
+          <ellipse cx="0" cy="-24" rx="28" ry="24" fill="#f4f0e8" stroke="#d8d0c0" stroke-width="2.5"/>
+          <ellipse cx="-14" cy="-42" rx="10" ry="9" fill="#f4f0e8" stroke="#d8d0c0" stroke-width="2.2"/>
+          <ellipse cx="14" cy="-42" rx="10" ry="9" fill="#f4f0e8" stroke="#d8d0c0" stroke-width="2.2"/>
+          <circle cx="-11" cy="-26" r="6" fill="#1a2030"/><circle cx="-9" cy="-28" r="2" fill="#fff"/>
+          <circle cx="11" cy="-26" r="6" fill="#1a2030"/><circle cx="13" cy="-28" r="2" fill="#fff"/>
+          <ellipse cx="0" cy="-15" rx="10" ry="7" fill="#e0d8c8"/>
+          <ellipse cx="-1" cy="-16" rx="5" ry="3.5" fill="#2a1a14"/>
+          <path d="M-8 -9 Q0 -3 8 -9" fill="none" stroke="#8a7060" stroke-width="2" stroke-linecap="round"/>
+        </g>
+      </g>
+      <!-- the drift pinning her — drawn after Miska, low, so it visually
+           buries her lower body/paws -->
+      <path d="M25 392 Q60 364 95 372 Q130 364 165 392 L165 412 L25 412Z" fill="#fdfeff" stroke="#d4ecfa" stroke-width="2"/>
+    </g>
+
+  </g>
+</svg>`;
+
 const OCTOPUS_CAVE_SCENE_SVG    = `<svg viewBox="0 0 800 500" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="xMidYMid slice" aria-label="Octopus Cave — an underwater grotto lit by shafts of light from above, with glowing coral, a drifting jellyfish, and Professor Octo the octopus wedged near a carved riddle-stone" role="img">
 
   <!-- ════════════════════════════════════════════════════════════
@@ -2727,6 +2870,7 @@ const ISLAND_SCENES = {
   2: WHALE_COAST_SCENE_SVG,     // Whale Coast     — Bluebell, stranded out in the open sea
   3: PENGUIN_ISLANDS_SCENE_SVG, // Penguin Islands — Pebble,   stranded, isolated on the ice
   4: OCTOPUS_CAVE_SCENE_SVG,    // Octopus Cave    — Professor Octo, wedged by the wall, tentacle pinned under a rock
+  5: POLAR_ACADEMY_SCENE_SVG,   // Polar Academy   — Miska,    stuck in a snowdrift on the way to the schoolhouse
 };
 
 // Mounts/unmounts the bespoke scene in #challengeCustomBg. Islands with no
