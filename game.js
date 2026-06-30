@@ -2920,14 +2920,51 @@ function setupIslandScene(scene, worldId) {
 // mascot animation; true pixel-perfect sync would need reading the SVG's
 // actual on-screen transform at runtime (getScreenCTM() or similar), which
 // is a fair bit more work — say if that's worth doing later.
-const SEAL_SWIM_START_LEFT_PCT = -12; // just off-screen, about to swim in
-const SEAL_SWIM_END_LEFT_PCT   = 14;  // arrived, near the friend
+//
+// P-seal-journey: previously this only tracked progress WITHIN the current
+// mission, resetting to START at the top of every mission — so across a
+// whole 5-mission island the rig only ever covered the -12%→14% gap, never
+// any further, even once the friend was long since rescued (missions 3-5
+// are post-rescue per dialogFor()). Now it's a single continuous journey
+// across all 5 missions of an island:
+//   • missions 1-2 (index 0-1): -12% → 14%, arriving AT the friend exactly
+//     when mission 2 completes — matches dialogFor()'s "...that sled will
+//     reach me!" line landing on mission index 1.
+//   • missions 3-5 (index 2-4): 14% → 60%, continuing on together — by the
+//     time the island is fully cleared, the rig has swum roughly half the
+//     scene width, well clear of every island's right-side geometry (cave
+//     wall, sea arch, academy building) checked by hand against all 6 of
+//     the built scenes. 60% isn't arbitrary either: it lands the rig right
+//     at Snow Beach's driftwood shelter/lantern, which only works out
+//     because all the islands share the same friend position (~14%) and
+//     roughly comparable scene layout — if a future island's geometry
+//     turns out tighter, give it its own override here rather than
+//     reshuffling this for everyone.
+// Mission count and the "reached the friend" mission are pulled from the
+// same values used elsewhere (startMission's needed formula, dialogFor's
+// 5-line arc) rather than re-guessed here.
+const SEAL_SWIM_START_LEFT_PCT  = -12; // just off-screen, about to swim in
+const SEAL_SWIM_FRIEND_LEFT_PCT = 14;  // arrived, at the friend's side
+const SEAL_SWIM_FINAL_LEFT_PCT  = 60;  // island fully cleared, swum on together
+const SEAL_SWIM_MISSION_COUNT   = 5;   // missions per island (0-indexed 0..4)
+const SEAL_SWIM_FRIEND_AT_MISSION = 2; // friend reached after this many completed missions (i.e. at the end of mission index 1)
+
 function syncMissionSeal() {
   if (!trip) return;
   const rig = document.querySelector("#missionSealRig");
   if (!rig) return;
-  const pct = Math.min(1, trip.solved / trip.needed);
-  const left = SEAL_SWIM_START_LEFT_PCT + (SEAL_SWIM_END_LEFT_PCT - SEAL_SWIM_START_LEFT_PCT) * pct;
+  const withinMission = Math.min(1, trip.solved / trip.needed);
+  // overall: 0 at the very start of mission 1, 1 once mission 5 is solved —
+  // missions already finished (trip.mission) plus how far into the current
+  // one we are, all divided by the total mission count.
+  const overall = (trip.mission + withinMission) / SEAL_SWIM_MISSION_COUNT;
+  const breakpoint = SEAL_SWIM_FRIEND_AT_MISSION / SEAL_SWIM_MISSION_COUNT;
+  let left;
+  if (overall <= breakpoint) {
+    left = SEAL_SWIM_START_LEFT_PCT + (SEAL_SWIM_FRIEND_LEFT_PCT - SEAL_SWIM_START_LEFT_PCT) * (overall / breakpoint);
+  } else {
+    left = SEAL_SWIM_FRIEND_LEFT_PCT + (SEAL_SWIM_FINAL_LEFT_PCT - SEAL_SWIM_FRIEND_LEFT_PCT) * ((overall - breakpoint) / (1 - breakpoint));
+  }
   rig.style.left = `${left.toFixed(1)}%`;
 }
 
