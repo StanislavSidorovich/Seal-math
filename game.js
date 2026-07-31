@@ -4744,8 +4744,10 @@ function renderDaily() {
   // stays meaningful past day 7, plus a summary line with the real streak
   // count, next milestone, and any banked freeze tokens.
   const dayInCycle = state.streak.count > 0 ? ((state.streak.count - 1) % 7) + 1 : 0;
+  const dayWord = currentLang === "ru" ? "День" : "Day";
+  const doneWord = currentLang === "ru" ? " — выполнено" : " - completed";
   $("streakGrid").innerHTML = Array.from({length:7}, (_,i) =>
-    `<div class="day ${i < dayInCycle?"done":""}" aria-label="Day ${i+1}${i<dayInCycle?" - completed":""}">Day<br>${i+1}</div>`
+    `<div class="day ${i < dayInCycle?"done":""}" aria-label="${dayWord} ${i+1}${i<dayInCycle?doneWord:""}">${dayWord}<br>${i+1}</div>`
   ).join("");
 
   const milestones     = [7, 14, 30, 60, 100];
@@ -6549,6 +6551,8 @@ const STRINGS = {
     parentSavedNote:"Progress is saved on this device only.",
     albumPanel:"Rescue Album", albumPanelDesc:"Every rescued friend brings a fun Arctic fact.",
     goFishing:"🎣 Go Fishing",
+    parentGateTitle:"Grown-ups Only", parentGateContinue:"Continue", parentGateCancel:"Cancel",
+    parentGateAnswerPh:"Answer", parentGateErr:"Not quite — try again.",
     // Quest panel progress
     islandProgress:"Island Progress",
     missionsLabel:"missions — level",
@@ -6685,6 +6689,8 @@ const STRINGS = {
     parentSavedNote:"Прогресс сохраняется только на этом устройстве.",
     albumPanel:"Альбом спасений", albumPanelDesc:"Каждый спасённый друг приносит интересный факт об Арктике.",
     goFishing:"🎣 На рыбалку",
+    parentGateTitle:"Только для взрослых", parentGateContinue:"Продолжить", parentGateCancel:"Отмена",
+    parentGateAnswerPh:"Ответ", parentGateErr:"Не совсем — попробуйте ещё раз.",
     // Island names (used in map)
     islandLocked:"Закрыто", missionsCount:"миссий",
     // Achievement descriptions shown in UI
@@ -6806,6 +6812,11 @@ function applyLangToDOM() {
       el.textContent = t(el.dataset.i18n);
     });
   }
+
+  // Placeholders (input/textarea) — plain translation, no bilingual wrapping.
+  document.querySelectorAll("[data-i18n-placeholder]").forEach(el => {
+    el.placeholder = t(el.dataset.i18nPlaceholder);
+  });
 }
 
 init();
