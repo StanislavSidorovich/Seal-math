@@ -215,6 +215,21 @@ const animals = [
   ["Sea otter","Tumble","Sea otters often float on their backs."],
   ["Octopus","Octo","Octopuses have three hearts and can change color."]
 ].map((a,i) => ({ id:i, species:a[0], name:a[1], fact:a[2] }));
+// RU species names + fun facts, indexed by animal id (names stay as-is —
+// they're the friends' proper names). Used on the rescue reward card.
+const animalSpeciesRu = ["Тюленёнок","Пингвин","Тупик","Белый медведь","Морж","Кит","Нарвал","Песец","Калан","Осьминог"];
+const animalFactRu = [
+  "Тюленята узнают голос своей мамы.",
+  "Пингвины — отличные пловцы.",
+  "Тупик может держать во рту сразу много рыбок.",
+  "У белых медведей широкие лапы для снега и льда.",
+  "Моржи опираются на бивни, чтобы отдыхать на льду.",
+  "Некоторые киты поют песни, которые слышно за много километров.",
+  "Бивень нарвала — это длинный зуб.",
+  "Песцы меняют цвет шубки со сменой сезонов.",
+  "Каланы часто лежат на спине на воде.",
+  "У осьминога три сердца, и он умеет менять цвет.",
+];
 
 const buildings = ["Fish Market","Lighthouse","Aquarium","Seal House","Penguin Village","Harbor","Arctic Museum","Ice Castle"]
   .map((name,i) => ({ id:i, name, cost:(i+1)*3 }));
@@ -3357,13 +3372,14 @@ function generateProblem(topic) {
   const boost = difficultyBoost(topic);
   let a, b, x, answer, text, hint;
   const rand = max => Math.floor(Math.random() * Math.max(1, max)) + 1;
+  const isRu = currentLang === "ru";
 
   switch (topic) {
-    case "add10":       a=rand(5); b=rand(5); answer=a+b; text=`${a} + ${b} = ?`; hint="Count forward from the bigger number."; break;
-    case "add20":       a=rand(10+boost*3); b=rand(10); answer=a+b; text=`${a} + ${b} = ?`; hint="Make a ten first if you can."; break;
-    case "sub20":       a=rand(12+boost*5)+5; b=rand(Math.min(12,a)); answer=a-b; text=`${a} - ${b} = ?`; hint="Count back or think what adds up to the first number."; break;
-    case "add100":      a=rand(50+boost*15); b=rand(40+boost*10); answer=a+b; text=`${a} + ${b} = ?`; hint="Add tens, then add ones."; break;
-    case "sub100":      a=rand(70+boost*10)+20; b=rand(Math.min(65,a-1)); answer=a-b; text=`${a} - ${b} = ?`; hint="Subtract tens first, then ones."; break;
+    case "add10":       a=rand(5); b=rand(5); answer=a+b; text=`${a} + ${b} = ?`; hint= isRu ? "Считай вперёд от большего числа." : "Count forward from the bigger number."; break;
+    case "add20":       a=rand(10+boost*3); b=rand(10); answer=a+b; text=`${a} + ${b} = ?`; hint= isRu ? "Сначала собери десяток, если можешь." : "Make a ten first if you can."; break;
+    case "sub20":       a=rand(12+boost*5)+5; b=rand(Math.min(12,a)); answer=a-b; text=`${a} - ${b} = ?`; hint= isRu ? "Считай назад или подумай, что в сумме даёт первое число." : "Count back or think what adds up to the first number."; break;
+    case "add100":      a=rand(50+boost*15); b=rand(40+boost*10); answer=a+b; text=`${a} + ${b} = ?`; hint= isRu ? "Сложи десятки, потом единицы." : "Add tens, then add ones."; break;
+    case "sub100":      a=rand(70+boost*10)+20; b=rand(Math.min(65,a-1)); answer=a-b; text=`${a} - ${b} = ?`; hint= isRu ? "Сначала вычти десятки, потом единицы." : "Subtract tens first, then ones."; break;
     case "carryBorrow": {
       if (Math.random()>.5) {
         do { a=28+rand(49); b=16+rand(38); } while ((a%10)+(b%10) < 10); // must carry
@@ -3372,12 +3388,12 @@ function generateProblem(topic) {
         do { a=28+rand(49); b=16+rand(38); if (b>a)[a,b]=[b,a]; } while ((a%10) >= (b%10)); // must borrow
         answer=a-b; text=`${a} - ${b} = ?`;
       }
-      hint="Line up the ones and tens like blocks."; break;
+      hint= isRu ? "Выстрой единицы и десятки в столбик, как кубики." : "Line up the ones and tens like blocks."; break;
     }
-    case "multiply":    a=rand(8+boost); b=rand(10); answer=a*b; text=`${a} × ${b} = ?`; hint="Multiplication is equal groups."; break;
-    case "divide":      b=rand(9)+1; answer=rand(10); a=b*answer; text=`${a} ÷ ${b} = ?`; hint="Think which times-table makes the first number."; break;
+    case "multiply":    a=rand(8+boost); b=rand(10); answer=a*b; text=`${a} × ${b} = ?`; hint= isRu ? "Умножение — это равные группы." : "Multiplication is equal groups."; break;
+    case "divide":      b=rand(9)+1; answer=rand(10); a=b*answer; text=`${a} ÷ ${b} = ?`; hint= isRu ? "Подумай, какая таблица умножения даёт первое число." : "Think which times-table makes the first number."; break;
     case "mixed":       return generateProblem(["add20","sub20","multiply","divide"][rand(4)-1]);
-    case "missing":     a=rand(20); answer=rand(15); text=`${a} + ☐ = ${a+answer}`; hint="Find what is missing by subtracting."; break;
+    case "missing":     a=rand(20); answer=rand(15); text=`${a} + ☐ = ${a+answer}`; hint= isRu ? "Найди пропущенное число вычитанием." : "Find what is missing by subtracting."; break;
     case "patterns": {
       const isRu = currentLang === "ru";
       // P12: previously this showed only the bare sequence ("15, 20, 25, 30, ?")
@@ -3445,10 +3461,10 @@ function generateProblem(topic) {
     case "equations": {
       x = rand(12); a = rand(9)+1;
       const eqForms = [
-        { text:`x + ${a} = ${x+a}`,  answer:x,   hint:"Subtract to find x." },
-        { text:`${x+a} - x = ${a}`,  answer:x,   hint:"What number makes this true?" },
-        { text:`${a} × x = ${a*x}`,  answer:x,   hint:"Divide to find x." },
-        { text:`x ÷ ${a} = ${x}`,    answer:x*a, hint:"Multiply to find x." }
+        { text:`x + ${a} = ${x+a}`,  answer:x,   hint: isRu ? "Отними, чтобы найти x." : "Subtract to find x." },
+        { text:`${x+a} - x = ${a}`,  answer:x,   hint: isRu ? "Какое число делает равенство верным?" : "What number makes this true?" },
+        { text:`${a} × x = ${a*x}`,  answer:x,   hint: isRu ? "Раздели, чтобы найти x." : "Divide to find x." },
+        { text:`x ÷ ${a} = ${x}`,    answer:x*a, hint: isRu ? "Умножь, чтобы найти x." : "Multiply to find x." }
       ];
       const eq = eqForms[Math.floor(Math.random()*eqForms.length)];
       text   = eq.text;
@@ -3464,47 +3480,50 @@ function generateProblem(topic) {
     case "add3": {
       a=rand(15+boost*5); b=rand(12+boost*3); const c=rand(10+boost*2);
       answer=a+b+c; text=`${a} + ${b} + ${c} = ?`;
-      hint="Add the first two numbers, then add the third."; break;
+      hint= isRu ? "Сложи первые два числа, потом прибавь третье." : "Add the first two numbers, then add the third."; break;
     }
 
     // S3: Brackets — (a + b) × c  or  a × (b - c)  etc.
     case "brackets": {
       const bracketForms = [
-        () => { const p=rand(8)+1,q=rand(8)+1,r=rand(9)+1; return { text:`(${p} + ${q}) × ${r} = ?`, answer:(p+q)*r, hint:"Work out the brackets first, then multiply." }; },
-        () => { const p=rand(8)+2,q=rand(Math.min(p-1,7))+1,r=rand(9)+1; return { text:`(${p} - ${q}) × ${r} = ?`, answer:(p-q)*r, hint:"Work out the brackets first, then multiply." }; },
-        () => { const r=rand(6)+2,p=rand(8)+1,q=rand(8)+1; return { text:`${r} × (${p} + ${q}) = ?`, answer:r*(p+q), hint:"Add inside the brackets first." }; },
-        () => { const d=rand(5)+2,p=rand(4)+1,q=rand(4)+1,r=d*(p+q); return { text:`${r} ÷ (${p} + ${q}) = ?`, answer:r/(p+q), hint:"Add inside the brackets, then divide." }; }
+        () => { const p=rand(8)+1,q=rand(8)+1,r=rand(9)+1; return { text:`(${p} + ${q}) × ${r} = ?`, answer:(p+q)*r, hint: isRu ? "Сначала посчитай в скобках, потом умножь." : "Work out the brackets first, then multiply." }; },
+        () => { const p=rand(8)+2,q=rand(Math.min(p-1,7))+1,r=rand(9)+1; return { text:`(${p} - ${q}) × ${r} = ?`, answer:(p-q)*r, hint: isRu ? "Сначала посчитай в скобках, потом умножь." : "Work out the brackets first, then multiply." }; },
+        () => { const r=rand(6)+2,p=rand(8)+1,q=rand(8)+1; return { text:`${r} × (${p} + ${q}) = ?`, answer:r*(p+q), hint: isRu ? "Сначала сложи в скобках." : "Add inside the brackets first." }; },
+        () => { const d=rand(5)+2,p=rand(4)+1,q=rand(4)+1,r=d*(p+q); return { text:`${r} ÷ (${p} + ${q}) = ?`, answer:r/(p+q), hint: isRu ? "Сложи в скобках, потом раздели." : "Add inside the brackets, then divide." }; }
       ];
       let prob = null;
       let tries = 0;
       while (!prob && tries < 20) { const form = bracketForms[Math.floor(Math.random()*bracketForms.length)]; prob = form(); tries++; }
-      if (!prob) { a=rand(6)+1; b=rand(5)+1; const r=rand(9)+1; prob={text:`(${a}+${b})×${r}=?`,answer:(a+b)*r,hint:"Brackets first!"}; }
+      if (!prob) { a=rand(6)+1; b=rand(5)+1; const r=rand(9)+1; prob={text:`(${a}+${b})×${r}=?`,answer:(a+b)*r,hint: isRu ? "Сначала скобки!" : "Brackets first!"}; }
       text=prob.text; answer=prob.answer; hint=prob.hint; break;
     }
 
     // S3: Order of operations — no brackets, multiply/divide before add/subtract
     case "orderOfOps": {
       const ooForms = [
-        () => { const p=rand(9)+1,q=rand(9)+1,r=rand(10); return { text:`${p} × ${q} + ${r} = ?`, answer:p*q+r, hint:"Multiply first, then add." }; },
-        () => { const p=rand(9)+1,q=rand(9)+1,r=rand(Math.min(p*q-1,20)); return { text:`${p} × ${q} - ${r} = ?`, answer:p*q-r, hint:"Multiply first, then subtract." }; },
-        () => { const r=rand(6)+2; const q=rand(10); const add=rand(10); return { text:`${r*q} ÷ ${r} + ${add} = ?`, answer:q+add, hint:"Divide first, then add." }; },
-        () => { const p=rand(8)+1,q=rand(8)+1,r=rand(9)+1; return { text:`${p} + ${q} × ${r} = ?`, answer:p+q*r, hint:"Multiply first, then add the rest." }; }
+        () => { const p=rand(9)+1,q=rand(9)+1,r=rand(10); return { text:`${p} × ${q} + ${r} = ?`, answer:p*q+r, hint: isRu ? "Сначала умножь, потом прибавь." : "Multiply first, then add." }; },
+        () => { const p=rand(9)+1,q=rand(9)+1,r=rand(Math.min(p*q-1,20)); return { text:`${p} × ${q} - ${r} = ?`, answer:p*q-r, hint: isRu ? "Сначала умножь, потом вычти." : "Multiply first, then subtract." }; },
+        () => { const r=rand(6)+2; const q=rand(10); const add=rand(10); return { text:`${r*q} ÷ ${r} + ${add} = ?`, answer:q+add, hint: isRu ? "Сначала раздели, потом прибавь." : "Divide first, then add." }; },
+        () => { const p=rand(8)+1,q=rand(8)+1,r=rand(9)+1; return { text:`${p} + ${q} × ${r} = ?`, answer:p+q*r, hint: isRu ? "Сначала умножь, потом прибавь остальное." : "Multiply first, then add the rest." }; }
       ];
       let oof = null;
       let oofTries = 0;
       while (!oof && oofTries < 10) { oof = ooForms[Math.floor(Math.random()*ooForms.length)](); oofTries++; }
-      if (!oof) oof = { text:`3 × 4 + 2 = ?`, answer:14, hint:"Multiply first, then add." };
+      if (!oof) oof = { text:`3 × 4 + 2 = ?`, answer:14, hint: isRu ? "Сначала умножь, потом прибавь." : "Multiply first, then add." };
       text=oof.text; answer=oof.answer; hint=oof.hint; break;
     }
 
     // S3: Simple fractions (½, ¼, ¾ of a number; adding unit fractions)
     case "fractions": {
       const fracForms = [
-        () => { const n=[2,4,8,10][Math.floor(Math.random()*4)]; const whole=n*(rand(6)+1); return { text:`½ of ${whole} = ?`, answer:whole/2, hint:"Half means divide by 2." }; },
-        () => { const whole=4*(rand(6)+1); return { text:`¼ of ${whole} = ?`, answer:whole/4, hint:"A quarter means divide by 4." }; },
-        () => { const whole=4*(rand(5)+1); return { text:`¾ of ${whole} = ?`, answer:whole*3/4, hint:"Find ¼ first, then multiply by 3." }; },
-        () => { const d=rand(4)+2; const whole=d*(rand(5)+1); return { text:`${whole} ÷ ${d} = ? (one ${["","","half","third","quarter","fifth","sixth"][d] || `1/${d}`} of ${whole})`, answer:whole/d, hint:`Divide ${whole} into ${d} equal groups.` }; },
-        () => { const whole=3*(rand(6)+1); return { text:`⅓ of ${whole} = ?`, answer:whole/3, hint:"Divide by 3 to find one third." }; }
+        () => { const n=[2,4,8,10][Math.floor(Math.random()*4)]; const whole=n*(rand(6)+1); return { text: isRu ? `½ от ${whole} = ?` : `½ of ${whole} = ?`, answer:whole/2, hint: isRu ? "Половина — это разделить на 2." : "Half means divide by 2." }; },
+        () => { const whole=4*(rand(6)+1); return { text: isRu ? `¼ от ${whole} = ?` : `¼ of ${whole} = ?`, answer:whole/4, hint: isRu ? "Четверть — это разделить на 4." : "A quarter means divide by 4." }; },
+        () => { const whole=4*(rand(5)+1); return { text: isRu ? `¾ от ${whole} = ?` : `¾ of ${whole} = ?`, answer:whole*3/4, hint: isRu ? "Сначала найди ¼, потом умножь на 3." : "Find ¼ first, then multiply by 3." }; },
+        () => { const d=rand(4)+2; const whole=d*(rand(5)+1);
+          const partRu = ["","","половина","треть","четверть","пятая часть","шестая часть"][d] || `1/${d}`;
+          const partEn = ["","","half","third","quarter","fifth","sixth"][d] || `1/${d}`;
+          return { text: isRu ? `${whole} ÷ ${d} = ? (одна ${partRu} от ${whole})` : `${whole} ÷ ${d} = ? (one ${partEn} of ${whole})`, answer:whole/d, hint: isRu ? `Раздели ${whole} на ${d} равных групп.` : `Divide ${whole} into ${d} equal groups.` }; },
+        () => { const whole=3*(rand(6)+1); return { text: isRu ? `⅓ от ${whole} = ?` : `⅓ of ${whole} = ?`, answer:whole/3, hint: isRu ? "Раздели на 3, чтобы найти одну треть." : "Divide by 3 to find one third." }; }
       ];
       const ff = fracForms[Math.floor(Math.random()*fracForms.length)]();
       text=ff.text; answer=ff.answer; hint=ff.hint; break;
@@ -4055,7 +4074,7 @@ function completeMission() {
   save(true);
   renderMap();
   renderAll();
-  if (!trip.daily && newDone < 5 && newDone % 2 === 0) setTimeout(() => toast("Bonus game unlocked between missions!"), 900);
+  if (!trip.daily && newDone < 5 && newDone % 2 === 0) setTimeout(() => toast(currentLang === "ru" ? "Между миссиями открыта мини-игра!" : "Bonus game unlocked between missions!"), 900);
 }
 
 // P8: Building celebration modal moment
@@ -4280,14 +4299,17 @@ function playRescueAnimation(animal, onDone) {
 
 // ─── Reward modal ─────────────────────────────────────────────────────────────
 function showReward(animal, building, rare) {
+  const isRu = currentLang === "ru";
   const openModal = () => {
-    $("rewardTitle").textContent = animal ? `${animal.name} Rescued!` : (rare ? "Rare Treasure!" : "Mission Complete!");
-    const bits = [`+${trip.needed*4} fish`, `+${trip.needed*2} coins`, `+${trip.needed} stars`];
-    if (animal)   bits.push(`rescued ${animal.name}`);
-    if (building) bits.push(`built ${building.name}`);
-    if (rare)     bits.push("+25 rare treasure coins");
+    $("rewardTitle").textContent = animal ? `${animal.name} ${t("rescued")}` : (rare ? t("rareTreasure") : t("missionComplete"));
+    const bits = [`+${trip.needed*4} ${t("fish")}`, `+${trip.needed*2} ${t("coins")}`, `+${trip.needed} ${t("stars")}`];
+    if (animal)   bits.push(isRu ? `спасён ${animal.name}` : `rescued ${animal.name}`);
+    if (building) bits.push(isRu ? `построено: ${buildingNamesRu[building.id] || building.name}` : `built ${building.name}`);
+    if (rare)     bits.push(isRu ? "+25 монет редкого сокровища" : "+25 rare treasure coins");
+    const speciesLabel = isRu ? (animalSpeciesRu[animal?.id] || animal?.species) : animal?.species;
+    const factLabel    = isRu ? (animalFactRu[animal?.id] || animal?.fact) : animal?.fact;
     const rescue = animal
-      ? `<div class="rescue-card">${animalSvgLarge(animal.id, animal.species)}<strong>${animal.name} the ${animal.species}</strong><p class="rescue-fact">${animal.fact}</p></div>`
+      ? `<div class="rescue-card">${animalSvgLarge(animal.id, animal.species)}<strong>${isRu ? `${animal.name} — ${speciesLabel}` : `${animal.name} the ${speciesLabel}`}</strong><p class="rescue-fact">${factLabel}</p></div>`
       : "";
     $("rewardText").innerHTML = `${rescue}<div class="loot-chest" aria-hidden="true"></div><p class="reward-bits">${bits.join(" · ")}</p>`;
     $("rewardModal").hidden = false;
