@@ -1,0 +1,315 @@
+<svg viewBox="0 0 800 500" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="xMidYMid slice" aria-label="Fish Bay — a wooden dock with a fishing boat, a jumping fish, a blinking lighthouse, and Nori the baby seal waving from the dock" role="img">
+
+  <!-- ════════════════════════════════════════════════════════════
+       FISH BAY — mission scene background (v2: animated + Nori)
+       Sausage the Seal: Arctic Math Adventure
+       Flat vector, no gradients — tonal depth comes from stacked
+       flat-color bands instead. Self-contained: all motion is plain
+       CSS @keyframes in the embedded <style> block below, so this
+       still animates correctly as a bare <img src="...svg">, a CSS
+       background-image, or inline markup — no JS required.
+
+       NOTE ON THE FRIEND CHARACTER: the brief suggested "Pip the
+       Penguin," but in the existing game data Pip is already the
+       Penguin Islands character (species id 1). Fish Bay's own
+       established friend is "Nori," the baby seal (species id 0,
+       world.character = "Nori", with rescue dialogue and Russian
+       declension already wired up in game.js). Used Nori here so
+       this scene stays consistent with the mission dialogue and the
+       rescue-card popup the player already sees for this island.
+
+       v3: Nori now stays PUT at #islandFriendSpot — her stranded
+       position near the lighthouse — for the whole mission. Sausage
+       (a separate element, #missionSealRig in index.html) is what
+       swims toward her as questions are answered; see syncMissionSeal()
+       in game.js. Matches the rescue dialogue ("...that sled will
+       reach me!") better than the earlier version where she walked to
+       a stationary Sausage.
+       ════════════════════════════════════════════════════════════ -->
+
+  <defs>
+    <clipPath id="fb-canvas"><rect x="0" y="0" width="800" height="500"/></clipPath>
+  </defs>
+
+  <style>
+    /* Clouds drift — gentle horizontal sway, independent timing per cloud */
+    .fb-cloud-a { animation: fb-drift-a 15s ease-in-out infinite; }
+    .fb-cloud-b { animation: fb-drift-b 12s ease-in-out infinite; }
+    .fb-cloud-c { animation: fb-drift-c 10s ease-in-out infinite; }
+    .fb-cloud-d { animation: fb-drift-d 8s  ease-in-out infinite; }
+    .fb-cloud-e { animation: fb-drift-b 13s ease-in-out infinite; animation-delay: -4s; }
+    .fb-cloud-f { animation: fb-drift-c 9s  ease-in-out infinite; animation-delay: -2s; }
+    @keyframes fb-drift-a { 0%,100% { transform: translateX(0); } 50% { transform: translateX(20px); } }
+    @keyframes fb-drift-b { 0%,100% { transform: translateX(0); } 50% { transform: translateX(-16px); } }
+    @keyframes fb-drift-c { 0%,100% { transform: translateX(0); } 50% { transform: translateX(14px); } }
+    @keyframes fb-drift-d { 0%,100% { transform: translateX(0); } 50% { transform: translateX(-10px); } }
+
+    /* Lighthouse beacon — bright flash with a soft pulsing glow ring */
+    .fb-beacon { transform-origin: 48px 106px; animation: fb-blink 2.6s ease-in-out infinite; }
+    .fb-beacon-glow { transform-origin: 48px 106px; animation: fb-glow 2.6s ease-in-out infinite; }
+    @keyframes fb-blink { 0%,55%,100% { opacity: .55; } 70% { opacity: 1; } 85% { opacity: .55; } }
+    @keyframes fb-glow  { 0%,55%,100% { opacity: 0; transform: scale(1); } 70% { opacity: .55; transform: scale(2.1); } 85% { opacity: 0; transform: scale(1); } }
+
+    /* Boat rocking on the water, slow and easy */
+    .fb-boat { transform-origin: 247px 236px; animation: fb-rock 3.6s ease-in-out infinite; }
+    @keyframes fb-rock { 0%,100% { transform: rotate(-2.4deg) translateY(0); } 50% { transform: rotate(2.6deg) translateY(-2px); } }
+
+    /* Fish leaping out of the water in a loop, with a synced splash */
+    .fb-fish   { transform-origin: 420px 268px; animation: fb-jump 3.2s ease-in-out infinite; }
+    .fb-splash { transform-origin: 392px 312px; animation: fb-splash 3.2s ease-in-out infinite; }
+    @keyframes fb-jump {
+      0%   { transform: translate(0,16px)   rotate(-4deg);  opacity: .9; }
+      16%  { transform: translate(-8px,-26px) rotate(-24deg); opacity: 1; }
+      30%  { transform: translate(-12px,-38px) rotate(-16deg); opacity: 1; }
+      46%  { transform: translate(-4px,-8px)  rotate(-4deg);  opacity: 1; }
+      58%  { transform: translate(0,16px)   rotate(-2deg);  opacity: .9; }
+      64%  { opacity: 0; }
+      96%  { opacity: 0; transform: translate(0,16px) rotate(-2deg); }
+      100% { transform: translate(0,16px)   rotate(-4deg);  opacity: .9; }
+    }
+    @keyframes fb-splash {
+      0%, 52%  { transform: scale(.4); opacity: 0; }
+      60%      { transform: scale(1);  opacity: .6; }
+      72%      { transform: scale(1.5); opacity: 0; }
+      100%     { transform: scale(.4); opacity: 0; }
+    }
+
+    /* Nori — idle bob on the dock, with a friendly flipper wave */
+    .fb-nori     { transform-origin: 231px 330px; animation: fb-bob 3s ease-in-out infinite; }
+    .fb-nori-wave{ transform-origin: 257px 326px; animation: fb-wave 1.7s ease-in-out infinite; }
+    @keyframes fb-bob  { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-3px); } }
+    @keyframes fb-wave { 0%,100% { transform: rotate(-6deg); } 50% { transform: rotate(34deg); } }
+  </style>
+
+  <g clip-path="url(#fb-canvas)">
+
+    <!-- ── Sky ─────────────────────────────────────────────── -->
+    <rect x="0" y="0" width="800" height="230" fill="#eafdff"/>
+    <rect x="0" y="172" width="800" height="58" fill="#d8fff1"/>
+
+    <!-- ── Arctic clouds (now a fuller spread across the whole sky) ── -->
+    <g fill="#ffffff" stroke="#cdeef5" stroke-width="2">
+      <g class="fb-cloud-a">
+        <ellipse cx="95" cy="58" rx="46" ry="20"/>
+        <circle cx="64" cy="50" r="20"/><circle cx="96" cy="40" r="24"/><circle cx="128" cy="48" r="18"/>
+      </g>
+      <g class="fb-cloud-b">
+        <ellipse cx="330" cy="40" rx="34" ry="15"/>
+        <circle cx="312" cy="34" r="14"/><circle cx="338" cy="28" r="17"/><circle cx="358" cy="35" r="12"/>
+      </g>
+      <g class="fb-cloud-f">
+        <ellipse cx="242" cy="112" rx="22" ry="10"/>
+        <circle cx="230" cy="108" r="9"/><circle cx="252" cy="104" r="11"/>
+      </g>
+      <g class="fb-cloud-c">
+        <ellipse cx="560" cy="62" rx="24" ry="11"/>
+        <circle cx="548" cy="58" r="10"/><circle cx="568" cy="54" r="12"/>
+      </g>
+      <g class="fb-cloud-e">
+        <ellipse cx="642" cy="34" rx="20" ry="9"/>
+        <circle cx="632" cy="30" r="8"/><circle cx="650" cy="27" r="10"/>
+      </g>
+      <g class="fb-cloud-d">
+        <ellipse cx="712" cy="42" rx="16" ry="7"/>
+        <circle cx="704" cy="40" r="7"/><circle cx="718" cy="38" r="8"/>
+      </g>
+    </g>
+
+    <!-- ── Distant icebergs, scattered for a less empty horizon ── -->
+    <g stroke="#cfe6ee" stroke-width="2" stroke-linejoin="round" opacity=".9">
+      <path d="M150 226 168 158 196 188 214 170 236 226Z" fill="#eef8fb"/>
+      <path d="M196 226 210 184 232 226Z" fill="#e3f3f8"/>
+    </g>
+    <g stroke="#d8eef3" stroke-width="2" stroke-linejoin="round" opacity=".75">
+      <path d="M368 226 382 200 404 226Z" fill="#eef8fb"/>
+    </g>
+    <g stroke="#d8eef3" stroke-width="2" stroke-linejoin="round" opacity=".7">
+      <path d="M566 228 580 196 602 228Z" fill="#eef8fb"/>
+      <path d="M598 228 608 208 624 228Z" fill="#eef8fb"/>
+    </g>
+    <g stroke="#dcf0f5" stroke-width="1.8" stroke-linejoin="round" opacity=".55">
+      <path d="M732 228 742 210 758 228Z" fill="#eef8fb"/>
+    </g>
+
+    <!-- ── Seagulls (more of them, a few different heights) ──── -->
+    <g fill="none" stroke="#1d3a4a" stroke-width="2.5" stroke-linecap="round">
+      <path d="M292 72q9-10 18 0q9-10 18 0"/>
+      <path d="M352 54q7-8 14 0q7-8 14 0"/>
+      <path d="M180 42q6-7 12 0q6-7 12 0" stroke-width="2"/>
+      <path d="M460 130q11-12 22 0q11-12 22 0" stroke-width="3"/>
+      <path d="M584 50q6-6 11 0q6-6 11 0" stroke-width="2" opacity=".85"/>
+    </g>
+
+    <!-- ── Ocean: three flat tonal bands instead of one — lighter
+         near the horizon, darker toward the bottom, no gradients ── -->
+    <rect x="0" y="230" width="800" height="270" fill="#24bdd2"/>
+    <path d="M0,300 Q40,283 80,300 T160,300 T240,300 T320,300 T400,300 T480,300 T560,300 T640,300 T720,300 T800,300 L800,230 L0,230 Z" fill="#46d6e8"/>
+    <path d="M0,396 Q40,409 80,396 T160,396 T240,396 T320,396 T400,396 T480,396 T560,396 T640,396 T720,396 T800,396 L800,500 L0,500 Z" fill="#117e92"/>
+
+    <!-- Ripple highlight lines, fading with depth -->
+    <path d="M0,355 Q40,343 80,355 T160,355 T240,355 T320,355 T400,355 T480,355 T560,355 T640,355 T720,355 T800,355" fill="none" stroke="#ffffff" stroke-width="3" stroke-linecap="round" opacity=".4"/>
+    <path d="M0,415 Q40,403 80,415 T160,415 T240,415 T320,415 T400,415 T480,415 T560,415 T640,415 T720,415 T800,415" fill="none" stroke="#ffffff" stroke-width="3" stroke-linecap="round" opacity=".25"/>
+    <path d="M0,470 Q40,460 80,470 T160,470 T240,470 T320,470 T400,470 T480,470 T560,470 T640,470 T720,470 T800,470" fill="none" stroke="#ffffff" stroke-width="2.5" stroke-linecap="round" opacity=".18"/>
+
+    <!-- ── Small school of minnow shadows (right side, subtle) ── -->
+    <g fill="#0c5d6d" opacity=".4">
+      <ellipse cx="618" cy="362" rx="9" ry="4"/>
+      <ellipse cx="642" cy="378" rx="7" ry="3.5"/>
+      <ellipse cx="600" cy="388" rx="6" ry="3"/>
+      <ellipse cx="660" cy="356" rx="6" ry="3"/>
+    </g>
+
+    <!-- ── Lighthouse, on a rocky point at the far left ────── -->
+    <g>
+      <path d="M6 232 14 196 34 184 58 188 70 206 78 232Z" fill="#9fb3bb" stroke="#748a92" stroke-width="2.5" stroke-linejoin="round"/>
+      <path d="M14 226 22 206 40 200 30 226Z" fill="#8aa0a8" opacity=".7"/>
+      <rect x="33" y="112" width="30" height="84" rx="4" fill="#ffffff" stroke="#1d3a4a" stroke-width="3"/>
+      <rect x="33" y="132" width="30" height="13" fill="#ff6f61"/>
+      <rect x="33" y="166" width="30" height="13" fill="#ff6f61"/>
+      <rect x="30" y="100" width="36" height="14" rx="2" fill="#1d3a4a"/>
+      <path d="M30 100 48 80 66 100Z" fill="#ff6f61" stroke="#1d3a4a" stroke-width="2.5" stroke-linejoin="round"/>
+      <circle class="fb-beacon-glow" cx="48" cy="106" r="4" fill="#ffe9a0"/>
+      <circle class="fb-beacon" cx="48" cy="106" r="4" fill="#ffd45a"/>
+    </g>
+
+    <!-- ── Wooden fishing dock ─────────────────────────────── -->
+    <g>
+      <g fill="#a8703f" stroke="#6e4423" stroke-width="2">
+        <rect x="16" y="226" width="11" height="64" rx="2"/>
+        <rect x="76" y="226" width="11" height="64" rx="2"/>
+        <rect x="136" y="226" width="11" height="64" rx="2"/>
+        <rect x="196" y="226" width="11" height="64" rx="2"/>
+      </g>
+      <g fill="#ffffff" opacity=".35">
+        <ellipse cx="21" cy="290" rx="10" ry="3.5"/>
+        <ellipse cx="81" cy="290" rx="10" ry="3.5"/>
+        <ellipse cx="141" cy="290" rx="10" ry="3.5"/>
+        <ellipse cx="201" cy="290" rx="10" ry="3.5"/>
+      </g>
+      <g stroke="#8a5a30" stroke-width="4" stroke-linecap="round">
+        <line x1="34" y1="184" x2="34" y2="206"/>
+        <line x1="122" y1="184" x2="122" y2="206"/>
+        <line x1="210" y1="184" x2="210" y2="206"/>
+        <line x1="34" y1="186" x2="210" y2="186"/>
+      </g>
+      <rect x="0" y="204" width="215" height="26" fill="#c98c52" stroke="#8a5a30" stroke-width="2.5"/>
+      <g stroke="#8a5a30" stroke-width="1.6" opacity=".55">
+        <line x1="22" y1="204" x2="22" y2="230"/><line x1="44" y1="204" x2="44" y2="230"/>
+        <line x1="66" y1="204" x2="66" y2="230"/><line x1="88" y1="204" x2="88" y2="230"/>
+        <line x1="110" y1="204" x2="110" y2="230"/><line x1="132" y1="204" x2="132" y2="230"/>
+        <line x1="154" y1="204" x2="154" y2="230"/><line x1="176" y1="204" x2="176" y2="230"/>
+        <line x1="198" y1="204" x2="198" y2="230"/>
+      </g>
+      <!-- tiny crab, peeking out from under the deck's shadow -->
+      <g transform="translate(48,222)">
+        <ellipse cx="0" cy="0" rx="9" ry="6" fill="#ff8a73" stroke="#1d3a4a" stroke-width="2"/>
+        <path d="M-7 -3q-7-5-9-1M7 -3q7-5 9-1" fill="none" stroke="#1d3a4a" stroke-width="2" stroke-linecap="round"/>
+        <path d="M-4 6q-2 5-5 6M4 6q2 5 5 6" fill="none" stroke="#1d3a4a" stroke-width="1.6" stroke-linecap="round"/>
+        <circle cx="-3" cy="-2" r="1.3" fill="#1d3a4a"/><circle cx="3" cy="-2" r="1.3" fill="#1d3a4a"/>
+      </g>
+      <!-- tiny starfish resting on the deck edge -->
+      <path d="M192 200 195 208 203 208 196 213 199 221 192 216 185 221 188 213 181 208 189 208Z" fill="#ffd45a" stroke="#1d3a4a" stroke-width="1.8" stroke-linejoin="round"/>
+    </g>
+
+    <!-- ── Small fishing boat, docked just past the pier's end ── -->
+    <!-- v4 fix: the previous translate(0,9) was on the SAME element as
+         the .fb-boat CSS animation — and an animated `transform` always
+         wins over a presentation-attribute `transform` on that element,
+         so the offset was silently ignored and the boat never actually
+         moved. Now the static position lives on this outer, non-animated
+         wrapper, and the rocking animation stays on the inner group —
+         the two no longer fight over the same property. Also moved right
+         so it sits in open water past the dock instead of over the posts. -->
+    <g transform="translate(45,9)">
+      <g class="fb-boat">
+        <path d="M186 224 Q188 244 246 248 Q304 244 308 224 Z" fill="#fef4e3" stroke="#1d3a4a" stroke-width="3" stroke-linejoin="round"/>
+        <rect x="188" y="218" width="118" height="9" rx="3" fill="#27c7de" stroke="#1d3a4a" stroke-width="2"/>
+        <rect x="222" y="190" width="44" height="30" rx="6" fill="#ffffff" stroke="#1d3a4a" stroke-width="2.5"/>
+        <circle cx="244" cy="206" r="6" fill="#27c7de" stroke="#1d3a4a" stroke-width="2"/>
+        <line x1="246" y1="190" x2="246" y2="166" stroke="#1d3a4a" stroke-width="2.5" stroke-linecap="round"/>
+        <path d="M246 166 268 174 246 182Z" fill="#ff8a73" stroke="#1d3a4a" stroke-width="2" stroke-linejoin="round"/>
+        <path d="M306 232 Q322 244 318 262" fill="none" stroke="#5c6b73" stroke-width="1.6"/>
+        <circle cx="317" cy="266" r="5" fill="#ff6f61" stroke="#1d3a4a" stroke-width="1.8"/>
+        <path d="M312 266h10" stroke="#ffffff" stroke-width="1.6"/>
+      </g>
+    </g>
+    <path d="M225,252 Q255,242 291,249 Q327,242 359,252 L359,262 L225,262 Z" fill="#46d6e8"/>
+    <path d="M225,252 Q255,242 291,249 Q327,242 359,252" fill="none" stroke="#ffffff" stroke-width="2" opacity=".4"/>
+
+    <!-- ── Nori the baby seal — swimming toward the boat. This group's
+         id is the hook for game.js: it's a plain (non-animated) <g> so
+         JS can safely set its transform directly (translateX) to show
+         her progress, without fighting the CSS bob/wave animations,
+         which live on the nested .fb-nori / .fb-nori-wave groups below.
+         Shifted down 20px from the original sketch so her whole swim
+         path stays clear of the dock-post bottoms (y226–290) no matter
+         what x she's at. Default position here = "arrived" (next to
+         the boat); game.js resets her to the "stranded" end at mission
+         start and walks her across as questions are answered. ── -->
+    <g id="islandFriendSpot" transform="translate(-141,0)">
+    <g class="fb-nori">
+      <path d="M203 346 C195 328 197 308 215 300 C233 292 253 298 257 316 C261 332 253 344 237 347 C225 349 211 348 203 346 Z" fill="#eef6fa" stroke="#1d3a4a" stroke-width="2.4"/>
+      <ellipse cx="231" cy="338" rx="14" ry="8" fill="#c9e4ef"/>
+      <ellipse cx="212" cy="322" rx="5" ry="3" fill="#ffb9c4" opacity=".55"/>
+      <ellipse cx="248" cy="320" rx="5" ry="3" fill="#ffb9c4" opacity=".55"/>
+      <ellipse cx="220" cy="315" rx="4.6" ry="5.6" fill="#1d3a4a"/>
+      <ellipse cx="240" cy="313" rx="4.6" ry="5.6" fill="#1d3a4a"/>
+      <circle cx="218.4" cy="312.6" r="1.4" fill="#ffffff"/>
+      <circle cx="238.4" cy="310.6" r="1.4" fill="#ffffff"/>
+      <path d="M225 326 Q231 320 237 326 Q235 332 231 334 Q227 332 225 326Z" fill="#ff8fa1"/>
+      <path d="M227 334q4 3 8 0" stroke="#1d3a4a" stroke-width="1.5" fill="none" stroke-linecap="round"/>
+      <g class="fb-nori-wave">
+        <ellipse cx="259" cy="308" rx="9" ry="16" fill="#eef6fa" stroke="#1d3a4a" stroke-width="2.2"/>
+      </g>
+      <g fill="none" stroke="#ffffff" stroke-linecap="round">
+        <ellipse cx="231" cy="350" rx="34" ry="7" opacity=".35" stroke-width="2.5"/>
+        <ellipse cx="231" cy="350" rx="22" ry="5" opacity=".5" stroke-width="2.5"/>
+      </g>
+    </g>
+    </g>
+
+    <!-- ── Jumping orange fish, leaping in a loop, with a synced splash ── -->
+    <!-- v4: nudged right ~35px for clearance from the boat's new spot -->
+    <g transform="translate(35,0)">
+    <g class="fb-fish">
+      <ellipse cx="420" cy="268" rx="34" ry="19" fill="#ff9f4a" stroke="#1d3a4a" stroke-width="3"/>
+      <path d="M388 268 358 250 365 268 358 286Z" fill="#ff9f4a" stroke="#1d3a4a" stroke-width="3" stroke-linejoin="round"/>
+      <path d="M408 256q10-6 20-2" fill="none" stroke="#e8852e" stroke-width="2.5" stroke-linecap="round"/>
+      <circle cx="444" cy="261" r="3.4" fill="#1d3a4a"/>
+    </g>
+    <g class="fb-splash" fill="none" stroke="#ffffff" stroke-linecap="round">
+      <ellipse cx="392" cy="312" rx="22" ry="6" opacity=".5" stroke-width="3"/>
+      <ellipse cx="392" cy="312" rx="34" ry="9" opacity=".3" stroke-width="2.5"/>
+      <circle cx="372" cy="298" r="2.5" fill="#ffffff" opacity=".7" stroke="none"/>
+      <circle cx="412" cy="300" r="3" fill="#ffffff" opacity=".6" stroke="none"/>
+      <circle cx="402" cy="290" r="2" fill="#ffffff" opacity=".6" stroke="none"/>
+    </g>
+    </g>
+
+    <!-- ── Floating buoys ───────────────────────────────────── -->
+    <g>
+      <g transform="translate(126,258)">
+        <path d="M0 -16Q9 -22 9 -12" fill="none" stroke="#1d3a4a" stroke-width="2" stroke-linecap="round"/>
+        <circle cx="0" cy="0" r="15" fill="#ffffff" stroke="#1d3a4a" stroke-width="2.6"/>
+        <rect x="-15" y="-6" width="30" height="6" fill="#ff6f61"/>
+        <rect x="-15" y="4" width="30" height="6" fill="#ff6f61"/>
+        <ellipse cx="0" cy="17" rx="13" ry="4" fill="#ffffff" opacity=".35"/>
+      </g>
+      <g transform="translate(548,332) scale(.75)">
+        <circle cx="0" cy="0" r="15" fill="#ffffff" stroke="#1d3a4a" stroke-width="2.6"/>
+        <rect x="-15" y="-6" width="30" height="6" fill="#ff6f61"/>
+        <rect x="-15" y="4" width="30" height="6" fill="#ff6f61"/>
+        <ellipse cx="0" cy="17" rx="13" ry="4" fill="#ffffff" opacity=".3"/>
+      </g>
+    </g>
+
+    <!-- ── Drifting message bottle (right side, a quiet find) ── -->
+    <g transform="translate(686,408) rotate(8)">
+      <path d="M-7 -22h14v8q7 5 7 16v8q0 6-7 6h-14q-7 0-7-6v-8q0-11 7-16Z" fill="#7fd2a0" stroke="#1d3a4a" stroke-width="2" stroke-linejoin="round" opacity=".92"/>
+      <rect x="-4" y="-28" width="8" height="8" rx="1.5" fill="#c98c52" stroke="#1d3a4a" stroke-width="1.8"/>
+      <rect x="-4" y="-6" width="8" height="14" rx="1" fill="#fff7e6" opacity=".85"/>
+      <ellipse cx="0" cy="20" rx="16" ry="4" fill="#ffffff" opacity=".3"/>
+    </g>
+
+  </g>
+</svg>

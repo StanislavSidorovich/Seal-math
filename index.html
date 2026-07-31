@@ -1,0 +1,784 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <meta name="theme-color" content="#27c7de">
+  <meta name="description" content="Help Sausage the Seal rescue friends by solving math problems! Educational game for ages 6–11.">
+  <link rel="manifest" href="manifest.json">
+  <title>Arctic Math Rescue</title>
+  <link rel="stylesheet" href="styles.css">
+  <link rel="stylesheet" href="styles-mobile.css">
+  <style>
+    /* Fallback: ensure profile screen is usable even if styles.css fails to load */
+    body { margin:0; font-family:"Trebuchet MS",Arial,sans-serif; }
+    .defs { position:absolute; width:0; height:0; overflow:hidden; }
+    .profile-screen { min-height:100vh; display:flex; align-items:center; justify-content:center; padding:20px; background:linear-gradient(160deg,#b0eaff,#d8f8ff,#e8fff7); }
+    .profile-screen-inner { width:100%; max-width:480px; text-align:center; }
+    .profile-logo { width:80px; height:80px; background:#fff; border-radius:50%; border:4px solid #c9f5ff; display:flex; align-items:center; justify-content:center; margin:0 auto 14px; }
+    .profile-logo svg { width:52px; height:52px; }
+    .profile-screen-header h1 { font-size:2rem; color:#17446a; margin:0; }
+    .profile-screen-sub { color:#5f7487; font-weight:700; margin:4px 0 0; }
+    .profile-choose-label { font-size:1.1rem; font-weight:900; color:#17446a; margin:20px 0 12px; }
+    .profile-list { display:flex; flex-direction:column; gap:10px; margin-bottom:14px; }
+    .profile-empty { color:#5f7487; padding:28px; line-height:1.6; }
+    .profile-card { display:flex; background:rgba(255,255,255,.9); border-radius:18px; border:3px solid #fff; box-shadow:0 8px 22px rgba(24,84,125,.12); overflow:hidden; }
+    .profile-play-btn { flex:1; display:flex; align-items:center; gap:12px; padding:14px 16px; border:0; background:transparent; cursor:pointer; text-align:left; font:inherit; }
+    .profile-card-emoji { font-size:2.2rem; line-height:1; }
+    .profile-card-name { display:block; font-size:1.1rem; font-weight:900; color:#17446a; }
+    .profile-card-sub { display:block; font-size:.82rem; color:#5f7487; }
+    .profile-edit-btn { border:0; background:transparent; font-size:1.2rem; padding:14px; cursor:pointer; opacity:.6; }
+    .profile-add-btn { width:100%; border:3px dashed #7de8f8; border-radius:16px; background:rgba(255,255,255,.7); color:#17446a; font-size:1rem; font-weight:900; padding:16px; cursor:pointer; font:inherit; margin-top:4px; }
+    /* Modal */
+    .profile-modal-overlay { position:fixed; inset:0; z-index:60; background:rgba(16,60,100,.45); display:flex; align-items:center; justify-content:center; padding:20px; }
+    .profile-modal-overlay[hidden] { display:none; }
+    .profile-modal-box { background:#fff; border-radius:24px; padding:24px 20px 20px; width:100%; max-width:380px; box-shadow:0 28px 70px rgba(0,0,0,.22); border:4px solid #c9f5ff; text-align:center; }
+    .profile-modal-title { margin:0 0 14px; font-size:1.3rem; color:#17446a; }
+    .profile-emoji-row { display:flex; flex-wrap:wrap; gap:5px; justify-content:center; margin-bottom:12px; }
+    .emoji-pick-btn { font-size:1.5rem; border:3px solid transparent; border-radius:10px; padding:4px 5px; cursor:pointer; background:#f4f8fc; line-height:1; font:inherit; }
+    .emoji-pick-btn.selected { border-color:#27c7de; background:#d0f5ff; }
+    .profile-name-input { width:100%; border:3px solid #d8f0ff; border-radius:12px; padding:10px 14px; font-size:1.1rem; font-weight:800; color:#17446a; text-align:center; margin-bottom:12px; font:inherit; background:#f8fdff; box-sizing:border-box; }
+    .profile-modal-actions { display:flex; flex-direction:column; gap:8px; margin-bottom:8px; }
+    .profile-modal-actions button { width:100%; min-height:48px; border:0; border-radius:14px; font:inherit; font-size:1rem; font-weight:900; cursor:pointer; }
+    #pmSave, #pmCreate { background:linear-gradient(180deg,#4fd6a8,#2ab890); color:#fff; }
+    #pmDupe { background:linear-gradient(180deg,#e4fbff,#a9ecff); color:#17446a; }
+    #pmDelete { background:linear-gradient(180deg,#ffe0e0,#ffaaa8); color:#6d1717; }
+    .profile-modal-cancel { border:0; background:transparent; color:#5f7487; font-size:.95rem; font-weight:700; cursor:pointer; padding:8px; width:100%; font:inherit; }
+  </style>
+</head>
+<body>
+
+  <!-- ═══ PROFILE SCREEN (shown before app) ═══ -->
+  <div id="profileScreen" class="profile-screen" role="dialog" aria-labelledby="profileScreenTitle">
+    <div class="profile-screen-inner">
+      <div class="profile-screen-header">
+        <div class="profile-logo">
+          <svg viewBox="0 0 64 64" aria-hidden="true"><use href="#seal-face"/></svg>
+        </div>
+        <h1 id="profileScreenTitle">Sausage the Seal</h1>
+        <p class="profile-screen-sub">Arctic Math Adventure</p>
+      </div>
+      <h2 class="profile-choose-label">Choose Player</h2>
+      <div class="profile-list" id="profileList"></div>
+      <button class="profile-add-btn" id="profileAddBtn">➕ New Player</button>
+    </div>
+  </div>
+
+  <!-- ═══ PROFILE EDIT MODAL ═══ -->
+  <div id="profileEditModal" class="profile-modal-overlay" hidden role="dialog" aria-labelledby="profileEditTitle">
+    <div class="profile-modal-box">
+      <h2 id="profileEditTitle" class="profile-modal-title">Player</h2>
+      <div class="profile-emoji-row" id="profileEmojiRow"></div>
+      <input type="text" id="profileNameInput" class="profile-name-input" maxlength="20" placeholder="Name…" autocomplete="off"/>
+      <div class="profile-modal-actions" id="profileModalActions"></div>
+      <button class="profile-modal-cancel" id="profileModalCancel">Cancel</button>
+    </div>
+  </div>
+
+  <!-- ═══ PARENT GATE MODAL (P11) ═══ -->
+  <div id="parentGateModal" class="profile-modal-overlay" hidden role="dialog" aria-labelledby="parentGateTitle">
+    <div class="profile-modal-box">
+      <h2 id="parentGateTitle" class="profile-modal-title">Grown-ups Only</h2>
+      <p class="parent-gate-text" id="parentGateQuestion">To continue, solve: 7 × 8 = ?</p>
+      <input type="number" inputmode="numeric" id="parentGateInput" class="profile-name-input" placeholder="Answer" autocomplete="off"/>
+      <p class="parent-gate-error" id="parentGateError" hidden>Not quite — try again.</p>
+      <div class="profile-modal-actions">
+        <button class="primary" id="parentGateSubmit">Continue</button>
+      </div>
+      <button class="profile-modal-cancel" id="parentGateCancel">Cancel</button>
+    </div>
+  </div>
+
+  <!-- ═══ EXIT MISSION MODAL — custom-styled replacement for the native confirm() ═══ -->
+  <div id="exitMissionModal" class="profile-modal-overlay" hidden role="dialog" aria-labelledby="exitMissionTitle">
+    <div class="profile-modal-box">
+      <h2 id="exitMissionTitle" class="profile-modal-title" data-i18n="exitMissionTitle">Leave this mission?</h2>
+      <p class="parent-gate-text" data-i18n="exitMissionConfirm">Exit this mission? Your progress on this question will be lost.</p>
+      <div class="profile-modal-actions">
+        <button class="primary" id="exitMissionConfirmBtn" data-i18n="exitMissionYes">Yes, go to map</button>
+      </div>
+      <button class="profile-modal-cancel" id="exitMissionCancelBtn" data-i18n="keepPlaying">Keep playing</button>
+    </div>
+  </div>
+
+  <div class="snow" aria-hidden="true"></div>
+
+  <!-- P10: screen reader live region -->
+  <div id="a11yLive" class="sr-only" aria-live="assertive" aria-atomic="true"></div>
+
+  <div id="app" hidden>
+    <header class="topbar">
+      <button class="profile-topbar-btn" id="profileTopbarBtn" aria-label="Switch player" title="Switch player">
+        <span class="profile-topbar-emoji" id="profileTopbarEmoji">🦭</span>
+        <span class="guardian-badge" id="guardianBadge" hidden title="Guardian of the Arctic">👑</span>
+        <span class="profile-topbar-name" id="profileTopbarName">Player</span>
+      </button>
+      <button class="lang-btn" id="langBtn" aria-label="Switch language" title="EN/RU/📖">EN</button>
+      <button class="icon-btn" id="menuBtn" aria-label="Open sections" title="Sections">
+        <span></span><span></span><span></span>
+      </button>
+      <div class="brand">
+        <div class="brand-mark" aria-hidden="true">
+          <svg viewBox="0 0 64 64"><use href="#seal-face"></use></svg>
+        </div>
+        <div>
+          <h1>Sausage the Seal</h1>
+          <p>Arctic Math Adventure</p>
+        </div>
+      </div>
+      <div class="resources" aria-label="Player rewards">
+        <span><b id="fishCount">0</b> <span data-i18n="fish">fish</span></span>
+        <span><b id="coinCount">0</b> <span data-i18n="coins">coins</span></span>
+        <span><b id="starCount">0</b> <span data-i18n="stars">stars</span></span>
+      </div>
+      <button class="icon-btn sound" id="muteBtn" aria-label="Toggle sound" title="Sound on">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 9v6h4l5 4V5L7 9H3zm14.5 3a4.5 4.5 0 0 0-2.1-3.8v7.6A4.5 4.5 0 0 0 17.5 12z"/></svg>
+      </button>
+      <button class="icon-btn" id="aboutBtn" aria-label="About" title="About" onclick="showAboutModal()">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-6h2v6zm0-8h-2V7h2v2z"/></svg>
+      </button>
+    </header>
+
+    <nav class="tabs" id="tabs" aria-label="Game sections">
+      <button class="tab active" data-view="adventure">Adventure</button>
+      <button class="tab" data-view="seal">My Seal</button>
+      <button class="tab" data-view="town">Town</button>
+      <button class="tab" data-view="album">Album</button>
+      <button class="tab" data-view="rewards">Rewards</button>
+      <button class="tab" data-view="daily">Daily</button>
+      <button class="tab" data-view="parent">Parent</button>
+    </nav>
+
+    <main>
+      <section class="view active" id="adventure">
+        <div class="hero">
+          <div class="map-panel">
+            <div class="sky-layer">
+              <span class="cloud c1"></span>
+              <span class="cloud c2"></span>
+              <span class="cloud c3"></span>
+            </div>
+            <div class="ocean" aria-hidden="true"></div>
+            <svg class="island-path-svg" id="islandPathSvg" aria-hidden="true"></svg>
+            <div class="map" id="worldMap" aria-label="Arctic world map"></div>
+            <div class="travel-seal" id="travelSeal" aria-hidden="true">
+              <svg id="travelSealSvg" viewBox="0 0 260 220"><use href="#sausage-body"/><use href="" class="seal-costume-layer" id="travelSealCostume"/><use href="" class="seal-accessory-layer" id="travelSealAccessory"/><use href="" class="seal-pet-layer" id="travelSealPet"/></svg>
+            </div>
+          </div>
+          <aside class="quest-panel">
+            <div class="seal-card">
+              <div class="seal-svg-wrap seal-idle">
+                <svg class="seal-svg seal-avatar idle" id="heroSeal" viewBox="0 0 260 220" aria-label="Sausage the seal">
+                <use href="#sausage-body"/>
+
+                <use href="" class="seal-costume-layer" id="heroSealCostume"/>
+                <use href="" class="seal-accessory-layer" id="heroSealAccessory"/>
+                <use href="" class="seal-pet-layer" id="heroSealPet"/>
+              </svg>
+              </div><!-- /seal-svg-wrap -->
+              <div>
+                <h2 id="questTitle">Choose an island</h2>
+                <p id="questText">A storm scattered Sausage's friends. Sail out, solve adventure problems, and bring everyone home.</p>
+              </div>
+            </div>
+            <div class="dialog" id="dialogBox"></div>
+            <div class="progress-stack">
+              <div><span id="islandProgressText">Island 0%</span><div class="meter small"><i id="islandMeter"></i></div></div>
+              <div><span id="missionProgressText">Mission 0/5</span><div class="meter small"><i id="missionMeter"></i></div></div>
+              <div><span id="nextRewardText">Next reward: rescue friend</span></div>
+            </div>
+            <div class="level-meter">
+              <span><span data-i18n="level">Level</span> <b id="levelNumber">1</b></span>
+              <div class="meter"><i id="xpMeter"></i></div>
+            </div>
+            <button class="primary" id="startChallengeBtn">Start Mission</button>
+            <button class="secondary" id="miniGameBtn">Play Bonus Game</button>
+          </aside>
+        </div>
+
+        <section class="challenge" id="challenge" hidden aria-label="Math challenge">
+          <div class="challenge-scene">
+            <div class="challenge-custom-bg" id="challengeCustomBg" hidden aria-hidden="true"></div>
+            <div class="iceberg"></div>
+            <div class="storm-overlay" id="stormOverlay" hidden aria-hidden="true"></div>
+            <div class="storm-clouds" id="stormClouds" hidden aria-hidden="true">
+              <div class="storm-cloud storm-cloud-1"></div>
+              <div class="storm-cloud storm-cloud-2"></div>
+              <div class="storm-cloud storm-cloud-3"></div>
+            </div>
+            <div class="mission-trail" id="missionTrail" aria-hidden="true">
+              <div class="mission-trail-track"></div>
+              <span class="mission-trail-start">🐾</span>
+              <span class="mission-trail-goal" id="missionTrailGoal"></span>
+              <span class="mission-trail-marker" id="missionTrailMarker">⭐</span>
+            </div>
+            <div class="mission-seal-rig" id="missionSealRig">
+              <svg class="small-seal seal-avatar swim" id="missionSeal" viewBox="0 0 260 220" aria-hidden="true"><use href="#sausage-body"/><use href="" class="seal-costume-layer" id="missionSealCostume"/><use href="" class="seal-accessory-layer" id="missionSealAccessory"/><use href="" class="seal-pet-layer" id="missionSealPet"/></svg>
+            </div>
+            <div class="fish-stream" id="fishStream"></div>
+          </div>
+          <div class="problem-box">
+            <p class="eyebrow" id="topicLabel">Mission</p>
+            <div class="mission-strip">
+              <b id="missionTitle">Mission 1 of 5</b>
+              <span id="questionsLeft">3 questions remaining</span>
+            </div>
+            <h2 id="problemText" aria-live="polite">3 + 4 = ?</h2>
+            <!-- P2: correct answer reveal -->
+            <div class="correct-reveal" id="correctReveal" hidden aria-live="polite"></div>
+            <div class="answers" id="answers" role="group" aria-label="Choose your answer"></div>
+            <!-- P7: second-chance nudge shown after the first wrong tap, before the full reveal -->
+            <div class="retry-nudge" id="retryNudge" hidden aria-live="polite"></div>
+            <button class="hint" id="hintBtn">Show a friendly hint</button>
+            <p class="hint-text" id="hintText" hidden></p>
+          </div>
+        </section>
+
+        <section class="mini-game" id="miniGame" hidden aria-label="Bonus mini-game">
+          <button class="mini-back-btn" id="closeMiniBtn">← Return to Map</button>
+          <div class="section-head">
+            <h2 id="miniTitle">Catch Fish</h2>
+            <p id="miniText">Tap the swimming fish before time runs out.</p>
+          </div>
+          <div class="mini-stage" id="miniStage"></div>
+        </section>
+      </section>
+
+      <section class="view" id="seal">
+        <div class="seal-room">
+          <div class="seal-preview">
+            <svg class="seal-svg seal-avatar excited" id="customSeal" viewBox="0 0 260 220" aria-label="Customized Sausage"><use href="#sausage-body"/><use href="" class="seal-costume-layer" id="customSealCostume"/><use href="" class="seal-accessory-layer" id="customSealAccessory"/><use href="" class="seal-pet-layer" id="customSealPet"/></svg>
+            <div class="equipped-list" id="equippedList"></div>
+          </div>
+          <div>
+            <div class="section-head">
+              <h2>My Seal</h2>
+              <p>Choose Sausage's costume, accessory, and pet. Equipped rewards appear in missions and town.</p>
+            </div>
+            <div class="closet-grid" id="closetGrid"></div>
+          </div>
+        </div>
+      </section>
+
+      <section class="view" id="town">
+        <div class="section-head">
+          <h2 data-i18n="arcticTown">Arctic Town</h2>
+          <p data-i18n="townDesc">Buildings appear as Sausage earns stars and rescues friends.</p>
+        </div>
+        <div class="town-scene" id="townScene"></div>
+        <button class="secondary lucky-catch-entry-btn" id="luckyCatchEntryBtn">🎣 Go Fishing</button>
+        <div class="town-grid" id="townGrid"></div>
+        <div class="section-head compact">
+          <h2 data-i18n="townDecorations">Town Decorations</h2>
+          <p data-i18n="townDecorationsDesc">Spend coins on cosy props for Arctic Town.</p>
+        </div>
+        <div class="decor-grid" id="decorGrid"></div>
+      </section>
+
+      <section class="view" id="album">
+        <div class="section-head">
+          <h2>Rescue Album</h2>
+          <p>Every rescued friend brings a fun Arctic fact.</p>
+        </div>
+        <div class="album-grid" id="albumGrid"></div>
+      </section>
+
+      <section class="view" id="rewards">
+        <div class="section-head">
+          <h2>Costumes and Pets</h2>
+          <p>Spend coins on playful looks for Sausage.</p>
+        </div>
+        <div class="shop-grid" id="shopGrid"></div>
+        <div class="section-head compact">
+          <h2>Achievements</h2>
+          <p id="achievementProgress">0 of 50 unlocked</p>
+        </div>
+        <div class="achievement-grid" id="achievementGrid"></div>
+      </section>
+
+      <section class="view" id="daily">
+        <div class="daily-wrap">
+          <div class="daily-card">
+            <h2>Daily Challenge</h2>
+            <!-- P9: narrative text set by JS -->
+            <p id="dailyText">Complete 5 rescue problems today for a bonus treasure.</p>
+            <div class="daily-bonus" id="dailyBonus">Today's treasure: Mystery Shell</div>
+            <button class="primary" id="dailyBtn">Play Daily Challenge</button>
+            <!-- P9: collected daily specials -->
+            <div id="dailyCollected" hidden></div>
+          </div>
+          <div id="streakSummary" class="streak-summary" aria-live="polite"></div>
+          <div class="streak" id="streakGrid" aria-label="Seven day streak"></div>
+        </div>
+      </section>
+
+      <section class="view" id="parent">
+        <div class="section-head">
+          <h2>Parent Dashboard</h2>
+          <p>Progress is saved on this device only.</p>
+        </div>
+        <div class="dashboard" id="dashboard"></div>
+        <div class="parent-tools">
+          <button class="secondary" id="exportBtn">Export &amp; Copy</button>
+          <button class="secondary" id="importBtn">Import Progress</button>
+          <button class="secondary" id="resetStatsBtn">Reset Statistics</button>
+          <button class="secondary" id="newAdventureBtn">New Adventure</button>
+          <button class="secondary danger" id="resetAllBtn">Reset Everything</button>
+        </div>
+        <textarea id="saveBox" class="save-box" aria-label="Exported or imported save data" placeholder="Exported progress appears here. Paste progress here to import."></textarea>
+      </section>
+    </main>
+  </div>
+
+  <div class="toast-stack" id="toastStack" aria-live="polite"></div>
+
+  <!-- S5: RESCUE CELEBRATION MODAL -->
+  <div class="rescue-celebration" id="rescueCelebration" hidden role="dialog" aria-labelledby="rescueCharName">
+    <div class="rescue-cel-box">
+      <div class="rescue-cel-stage">
+        <div class="rescue-cel-confetti" id="rescueConfetti"></div>
+        <div class="rescue-cel-char" id="rescueCelChar">🐧</div>
+        <div class="rescue-cel-bounce" id="rescueCelBounce"></div>
+      </div>
+      <h2 class="rescue-cel-name" id="rescueCharName">Pip</h2>
+      <p  class="rescue-cel-quote" id="rescueCelQuote">"Thank you!"</p>
+      <div class="rescue-cel-rewards" id="rescueCelRewards">
+        <span class="rescue-cel-chip">+50 🐟</span>
+        <span class="rescue-cel-chip">+10 ⭐</span>
+      </div>
+      <p class="rescue-cel-town">Joined Arctic Town!</p>
+      <button class="primary rescue-cel-btn" id="rescueCelClose">Keep Exploring 🗺️</button>
+    </div>
+  </div>
+
+  <!-- S5: ISLAND BRIEFING MODAL -->
+  <div class="briefing-modal" id="briefingModal" hidden role="dialog" aria-labelledby="briefingTitle">
+    <div class="briefing-box">
+      <div class="briefing-visual" id="briefingVisual">📚</div>
+      <div class="briefing-dots" id="briefingDots"></div>
+      <h2 class="briefing-title" id="briefingTitle">Island Briefing</h2>
+      <p  class="briefing-body"  id="briefingBody">Getting ready…</p>
+      <div class="briefing-example" id="briefingExample"></div>
+      <div class="briefing-actions">
+        <button class="secondary" id="briefingSkip">Skip</button>
+        <button class="primary"   id="briefingNext">Next →</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- S5: SMART HINT PANEL (teachable moment) -->
+  <div class="smart-hint-panel" id="smartHintPanel" hidden aria-live="polite">
+    <div class="smart-hint-inner">
+      <span class="smart-hint-icon">💡</span>
+      <div class="smart-hint-content">
+        <strong class="smart-hint-title" id="smartHintTitle">Quick tip</strong>
+        <p class="smart-hint-text" id="smartHintText"></p>
+        <div class="smart-hint-example" id="smartHintExample"></div>
+      </div>
+      <button class="smart-hint-close" id="smartHintClose" aria-label="Close tip">✕</button>
+    </div>
+  </div>
+
+  <!-- S3: Welcome back overlay -->
+  <div class="welcome-back-overlay" id="welcomeBackOverlay" hidden role="dialog" aria-label="Welcome back"></div>
+
+  <!-- Reward modal -->
+  <div class="reward-modal" id="rewardModal" hidden role="dialog" aria-labelledby="rewardTitle">
+    <div class="reward-box">
+      <div class="burst"></div>
+      <h2 id="rewardTitle">Rescue Complete!</h2>
+      <div id="rewardText">Sausage earned new rewards.</div>
+      <button class="primary" id="rewardClose">Keep Exploring</button>
+    </div>
+  </div>
+
+  <!-- P8: Building celebration overlay -->
+  <div class="building-celebration" id="buildingCelebration" hidden aria-live="polite"></div>
+
+  <!-- P14: LUCKY CATCH BONUS GAME — fish-gated bonus round, the main fish sink -->
+  <div class="lucky-catch-overlay" id="luckyCatchModal" hidden role="dialog" aria-labelledby="luckyCatchTitle">
+    <div class="lucky-catch-box">
+      <button class="lucky-catch-close" id="luckyCatchClose" aria-label="Close">✕</button>
+      <h2 id="luckyCatchTitle">🎣 Lucky Catch</h2>
+      <p class="lucky-catch-problem" id="luckyCatchProblem"></p>
+      <div class="lucky-catch-stage" id="luckyCatchStage"></div>
+      <p class="lucky-catch-result" id="luckyCatchResult" hidden></p>
+    </div>
+  </div>
+
+  <!-- P3: Onboarding modal -->
+  <div class="onboarding-modal" id="onboardingModal" hidden role="dialog" aria-labelledby="onboardTitle">
+    <div class="onboard-box">
+      <span class="onboard-emoji" aria-hidden="true">🦭</span>
+      <h2 class="onboard-title" id="onboardTitle">Welcome!</h2>
+      <p class="onboard-text">Getting ready...</p>
+      <div class="onboard-dots"></div>
+      <div class="onboard-actions">
+        <button class="onboard-skip" onclick="closeOnboarding()">Skip</button>
+        <button class="onboard-next primary" onclick="advanceOnboarding()">Next →</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══ ABOUT / PRIVACY / CREDITS MODAL ═══ -->
+  <div id="aboutModal" class="profile-modal-overlay" hidden role="dialog" aria-labelledby="aboutModalTitle">
+    <div class="profile-modal-box" style="max-width:420px;text-align:left;">
+      <h2 id="aboutModalTitle" class="profile-modal-title" style="text-align:center">🦭 Sausage the Seal</h2>
+      <p style="color:var(--muted);font-size:.9rem;text-align:center;margin:0 0 16px">Arctic Math Adventure · v<span id="aboutVersion">1.0.0</span></p>
+
+      <div id="aboutTabs" style="display:flex;gap:6px;margin-bottom:14px">
+        <button class="about-tab-btn active" data-tab="about" onclick="switchAboutTab('about')">About</button>
+        <button class="about-tab-btn" data-tab="privacy" onclick="switchAboutTab('privacy')">Privacy</button>
+        <button class="about-tab-btn" data-tab="credits" onclick="switchAboutTab('credits')">Credits</button>
+      </div>
+
+      <div id="aboutTabAbout" class="about-tab-panel">
+        <p>An educational math game for children aged 6–11. Help Sausage the Seal rescue friends across the Arctic Ocean by solving math problems.</p>
+        <p>🐟 <b>Free to play.</b> No ads. No in-app purchases. All data stays on your device.</p>
+        <label style="display:block;margin:14px 0 4px;font-weight:800;color:var(--deep)">🔊 <span data-i18n="volumeLabel">Volume</span></label>
+        <input type="range" id="volumeSlider" min="0" max="100" step="5" style="width:100%">
+        <p style="color:var(--muted);font-size:.85rem">For feedback: <b>sausagetheseal@gmail.com</b></p>
+      </div>
+
+      <div id="aboutTabPrivacy" class="about-tab-panel" hidden>
+        <p><b>Privacy Policy</b></p>
+        <p>This app does <b>not</b> collect, store, or share any personal data. All game progress is saved locally on your device only.</p>
+        <p>We do not use analytics, advertising networks, or third-party SDKs that collect data.</p>
+        <p>This app is designed for children. No account registration is required. No data leaves your device.</p>
+        <p style="color:var(--muted);font-size:.82rem">Last updated: June 2026</p>
+      </div>
+
+      <div id="aboutTabCredits" class="about-tab-panel" hidden>
+        <p><b>Game Design &amp; Development</b><br>Stanislav (indie developer)</p>
+        <p><b>Art &amp; Characters</b><br>SVG illustrations created for this project</p>
+        <p><b>Sound</b><br>Web Audio API · No third-party assets</p>
+        <p style="color:var(--muted);font-size:.85rem">Built with vanilla JavaScript, HTML &amp; CSS. No frameworks. 🧊</p>
+      </div>
+
+      <button class="primary" onclick="$('aboutModal').hidden=true" style="width:100%;margin-top:14px;min-height:46px;border:0;border-radius:14px;background:linear-gradient(180deg,#4fd6a8,#2ab890);color:#fff;font:inherit;font-size:1rem;font-weight:900;cursor:pointer">Close</button>
+    </div>
+  </div>
+
+  <svg width="0" height="0" style="position:absolute;width:0;height:0;overflow:hidden" aria-hidden="true">
+    <!-- Seal face icon for brand mark -->
+    <symbol id="seal-face" viewBox="0 0 64 64">
+      <ellipse cx="32" cy="36" rx="23" ry="20" fill="#e8f4f8"/>
+      <path d="M11 40 Q20 58 32 57 Q44 58 53 40 Q46 52 32 52 Q18 52 11 40z" fill="#b8dce8"/>
+      <!-- eyes -->
+      <ellipse cx="24" cy="30" rx="4.5" ry="5" fill="#1a2a38"/>
+      <ellipse cx="40" cy="30" rx="4.5" ry="5" fill="#1a2a38"/>
+      <circle cx="25.5" cy="28.5" r="1.5" fill="#fff"/>
+      <circle cx="41.5" cy="28.5" r="1.5" fill="#fff"/>
+      <!-- nose -->
+      <ellipse cx="32" cy="38" rx="5" ry="3.5" fill="#e8929e"/>
+      <path d="M32 38 L29 42 M32 38 L35 42" fill="none" stroke="#c06070" stroke-width="1.2" stroke-linecap="round"/>
+      <!-- whiskers -->
+      <path d="M16 35 Q22 37 27 36" fill="none" stroke="#90aab8" stroke-width="1" stroke-linecap="round"/>
+      <path d="M16 38 Q22 39 27 38.5" fill="none" stroke="#90aab8" stroke-width="1" stroke-linecap="round"/>
+      <path d="M48 35 Q42 37 37 36" fill="none" stroke="#90aab8" stroke-width="1" stroke-linecap="round"/>
+      <path d="M48 38 Q42 39 37 38.5" fill="none" stroke="#90aab8" stroke-width="1" stroke-linecap="round"/>
+    </symbol>
+
+    <!-- ═══════════════════════════════════════════════════════
+         SAUSAGE — kawaii baby seal, Option B style + tail
+         viewBox 260×220, lying pose, thick outlines
+         ═══════════════════════════════════════════════════════ -->
+    <symbol id="sausage-body" viewBox="0 0 260 220">
+      <!-- shadow -->
+      <ellipse cx="124" cy="210" rx="90" ry="9" fill="rgba(100,160,200,.12)"/>
+
+      <!-- TAIL — pointed, right side, behind body -->
+      <path d="M196 128 Q224 112 238 98 Q228 114 214 126 Q206 134 198 134Z"
+            fill="#EEF4F8" stroke="#3A2E28" stroke-width="5"
+            stroke-linejoin="round" stroke-linecap="round"/>
+      <!-- tail fork line -->
+      <path d="M204 118 Q220 108 234 100" fill="none" stroke="#3A2E28" stroke-width="3" stroke-linecap="round"/>
+
+      <!-- BODY — wide rounded lying shape, head+body merged, no neck gap -->
+      <path d="M54 58
+               Q32 62  22 82
+               Q10 104  16 130
+               Q22 156  44 172
+               Q68 188 102 192
+               Q136 196 166 188
+               Q196 178 210 158
+               Q224 136 218 114
+               Q212  92 194 80
+               Q172  66 144 62
+               Q120  44  90 46
+               Q66   46  54 58 Z"
+            fill="#EEF4F8" stroke="#3A2E28" stroke-width="6"
+            stroke-linejoin="round" stroke-linecap="round"/>
+
+      <!-- belly — slightly whiter inner oval -->
+      <ellipse cx="118" cy="136" rx="66" ry="44" fill="#FAFCFF" opacity=".7"/>
+
+      <!-- LEFT FRONT FLIPPER — small stubby, bottom-left -->
+      <path d="M42 150 Q20 160  16 178 Q32 184 46 172 Q56 162 54 148Z"
+            fill="#EEF4F8" stroke="#3A2E28" stroke-width="5"
+            stroke-linejoin="round" stroke-linecap="round"/>
+
+      <!-- RIGHT FRONT FLIPPER — small far-side peek -->
+      <path d="M168 172 Q182 180 184 196 Q170 198 160 188 Q156 180 160 170Z"
+            fill="#E4EEF4" stroke="#3A2E28" stroke-width="4.5"
+            stroke-linejoin="round" stroke-linecap="round"/>
+
+      <!-- HEAD — very large round dome, sits upper-left of body -->
+      <circle cx="90" cy="90" r="72" fill="#EEF4F8" stroke="#3A2E28" stroke-width="6"/>
+
+      <!-- head highlight — top dome -->
+      <ellipse cx="76" cy="58" rx="36" ry="26" fill="#F8FBFF" opacity=".6"/>
+
+      <!-- MUZZLE — separate small oval, low on head -->
+      <ellipse cx="88" cy="116" rx="30" ry="22"
+               fill="#E8F2F8" stroke="#3A2E28" stroke-width="4.5"/>
+
+      <!-- muzzle highlight -->
+      <ellipse cx="84" cy="110" rx="16" ry="9" fill="#F8FBFF" opacity=".5"/>
+
+      <!-- NOSE — dark button with tiny highlight -->
+      <ellipse cx="88" cy="108" rx="10" ry="7.5" fill="#3A2E28"/>
+      <ellipse cx="86" cy="105" rx="3.5" ry="2.5" fill="#fff" opacity=".35"/>
+
+      <!-- SMILE — gentle curve -->
+      <path d="M72 122 Q88 134 104 122"
+            fill="none" stroke="#3A2E28" stroke-width="4" stroke-linecap="round"/>
+
+      <!-- EYES — large dark ovals, Option B style, plenty of specular -->
+      <!-- left eye -->
+      <ellipse cx="62" cy="80" rx="16" ry="18" fill="#1E1A16" stroke="#3A2E28" stroke-width="3"/>
+      <ellipse cx="62" cy="80" rx="10" ry="12" fill="#2A2420"/>
+      <circle  cx="68" cy="72" r="6"   fill="#fff" opacity=".92"/>
+      <circle  cx="58" cy="86" r="2.5" fill="#fff" opacity=".45"/>
+
+      <!-- right eye -->
+      <ellipse cx="112" cy="76" rx="15" ry="17" fill="#1E1A16" stroke="#3A2E28" stroke-width="3"/>
+      <ellipse cx="112" cy="76" rx="9"  ry="11" fill="#2A2420"/>
+      <circle  cx="118" cy="68" r="5.5" fill="#fff" opacity=".92"/>
+      <circle  cx="108" cy="82" r="2.2" fill="#fff" opacity=".45"/>
+
+      <!-- CHEEKS — blush circles, characteristic Option B -->
+      <ellipse cx="46"  cy="100" rx="14" ry="9" fill="#F4C8D0" opacity=".7"/>
+      <ellipse cx="128" cy="96"  rx="14" ry="9" fill="#F4C8D0" opacity=".7"/>
+
+      <!-- WHISKERS — thin, 2 per side -->
+      <line x1="26" y1="112" x2="56" y2="116" stroke="#3A2E28" stroke-width="2.5" stroke-linecap="round"/>
+      <line x1="24" y1="122" x2="56" y2="122" stroke="#3A2E28" stroke-width="2.5" stroke-linecap="round"/>
+      <line x1="120" y1="112" x2="150" y2="108" stroke="#3A2E28" stroke-width="2.5" stroke-linecap="round"/>
+      <line x1="120" y1="122" x2="152" y2="120" stroke="#3A2E28" stroke-width="2.5" stroke-linecap="round"/>
+
+      <!-- EAR HOLES — tiny, seals have no pinnae -->
+      <ellipse cx="30"  cy="56" rx="6" ry="5" fill="#C8DCE8" stroke="#3A2E28" stroke-width="2.5" transform="rotate(-15 30 56)"/>
+      <ellipse cx="144" cy="44" rx="6" ry="5" fill="#C8DCE8" stroke="#3A2E28" stroke-width="2.5" transform="rotate(10 144 44)"/>
+    </symbol>
+
+    <!-- ═══════════════════════════════════════════════════
+         COSTUME / ACCESSORY / PET OVERLAYS
+         ═══════════════════════════════════════════════════ -->
+
+    <!-- Pirate hat -->
+    <symbol id="costume-pirate" viewBox="0 0 260 220">
+      <!-- hat brim -->
+      <path d="M40 50 Q90 30 140 50" fill="#18182a" stroke="#18182a" stroke-width="2"/>
+      <ellipse cx="90" cy="52" rx="52" ry="8" fill="#18182a"/>
+      <!-- hat body -->
+      <path d="M44 50 Q47 18 90 12 Q133 18 136 50Z" fill="#18182a"/>
+      <!-- skull badge -->
+      <ellipse cx="90" cy="32" rx="11" ry="10" fill="#f0ede0"/>
+      <circle cx="86" cy="30" r="2.5" fill="#18182a"/>
+      <circle cx="94" cy="30" r="2.5" fill="#18182a"/>
+      <path d="M84 36 h12 M86 33 l-2 4 M96 33 l2 4" fill="none" stroke="#18182a" stroke-width="1.5" stroke-linecap="round"/>
+      <!-- hat band -->
+      <path d="M46 48 Q90 42 134 48" fill="none" stroke="#c8a030" stroke-width="3" stroke-linecap="round"/>
+    </symbol>
+
+    <!-- Astronaut helmet -->
+    <symbol id="costume-astronaut" viewBox="0 0 260 220">
+      <!-- outer helmet ring, sized to the real head (cx 90, cy 90, r 72) -->
+      <ellipse cx="90" cy="90" rx="80" ry="78" fill="none" stroke="#6fc6ec" stroke-width="9" opacity="0.9"/>
+      <!-- faint visor tint -->
+      <ellipse cx="90" cy="86" rx="70" ry="66" fill="rgba(160,220,255,0.08)"/>
+      <!-- visor glare -->
+      <path d="M55 50 Q75 38 105 44" fill="none" stroke="#fff" stroke-width="3" stroke-linecap="round" opacity="0.6"/>
+      <!-- side controls -->
+      <rect x="150" y="76" width="16" height="10" rx="4" fill="#ff7b7b"/>
+      <rect x="150" y="92" width="16" height="10" rx="4" fill="#4fd6a8"/>
+      <rect x="14"  y="76" width="16" height="10" rx="4" fill="#ffd45a"/>
+      <!-- neck ring, sits below the head -->
+      <path d="M40 158 Q90 172 140 158" fill="none" stroke="#7fa8c0" stroke-width="6" stroke-linecap="round"/>
+    </symbol>
+
+    <!-- Crown (king) -->
+    <symbol id="costume-king" viewBox="0 0 260 220">
+      <!-- crown band -->
+      <rect x="48" y="14" width="84" height="12" rx="4" fill="#e8a820" stroke="#c88010" stroke-width="1"/>
+      <!-- crown points -->
+      <polygon points="48,14 58,0 68,14" fill="#ffd45a" stroke="#c88010" stroke-width="1"/>
+      <polygon points="80,14 90,0 100,14" fill="#ffd45a" stroke="#c88010" stroke-width="1"/>
+      <polygon points="112,14 122,0 132,14" fill="#ffd45a" stroke="#c88010" stroke-width="1"/>
+      <!-- gems -->
+      <circle cx="90" cy="3" r="5" fill="#ff6080"/>
+      <circle cx="58" cy="4" r="3.5" fill="#60c8ff"/>
+      <circle cx="122" cy="4" r="3.5" fill="#80e860"/>
+      <!-- band gems -->
+      <circle cx="74" cy="20" r="3" fill="#ff8844"/>
+      <circle cx="106" cy="20" r="3" fill="#8844ff"/>
+    </symbol>
+
+    <!-- Superhero cape -->
+    <symbol id="costume-superhero" viewBox="0 0 260 220">
+      <!-- cape shape, draping from the shoulders below the head -->
+      <path d="M50 148 Q30 176 36 204 Q68 190 90 196 Q112 190 144 204 Q150 176 130 148 Q112 162 90 164 Q68 162 50 148Z"
+            fill="#e02020"/>
+      <path d="M50 148 Q68 162 90 164 Q112 162 130 148" fill="none" stroke="#a01010" stroke-width="2"/>
+      <!-- cape inner shading -->
+      <path d="M36 204 Q56 188 90 192 Q90 204 66 208Z" fill="rgba(0,0,0,.12)"/>
+      <!-- S badge on chest, below the chin -->
+      <circle cx="90" cy="144" r="16" fill="#ffd45a" stroke="#c8a020" stroke-width="2"/>
+      <text x="90" y="150" text-anchor="middle" font-size="17" font-weight="900" fill="#c01010">S</text>
+    </symbol>
+
+    <!-- Guardian Cape — exclusive reward for completing the Arctic Champion finale.
+         Crown geometry reused from costume-king, cape geometry reused from
+         costume-superhero, just recolored to the Champion island's icy
+         teal/gold palette (#fff8b8 / #2dd6a6) — zero new shapes, only colors. -->
+    <symbol id="costume-guardiancape" viewBox="0 0 260 220">
+      <!-- cape, drawn first so the crown/badge sit on top of it -->
+      <path d="M50 148 Q30 176 36 204 Q68 190 90 196 Q112 190 144 204 Q150 176 130 148 Q112 162 90 164 Q68 162 50 148Z"
+            fill="#17869f"/>
+      <path d="M50 148 Q68 162 90 164 Q112 162 130 148" fill="none" stroke="#0e5567" stroke-width="2"/>
+      <path d="M36 204 Q56 188 90 192 Q90 204 66 208Z" fill="rgba(0,0,0,.12)"/>
+      <!-- crown -->
+      <rect x="48" y="14" width="84" height="12" rx="4" fill="#bdf3ea" stroke="#1a9b7a" stroke-width="1"/>
+      <polygon points="48,14 58,0 68,14" fill="#e8fffb" stroke="#1a9b7a" stroke-width="1"/>
+      <polygon points="80,14 90,0 100,14" fill="#e8fffb" stroke="#1a9b7a" stroke-width="1"/>
+      <polygon points="112,14 122,0 132,14" fill="#e8fffb" stroke="#1a9b7a" stroke-width="1"/>
+      <circle cx="90" cy="3" r="5" fill="#2dd6a6"/>
+      <circle cx="58" cy="4" r="3.5" fill="#60c8ff"/>
+      <circle cx="122" cy="4" r="3.5" fill="#60c8ff"/>
+      <circle cx="74" cy="20" r="3" fill="#fff8b8"/>
+      <circle cx="106" cy="20" r="3" fill="#fff8b8"/>
+      <!-- star badge on chest -->
+      <circle cx="90" cy="144" r="16" fill="#fff8b8" stroke="#2dd6a6" stroke-width="2"/>
+      <text x="90" y="150" text-anchor="middle" font-size="17" font-weight="900" fill="#17869f">★</text>
+    </symbol>
+
+    <!-- Sunny hat (accessory) -->
+    <symbol id="accessory-sunny" viewBox="0 0 260 220">
+      <!-- wide brim -->
+      <ellipse cx="90" cy="20" rx="66" ry="11" fill="#ffd45a"/>
+      <!-- hat body -->
+      <path d="M56 20 Q58 2 90 0 Q122 2 124 20Z" fill="#ffd45a"/>
+      <path d="M60 18 Q62 6 90 4 Q118 6 120 18Z" fill="#ffb820"/>
+      <!-- hatband -->
+      <path d="M60 20 Q90 16 120 20" fill="none" stroke="#e84040" stroke-width="3" stroke-linecap="round"/>
+      <!-- sun rays on brim -->
+      <line x1="24" y1="20" x2="12" y2="14" stroke="#ffb820" stroke-width="2.5" stroke-linecap="round"/>
+      <line x1="156" y1="20" x2="168" y2="14" stroke="#ffb820" stroke-width="2.5" stroke-linecap="round"/>
+      <line x1="28" y1="28" x2="16" y2="34" stroke="#ffb820" stroke-width="2" stroke-linecap="round"/>
+      <line x1="152" y1="28" x2="164" y2="34" stroke="#ffb820" stroke-width="2" stroke-linecap="round"/>
+      <line x1="38" y1="10" x2="32" y2="0" stroke="#ffb820" stroke-width="2" stroke-linecap="round"/>
+      <line x1="142" y1="10" x2="148" y2="0" stroke="#ffb820" stroke-width="2" stroke-linecap="round"/>
+    </symbol>
+
+    <!-- Star scarf -->
+    <symbol id="accessory-scarf" viewBox="0 0 260 220">
+      <path d="M50 140 Q90 132 130 140 Q132 152 130 156 Q90 148 50 156 Q48 152 50 140Z" fill="#7858d8"/>
+      <path d="M50 140 Q52 148 50 156" fill="#5840b0"/>
+      <!-- stars -->
+      <text x="72" y="151" font-size="11" fill="#ffd45a" opacity="0.95">★</text>
+      <text x="88" y="147" font-size="9" fill="#ffd45a" opacity="0.9">★</text>
+      <text x="104" y="151" font-size="8" fill="#ffd45a" opacity="0.85">★</text>
+      <!-- scarf tail -->
+      <path d="M50 140 Q36 164 42 192 Q47 196 52 191 Q49 170 54 152" fill="#7858d8"/>
+      <path d="M52 191 Q47 196 42 192 Q40 200 47 202 Q53 200 52 191Z" fill="#6040b8"/>
+    </symbol>
+
+    <!-- Snow goggles -->
+    <symbol id="accessory-goggles" viewBox="0 0 260 220">
+      <!-- strap -->
+      <path d="M58 70 Q46 64 40 70" fill="none" stroke="#444" stroke-width="3" stroke-linecap="round"/>
+      <path d="M122 70 Q134 64 140 70" fill="none" stroke="#444" stroke-width="3" stroke-linecap="round"/>
+      <!-- left lens -->
+      <rect x="52" y="64" width="36" height="26" rx="12" fill="#00b8d8" opacity="0.75"/>
+      <rect x="54" y="66" width="32" height="22" rx="10" fill="rgba(180,240,255,0.3)"/>
+      <path d="M56 70 Q68 66 84 70" fill="none" stroke="#fff" stroke-width="1.5" stroke-linecap="round" opacity="0.6"/>
+      <!-- right lens -->
+      <rect x="92" y="64" width="36" height="26" rx="12" fill="#00b8d8" opacity="0.75"/>
+      <rect x="94" y="66" width="32" height="22" rx="10" fill="rgba(180,240,255,0.3)"/>
+      <path d="M96 70 Q108 66 124 70" fill="none" stroke="#fff" stroke-width="1.5" stroke-linecap="round" opacity="0.6"/>
+      <!-- bridge -->
+      <rect x="88" y="72" width="8" height="6" rx="3" fill="#338"/>
+    </symbol>
+
+    <!-- Fish pet -->
+    <symbol id="pet-fish" viewBox="0 0 260 220">
+      <!-- little fish companion near the seal -->
+      <ellipse cx="205" cy="165" rx="20" ry="12" fill="#ffb840"/>
+      <path d="M225 165 Q238 156 238 165 Q238 174 225 165Z" fill="#ffb840"/>
+      <ellipse cx="205" cy="165" rx="20" ry="12" fill="none" stroke="#e89020" stroke-width="1"/>
+      <!-- fin -->
+      <path d="M210 153 Q218 148 222 155" fill="#ffa020" stroke="none"/>
+      <!-- eye -->
+      <circle cx="196" cy="161" r="3" fill="#1a1a2e"/>
+      <circle cx="197" cy="160" r="1" fill="#fff"/>
+      <!-- mouth -->
+      <path d="M190 165 Q192 168 194 165" fill="none" stroke="#c07020" stroke-width="1" stroke-linecap="round"/>
+    </symbol>
+
+    <!-- P9: Wizard hat — same brim+cone+band construction as the pirate hat,
+         tall pointed cone instead of a tricorn, deep purple palette so it
+         reads as distinct magic-themed headwear. -->
+    <symbol id="costume-wizard" viewBox="0 0 260 220">
+      <ellipse cx="90" cy="44" rx="48" ry="8" fill="#3a2270"/>
+      <path d="M58 44 Q66 8 90 0 Q114 8 122 44Z" fill="#5b3aa0"/>
+      <path d="M64 40 Q70 12 90 5 Q110 12 116 40Z" fill="#6f4bc0"/>
+      <path d="M62 43 Q90 38 118 43" fill="none" stroke="#ffd45a" stroke-width="3" stroke-linecap="round"/>
+      <text x="84" y="26" font-size="11" fill="#ffd45a">★</text>
+      <text x="98" y="14" font-size="8" fill="#fff" opacity="0.85">✦</text>
+    </symbol>
+
+    <!-- P9: Bow tie — neck-zone accessory, alternative to the Star Scarf. -->
+    <symbol id="accessory-bowtie" viewBox="0 0 260 220">
+      <path d="M90 142 L58 128 Q50 142 58 156 L90 142Z" fill="#e0405a"/>
+      <path d="M90 142 L122 128 Q130 142 122 156 L90 142Z" fill="#e0405a"/>
+      <path d="M58 128 Q50 142 58 156" fill="none" stroke="#b82c44" stroke-width="2"/>
+      <path d="M122 128 Q130 142 122 156" fill="none" stroke="#b82c44" stroke-width="2"/>
+      <circle cx="90" cy="142" r="9" fill="#b82c44"/>
+    </symbol>
+
+    <!-- P9: Snow Owl pet — second pet option alongside the fish, same
+         off-to-the-side placement and scale as pet-fish. -->
+    <symbol id="pet-owl" viewBox="0 0 260 220">
+      <path d="M196 142 L200 130 L204 144Z" fill="#f4f8fb" stroke="#cfe0ea" stroke-width="1.5"/>
+      <path d="M224 142 L220 130 L216 144Z" fill="#f4f8fb" stroke="#cfe0ea" stroke-width="1.5"/>
+      <ellipse cx="210" cy="162" rx="18" ry="21" fill="#f4f8fb" stroke="#cfe0ea" stroke-width="2"/>
+      <path d="M197 170 Q188 175 191 188 Q202 185 204 172Z" fill="#dde9f0"/>
+      <circle cx="203" cy="154" r="6.5" fill="#fff"/>
+      <circle cx="217" cy="154" r="6.5" fill="#fff"/>
+      <circle cx="203" cy="154" r="3.2" fill="#1a1a2e"/>
+      <circle cx="217" cy="154" r="3.2" fill="#1a1a2e"/>
+      <path d="M207 161 L213 161 L210 166Z" fill="#ffb840"/>
+    </symbol>
+
+    <!-- sausage-full alias -->
+    <symbol id="sausage-full" viewBox="0 0 260 220">
+      <use href="#sausage-body"/>
+    </symbol>
+  </svg>
+
+  <script src="game.js"></script>
+  <script>
+    // Registers sw.js for offline support + proper PWA installability.
+    // Guarded with a feature check since some embedded/wrapped webviews
+    // (e.g. Median.co's Android wrapper) don't need or support this.
+    if ("serviceWorker" in navigator) {
+      window.addEventListener("load", () => {
+        navigator.serviceWorker.register("./sw.js").catch(() => {
+          // Non-fatal — the game still works fully online without it.
+        });
+      });
+    }
+  </script>
+</body>
+</html>
