@@ -1261,6 +1261,20 @@ function attachEvents() {
   const luckyCatchClose    = $("luckyCatchClose");
   if (luckyCatchEntryBtn) luckyCatchEntryBtn.addEventListener("click", openLuckyCatchEntry);
   if (luckyCatchClose)    luckyCatchClose.addEventListener("click", closeLuckyCatch);
+  // Sea School reference (times table + rules)
+  const schoolEntryBtn = $("schoolEntryBtn");
+  const schoolClose    = $("schoolClose");
+  if (schoolEntryBtn) schoolEntryBtn.addEventListener("click", openSchool);
+  if (schoolClose)    schoolClose.addEventListener("click", closeSchool);
+  const schoolTabs = $("schoolTabs");
+  if (schoolTabs) schoolTabs.addEventListener("click", e => {
+    const b = e.target.closest(".school-tab");
+    if (b) switchSchoolTab(b.dataset.schoolTab);
+  });
+  const schoolOverlay = $("schoolModal");
+  if (schoolOverlay) schoolOverlay.addEventListener("click", e => {
+    if (e.target === schoolOverlay) closeSchool();
+  });
   document.querySelectorAll(".tab").forEach(btn => btn.addEventListener("click", () => switchView(btn.dataset.view)));
   document.addEventListener("pointerdown", initAudio, { once:true });
   // S5: Rescue celebration close
@@ -1341,6 +1355,7 @@ function setupHardwareBackButton() {
       ["briefingModal",      closeBriefing],
       ["onboardingModal",    closeOnboarding],
       ["luckyCatchModal",    closeLuckyCatch],
+      ["schoolModal",        closeSchool],
       ["smartHintPanel",     closeSmartHint],
       ["aboutModal",         () => { $("aboutModal").hidden = true; }],
       ["rewardModal",        () => { $("rewardModal").hidden = true; }],
@@ -5246,6 +5261,90 @@ function closeLuckyCatch() {
   if (stage) stage.innerHTML = "";
 }
 
+// ── SEA SCHOOL — always-available reference (times table + rules) ──────────
+// A pure reference: never gated by stars, so a child can always look up a
+// fact. Times table is a 10×10 Pythagoras grid (products to 100); Rules are
+// pulled from the existing ISLAND_BRIEFINGS teaching content (reused, not
+// duplicated), limited to islands the player has actually reached.
+function openSchool() {
+  const modal = $("schoolModal");
+  if (!modal) return;
+  modal.hidden = false;
+  switchSchoolTab("table");
+  renderSchoolTable();
+  renderSchoolRules();
+}
+
+function closeSchool() {
+  const modal = $("schoolModal");
+  if (modal) modal.hidden = true;
+}
+
+function switchSchoolTab(id) {
+  document.querySelectorAll(".school-tab").forEach(b =>
+    b.classList.toggle("active", b.dataset.schoolTab === id));
+  const tp = $("schoolTablePanel"), rp = $("schoolRulesPanel");
+  if (tp) tp.hidden = id !== "table";
+  if (rp) rp.hidden = id !== "rules";
+}
+
+function renderSchoolTable() {
+  const grid = $("schoolGrid");
+  if (!grid) return;
+  const isRu = currentLang === "ru";
+  let html = `<button class="school-cell corner" tabindex="-1" aria-hidden="true">×</button>`;
+  for (let c = 1; c <= 10; c++) html += `<div class="school-cell head">${c}</div>`;
+  for (let r = 1; r <= 10; r++) {
+    html += `<div class="school-cell head">${r}</div>`;
+    for (let c = 1; c <= 10; c++) {
+      html += `<button class="school-cell" data-r="${r}" data-c="${c}" aria-label="${r} × ${c} = ${r*c}">${r*c}</button>`;
+    }
+  }
+  grid.innerHTML = html;
+  const eq = $("schoolEq");
+  if (eq) eq.textContent = t("schoolTapCell");
+
+  if (!grid.dataset.bound) {
+    grid.dataset.bound = "1";
+    grid.addEventListener("click", e => {
+      const cell = e.target.closest(".school-cell[data-r]");
+      if (!cell) return;
+      const R = Number(cell.dataset.r), C = Number(cell.dataset.c);
+      grid.querySelectorAll(".school-cell").forEach(x => {
+        x.classList.remove("hl", "sel");
+        const xr = Number(x.dataset.r), xc = Number(x.dataset.c);
+        if ((xr === R || xc === C) && !(xr === R && xc === C)) x.classList.add("hl");
+      });
+      cell.classList.add("sel");
+      const groups = isRu ? `(${R} по ${C})` : `(${R} groups of ${C})`;
+      const eqEl = $("schoolEq");
+      if (eqEl) eqEl.innerHTML = `${R} × ${C} = ${R*C}<small>${groups}</small>`;
+      playSound("tap");
+    });
+  }
+}
+
+function renderSchoolRules() {
+  const wrap = $("schoolRules");
+  if (!wrap) return;
+  const isRu = currentLang === "ru";
+  const source = isRu ? ISLAND_BRIEFINGS_RU : ISLAND_BRIEFINGS;
+  // Only show rules for islands the player has actually reached, so newer
+  // topics aren't spoiled before they're introduced.
+  const maxIsland = Math.min(state.unlockedWorld, 7);
+  let html = "";
+  for (let i = 0; i <= maxIsland; i++) {
+    const cards = source[i] || [];
+    cards.forEach(card => {
+      const ex = card.example ? `<div class="school-rule-example">${card.example}</div>` : "";
+      html += `<article class="school-rule-card">
+        <h3><span class="school-rule-visual" aria-hidden="true">${card.visual}</span>${card.title}</h3>
+        <p>${card.body}</p>${ex}</article>`;
+    });
+  }
+  wrap.innerHTML = html;
+}
+
 function finishMiniGame(caught, type) {
   if ($("miniGame").hidden) return;
   if (miniGameTimer) { clearTimeout(miniGameTimer); miniGameTimer = null; }
@@ -6553,6 +6652,8 @@ const STRINGS = {
     parentSavedNote:"Progress is saved on this device only.",
     albumPanel:"Rescue Album", albumPanelDesc:"Every rescued friend brings a fun Arctic fact.",
     goFishing:"🎣 Go Fishing",
+    openSchool:"🎓 Sea School", seaSchool:"🎓 Sea School",
+    schoolTable:"Times table", schoolRules:"Rules", schoolTapCell:"Tap a cell 👆",
     parentGateTitle:"Grown-ups Only", parentGateContinue:"Continue", parentGateCancel:"Cancel",
     parentGateAnswerPh:"Answer", parentGateErr:"Not quite — try again.",
     // Quest panel progress
@@ -6691,6 +6792,8 @@ const STRINGS = {
     parentSavedNote:"Прогресс сохраняется только на этом устройстве.",
     albumPanel:"Альбом спасений", albumPanelDesc:"Каждый спасённый друг приносит интересный факт об Арктике.",
     goFishing:"🎣 На рыбалку",
+    openSchool:"🎓 Морская школа", seaSchool:"🎓 Морская школа",
+    schoolTable:"Таблица", schoolRules:"Правила", schoolTapCell:"Нажми на клетку 👆",
     parentGateTitle:"Только для взрослых", parentGateContinue:"Продолжить", parentGateCancel:"Отмена",
     parentGateAnswerPh:"Ответ", parentGateErr:"Не совсем — попробуйте ещё раз.",
     // Island names (used in map)

@@ -266,7 +266,10 @@
           <p data-i18n="townDesc">Buildings appear as Sausage earns stars and rescues friends.</p>
         </div>
         <div class="town-scene" id="townScene"></div>
-        <button class="secondary lucky-catch-entry-btn" id="luckyCatchEntryBtn" data-i18n="goFishing">🎣 Go Fishing</button>
+        <div class="town-entry-row">
+          <button class="secondary lucky-catch-entry-btn" id="luckyCatchEntryBtn" data-i18n="goFishing">🎣 Go Fishing</button>
+          <button class="secondary school-entry-btn" id="schoolEntryBtn" data-i18n="openSchool">🎓 Sea School</button>
+        </div>
         <div class="town-grid" id="townGrid"></div>
         <div class="section-head compact">
           <h2 data-i18n="townDecorations">Town Decorations</h2>
@@ -403,6 +406,25 @@
       <p class="lucky-catch-problem" id="luckyCatchProblem"></p>
       <div class="lucky-catch-stage" id="luckyCatchStage"></div>
       <p class="lucky-catch-result" id="luckyCatchResult" hidden></p>
+    </div>
+  </div>
+
+  <!-- SEA SCHOOL — always-available reference: times table + rules -->
+  <div class="school-overlay" id="schoolModal" hidden role="dialog" aria-labelledby="schoolTitle">
+    <div class="school-box">
+      <button class="lucky-catch-close" id="schoolClose" aria-label="Close">✕</button>
+      <h2 id="schoolTitle" data-i18n="seaSchool">🎓 Sea School</h2>
+      <div class="school-tabs" id="schoolTabs" role="tablist">
+        <button class="school-tab active" data-school-tab="table" role="tab" data-i18n="schoolTable">Times table</button>
+        <button class="school-tab" data-school-tab="rules" role="tab" data-i18n="schoolRules">Rules</button>
+      </div>
+      <div class="school-panel" id="schoolTablePanel">
+        <div class="school-grid" id="schoolGrid"></div>
+        <p class="school-eq" id="schoolEq" data-i18n="schoolTapCell">Tap a cell 👆</p>
+      </div>
+      <div class="school-panel" id="schoolRulesPanel" hidden>
+        <div class="school-rules" id="schoolRules"></div>
+      </div>
     </div>
   </div>
 
