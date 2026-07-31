@@ -1271,6 +1271,25 @@ function attachEvents() {
     const b = e.target.closest(".school-tab");
     if (b) switchSchoolTab(b.dataset.schoolTab);
   });
+  document.querySelectorAll(".school-mode-btn").forEach(b =>
+    b.addEventListener("click", () => switchSchoolTrainMode(b.dataset.trainMode)));
+  const schoolQuizAnswersEl = $("schoolQuizAnswers");
+  if (schoolQuizAnswersEl) schoolQuizAnswersEl.addEventListener("click", e => {
+    const b = e.target.closest(".answer");
+    if (b) handleSchoolQuizAnswer(b);
+  });
+  const schoolFillGridEl = $("schoolFillGrid");
+  if (schoolFillGridEl) schoolFillGridEl.addEventListener("click", e => {
+    const cell = e.target.closest(".school-cell.blank:not(.filled)");
+    if (cell) handleSchoolFillCellTap(cell);
+  });
+  const schoolFillChoicesEl = $("schoolFillChoices");
+  if (schoolFillChoicesEl) schoolFillChoicesEl.addEventListener("click", e => {
+    const b = e.target.closest(".answer");
+    if (b) handleSchoolFillAnswer(b);
+  });
+  const schoolFillNewBtn = $("schoolFillNew");
+  if (schoolFillNewBtn) schoolFillNewBtn.addEventListener("click", renderSchoolFill);
   const schoolOverlay = $("schoolModal");
   if (schoolOverlay) schoolOverlay.addEventListener("click", e => {
     if (e.target === schoolOverlay) closeSchool();
@@ -5296,9 +5315,13 @@ function closeSchool() {
 function switchSchoolTab(id) {
   document.querySelectorAll(".school-tab").forEach(b =>
     b.classList.toggle("active", b.dataset.schoolTab === id));
-  const tp = $("schoolTablePanel"), rp = $("schoolRulesPanel");
+  const tp = $("schoolTablePanel"), rp = $("schoolRulesPanel"), np = $("schoolTrainPanel");
   if (tp) tp.hidden = id !== "table";
   if (rp) rp.hidden = id !== "rules";
+  if (np) np.hidden = id !== "train";
+  // Lazy-init on first visit only — switchSchoolTrainMode's own guards stop it
+  // from resetting an in-progress quiz/fill puzzle on repeat visits.
+  if (id === "train") switchSchoolTrainMode(schoolTrainMode);
 }
 
 function renderSchoolTable() {
@@ -5356,6 +5379,161 @@ function renderSchoolRules() {
     });
   }
   wrap.innerHTML = html;
+}
+
+// ── SEA SCHOOL PRACTICE — quiz (MCQ) + fill-the-grid drills ─────────────────
+// Deliberately draws questions from the plain 1-10 table, NOT the adventure
+// `multiply` generator (which scales past 10 via difficultyBoost/level) — this
+// is a dedicated times-table trainer, independent of mission difficulty.
+// Reuses the vetted wrongAnswers() distractor logic + shuffle() + the
+// existing `.answer`/`.answer.correct`/`.answer.wrong` button language from
+// the main mission screen, so it looks and behaves like the rest of the game.
+let schoolQuiz = null;
+let schoolFillState = null;
+let schoolTrainMode = "quiz";
+const SCHOOL_QUIZ_LEN = 8;
+const rand10 = () => Math.floor(Math.random() * 10) + 1;
+
+function switchSchoolTrainMode(mode) {
+  schoolTrainMode = mode;
+  document.querySelectorAll(".school-mode-btn").forEach(b =>
+    b.classList.toggle("active", b.dataset.trainMode === mode));
+  const quizWrap = $("schoolQuizWrap"), fillWrap = $("schoolFillWrap");
+  if (quizWrap) quizWrap.hidden = mode !== "quiz";
+  if (fillWrap) fillWrap.hidden = mode !== "fill";
+  if (mode === "quiz" && !schoolQuiz) startSchoolQuiz();
+  if (mode === "fill" && !schoolFillState) renderSchoolFill();
+}
+
+function startSchoolQuiz() {
+  schoolQuiz = { idx: 0, correct: 0, total: SCHOOL_QUIZ_LEN, current: null };
+  showSchoolQuizQuestion();
+}
+
+function showSchoolQuizQuestion() {
+  const progressEl = $("schoolQuizProgress"), qEl = $("schoolQuizQ"), ansEl = $("schoolQuizAnswers");
+  if (!schoolQuiz || !progressEl || !qEl || !ansEl) return;
+  const ru = currentLang === "ru";
+  if (schoolQuiz.idx >= schoolQuiz.total) {
+    progressEl.textContent = ru
+      ? `Готово! ${schoolQuiz.correct} из ${schoolQuiz.total} правильно 🎉`
+      : `Done! ${schoolQuiz.correct} of ${schoolQuiz.total} correct 🎉`;
+    qEl.textContent = "";
+    ansEl.innerHTML = `<button class="secondary school-quiz-again" id="schoolQuizAgain">${ru ? "Играть снова" : "Play again"}</button>`;
+    const again = $("schoolQuizAgain");
+    if (again) again.addEventListener("click", startSchoolQuiz);
+    return;
+  }
+  const r = rand10(), c = rand10();
+  schoolQuiz.current = { topic:"multiply", text:`${r} × ${c} = ?`, answer:r*c };
+  progressEl.textContent = ru
+    ? `Вопрос ${schoolQuiz.idx+1} из ${schoolQuiz.total}`
+    : `Question ${schoolQuiz.idx+1} of ${schoolQuiz.total}`;
+  qEl.textContent = schoolQuiz.current.text;
+  const options = shuffle([schoolQuiz.current.answer, ...wrongAnswers(schoolQuiz.current)]);
+  ansEl.innerHTML = options.map(v => `<button class="answer" data-value="${v}">${v}</button>`).join("");
+}
+
+function handleSchoolQuizAnswer(btn) {
+  if (!schoolQuiz || !schoolQuiz.current || btn.disabled) return;
+  const value   = Number(btn.dataset.value);
+  const correct = value === schoolQuiz.current.answer;
+  document.querySelectorAll("#schoolQuizAnswers .answer").forEach(b => b.disabled = true);
+  btn.classList.add(correct ? "correct" : "wrong");
+  if (correct) { schoolQuiz.correct++; playSound("correct"); }
+  else {
+    playSound("wrong");
+    const rightBtn = [...document.querySelectorAll("#schoolQuizAnswers .answer")]
+      .find(b => Number(b.dataset.value) === schoolQuiz.current.answer);
+    if (rightBtn) rightBtn.classList.add("correct");
+  }
+  schoolQuiz.idx++;
+  setTimeout(showSchoolQuizQuestion, 900);
+}
+
+// Fill-the-grid: same sticky 10×10 grid, ~18 cells blanked (skipping the
+// trivial ×1 row/col). Tapping a blank shows 4 choices; a correct tap
+// reveals the number permanently, a wrong tap just shakes — low-stakes,
+// unlimited retries, matching this feature's "always-open reference" spirit.
+function renderSchoolFill() {
+  const grid = $("schoolFillGrid");
+  if (!grid) return;
+  const blanks = new Set();
+  while (blanks.size < 18) {
+    const r = Math.floor(Math.random()*9) + 2; // 2..10 — skip ×1 (too trivial)
+    const c = Math.floor(Math.random()*9) + 2;
+    blanks.add(`${r}-${c}`);
+  }
+  schoolFillState = { blanks, filled: new Set(), selected: null };
+
+  let html = `<button class="school-cell corner" tabindex="-1" aria-hidden="true">×</button>`;
+  for (let c = 1; c <= 10; c++) html += `<div class="school-cell head head-col">${c}</div>`;
+  for (let r = 1; r <= 10; r++) {
+    html += `<div class="school-cell head head-row">${r}</div>`;
+    for (let c = 1; c <= 10; c++) {
+      const isBlank = blanks.has(`${r}-${c}`);
+      html += isBlank
+        ? `<button class="school-cell blank" data-r="${r}" data-c="${c}" aria-label="${r} × ${c} = ?">?</button>`
+        : `<div class="school-cell">${r*c}</div>`;
+    }
+  }
+  grid.innerHTML = html;
+  updateSchoolFillProgress();
+  renderSchoolFillChoices(null);
+}
+
+function updateSchoolFillProgress() {
+  const el = $("schoolFillProgress");
+  if (!el || !schoolFillState) return;
+  const ru = currentLang === "ru";
+  el.textContent = ru
+    ? `Заполнено: ${schoolFillState.filled.size} из ${schoolFillState.blanks.size}`
+    : `Filled: ${schoolFillState.filled.size} of ${schoolFillState.blanks.size}`;
+}
+
+function handleSchoolFillCellTap(cell) {
+  if (!schoolFillState) return;
+  document.querySelectorAll("#schoolFillGrid .school-cell.sel").forEach(x => x.classList.remove("sel"));
+  cell.classList.add("sel");
+  schoolFillState.selected = { r:Number(cell.dataset.r), c:Number(cell.dataset.c), cell };
+  renderSchoolFillChoices(schoolFillState.selected);
+}
+
+function renderSchoolFillChoices(target) {
+  const wrap = $("schoolFillChoices");
+  if (!wrap) return;
+  if (!target) { wrap.hidden = true; wrap.innerHTML = ""; return; }
+  const problem = { topic:"multiply", text:`${target.r} × ${target.c} = ?`, answer:target.r*target.c };
+  const options = shuffle([problem.answer, ...wrongAnswers(problem)]);
+  wrap.hidden = false;
+  wrap.innerHTML = options.map(v => `<button class="answer" data-value="${v}">${v}</button>`).join("");
+}
+
+function handleSchoolFillAnswer(btn) {
+  if (!schoolFillState || !schoolFillState.selected) return;
+  const { r, c, cell } = schoolFillState.selected;
+  const value      = Number(btn.dataset.value);
+  const correctVal = r * c;
+  if (value !== correctVal) {
+    playSound("wrong");
+    btn.classList.add("wrong");
+    setTimeout(() => btn.classList.remove("wrong"), 400);
+    return;
+  }
+  playSound("correct");
+  document.querySelectorAll("#schoolFillChoices .answer").forEach(b => b.disabled = true);
+  btn.classList.add("correct");
+  cell.textContent = correctVal;
+  cell.classList.add("filled");
+  cell.classList.remove("sel");
+  schoolFillState.filled.add(`${r}-${c}`);
+  updateSchoolFillProgress();
+  const done = schoolFillState.filled.size >= schoolFillState.blanks.size;
+  schoolFillState.selected = null;
+  setTimeout(() => {
+    renderSchoolFillChoices(null);
+    if (done) toast(currentLang === "ru" ? "Таблица заполнена! 🎉" : "Grid complete! 🎉");
+  }, 550);
 }
 
 function finishMiniGame(caught, type) {
@@ -6793,6 +6971,7 @@ const STRINGS = {
     goFishing:"🎣 Go Fishing",
     openSchool:"🎓 Sea School", seaSchool:"🎓 Sea School",
     schoolTable:"Times table", schoolRules:"Rules", schoolTapCell:"Tap a cell 👆",
+    schoolTrain:"Practice", schoolQuiz:"Quiz", schoolFillMode:"Fill the grid", schoolNewPuzzle:"New puzzle",
     parentGateTitle:"Grown-ups Only", parentGateContinue:"Continue", parentGateCancel:"Cancel",
     parentGateAnswerPh:"Answer", parentGateErr:"Not quite — try again.",
     // Quest panel progress
@@ -6933,6 +7112,7 @@ const STRINGS = {
     goFishing:"🎣 На рыбалку",
     openSchool:"🎓 Морская школа", seaSchool:"🎓 Морская школа",
     schoolTable:"Таблица", schoolRules:"Правила", schoolTapCell:"Нажми на клетку 👆",
+    schoolTrain:"Тренировка", schoolQuiz:"Викторина", schoolFillMode:"Заполни таблицу", schoolNewPuzzle:"Новая головоломка",
     parentGateTitle:"Только для взрослых", parentGateContinue:"Продолжить", parentGateCancel:"Отмена",
     parentGateAnswerPh:"Ответ", parentGateErr:"Не совсем — попробуйте ещё раз.",
     // Island names (used in map)

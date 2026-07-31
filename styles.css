@@ -782,6 +782,26 @@ button { font: inherit; color: inherit; }
   background: #fff; border-radius: 12px; padding: 8px 12px; border: 1px dashed #b9d6e2;
   font-weight: 800; color: var(--deep); white-space: pre-line; font-size: .9rem;
 }
+
+/* ── SEA SCHOOL — practice drill (quiz + fill-the-grid) ── */
+.school-train-modes { display: flex; gap: 8px; justify-content: center; margin-bottom: 16px; }
+.school-mode-btn {
+  padding: 7px 16px; border-radius: 999px; border: 2px solid #e0eef5;
+  background: #f7fbfd; color: var(--deep); font-weight: 800; cursor: pointer; font-size: .88rem;
+}
+.school-mode-btn.active { background: #9be8ff; border-color: #6fd0f0; }
+.school-quiz-progress { text-align: center; color: var(--muted); font-weight: 800; font-size: .88rem; margin: 0 0 8px; }
+.school-quiz-q { text-align: center; font-size: 1.7rem; font-weight: 900; color: var(--deep); margin: 0 0 16px; }
+.school-quiz-again { width: 100%; }
+.school-fill-toolbar { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 10px; }
+.school-fill-toolbar .school-eq { margin: 0; text-align: left; font-size: 1rem; }
+.school-fill-toolbar .secondary { min-height: 40px; padding: 0 14px; font-size: .85rem; white-space: nowrap; }
+/* Revealed fill-mode cells are plain <div>s (not interactive) vs. the
+   <button> blanks — keep their cursor honest. */
+#schoolFillGrid div.school-cell { cursor: default; }
+.school-cell.blank { background: #fff3da; border-color: #f5d896; color: #c98a00; font-weight: 900; }
+.school-cell.filled { background: #d8f8e6; border-color: #7bdba0; color: #1c8a4e; cursor: default; }
+.school-fill-choices { margin-top: 14px; }
 .guardian-badge { font-size: 1rem; line-height: 1; }
 
 .section-head { padding: 18px; margin-bottom: 14px; }

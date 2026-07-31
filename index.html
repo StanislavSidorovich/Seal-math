@@ -417,6 +417,7 @@
       <div class="school-tabs" id="schoolTabs" role="tablist">
         <button class="school-tab active" data-school-tab="table" role="tab" data-i18n="schoolTable">Times table</button>
         <button class="school-tab" data-school-tab="rules" role="tab" data-i18n="schoolRules">Rules</button>
+        <button class="school-tab" data-school-tab="train" role="tab" data-i18n="schoolTrain">Practice</button>
       </div>
       <div class="school-panel" id="schoolTablePanel">
         <div class="school-grid" id="schoolGrid"></div>
@@ -424,6 +425,25 @@
       </div>
       <div class="school-panel" id="schoolRulesPanel" hidden>
         <div class="school-rules" id="schoolRules"></div>
+      </div>
+      <div class="school-panel" id="schoolTrainPanel" hidden>
+        <div class="school-train-modes">
+          <button class="school-mode-btn active" data-train-mode="quiz" data-i18n="schoolQuiz">Quiz</button>
+          <button class="school-mode-btn" data-train-mode="fill" data-i18n="schoolFillMode">Fill the grid</button>
+        </div>
+        <div id="schoolQuizWrap">
+          <p class="school-quiz-progress" id="schoolQuizProgress"></p>
+          <p class="school-quiz-q" id="schoolQuizQ"></p>
+          <div class="answers" id="schoolQuizAnswers"></div>
+        </div>
+        <div id="schoolFillWrap" hidden>
+          <div class="school-fill-toolbar">
+            <p class="school-eq" id="schoolFillProgress"></p>
+            <button class="secondary" id="schoolFillNew" data-i18n="schoolNewPuzzle">New puzzle</button>
+          </div>
+          <div class="school-grid" id="schoolFillGrid"></div>
+          <div class="answers school-fill-choices" id="schoolFillChoices" hidden></div>
+        </div>
       </div>
     </div>
   </div>
