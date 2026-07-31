@@ -4509,8 +4509,10 @@ function renderAlbum() {
         <button class="feed-btn" data-feed="${a.id}" ${state.fish<FEED_COST?"disabled":""} aria-label="${currentLang==="ru"?`Покормить ${a.name} — ${FEED_COST} рыбки`:`Feed ${a.name} — ${FEED_COST} fish`}">🐟 ${currentLang==="ru"?"Покормить":"Feed"} (${FEED_COST})</button>
         ${feeds>0 ? `<span class="feed-count">${currentLang==="ru"?"Покормлен":"Fed"} ${feeds}×</span>` : ""}
       </div>` : "";
-    return `<article class="item-card ${rescued?"":"locked"}">${animalSvg(a.id)}<h3>${rescued?a.name:"Hidden Friend"}</h3>
-      <p>${rescued?`${a.species}: ${a.fact}`:"Complete story missions to discover this friend."}</p>
+    const speciesLabel = currentLang === "ru" ? (animalSpeciesRu[a.id] || a.species) : a.species;
+    const factLabel    = currentLang === "ru" ? (animalFactRu[a.id] || a.fact) : a.fact;
+    return `<article class="item-card ${rescued?"":"locked"}">${animalSvg(a.id)}<h3>${rescued?a.name:t("hiddenFriend")}</h3>
+      <p>${rescued?`${speciesLabel}: ${factLabel}`:t("completeStory")}</p>
       ${feedRow}</article>`;
   }).join("");
   const albumGrid = $("albumGrid");
@@ -6272,11 +6274,11 @@ function resetEverything() {
 function randomSurprise() {
   setTimeout(() => {
     const roll = Math.random();
-    if      (roll < .18) { state.doubleRewardsUntil = Date.now()+120000; toast("Double Rewards! The next 2 minutes sparkle. ✨"); react("surprised"); }
-    else if (roll < .34) { state.coins+=18; state.rareTreasures++; toast("Mystery treasure chest! +18 coins 🎁"); confetti(); }
-    else if (roll < .50) { state.fish+=8; toast("Lost fish found their way home! +8 fish 🐟"); }
-    else if (roll < .62) { state.mysteryVisits++; toast("Mystery visitor waved from the snow! 👋"); speak("town"); }
-    else if (roll < .72) { state.stars+=2; toast("Bonus whale splash! +2 stars 🐋"); }
+    if      (roll < .18) { state.doubleRewardsUntil = Date.now()+120000; toast(t("surpriseDoubleRewards")); react("surprised"); }
+    else if (roll < .34) { state.coins+=18; state.rareTreasures++; toast(t("surpriseChest")); confetti(); }
+    else if (roll < .50) { state.fish+=8; toast(t("surpriseFish")); }
+    else if (roll < .62) { state.mysteryVisits++; toast(t("surpriseVisitor")); speak("town"); }
+    else if (roll < .72) { state.stars+=2; toast(t("surpriseWhale")); }
     if (roll < .72) { save(); renderAll(); }
     randomSurprise();
   }, 100000+Math.random()*140000); // was 24-50s; ~5x less frequent (100-240s / ~1.5-4min)
@@ -6471,6 +6473,12 @@ const STRINGS = {
     keepExploring:"Keep Exploring",
     missionComplete:"Mission Complete!", rareTreasure:"Rare Treasure!",
     rescued:"Rescued!",
+    // Surprise (town) events
+    surpriseDoubleRewards:"Double Rewards! The next 2 minutes sparkle. ✨",
+    surpriseChest:"Mystery treasure chest! +18 coins 🎁",
+    surpriseFish:"Lost fish found their way home! +8 fish 🐟",
+    surpriseVisitor:"Mystery visitor waved from the snow! 👋",
+    surpriseWhale:"Bonus whale splash! +2 stars 🐋",
     // Quest panel progress
     islandProgress:"Island Progress",
     missionsLabel:"missions — level",
@@ -6586,6 +6594,12 @@ const STRINGS = {
     keepExploring:"Продолжить!",
     missionComplete:"Миссия выполнена!", rareTreasure:"Редкое сокровище!",
     rescued:"Спасён!",
+    // Surprise (town) events
+    surpriseDoubleRewards:"Двойные награды! Следующие 2 минуты сверкают. ✨",
+    surpriseChest:"Таинственный сундук с сокровищами! +18 монет 🎁",
+    surpriseFish:"Потерянные рыбки нашли дорогу домой! +8 рыбок 🐟",
+    surpriseVisitor:"Таинственный гость помахал из снега! 👋",
+    surpriseWhale:"Бонусный всплеск кита! +2 звезды 🐋",
     // Island names (used in map)
     islandLocked:"Закрыто", missionsCount:"миссий",
     // Achievement descriptions shown in UI
