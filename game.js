@@ -254,6 +254,10 @@ const shop = [
   ["Bow Tie",       14,"accessory","bowtie"],
   ["Snow Owl Pet",  32,"pet","owlpet"]
 ].map((s,i) => ({ id:i, name:s[0], cost:s[1], type:s[2], className:s[3], earnedOnly:!!s[4] }));
+// RU shop names, same order/index as `shop`. Used everywhere a costume/pet
+// name is shown (shop grid, My Seal closet badges, buy toast).
+const shopNamesRu = ["Тюлень-пират","Тюлень-космонавт","Тюлень-король","Тюлень-супергерой","Летняя шляпа","Звёздный шарф","Снежные очки","Рыбка-питомец","Плащ Хранителя","Тюлень-волшебник","Галстук-бабочка","Полярная сова"];
+function shopName(item) { return currentLang === "ru" ? (shopNamesRu[item.id] || item.name) : item.name; }
 
 // P9: economy expansion — Town Decorations, a second coin sink alongside
 // the costume shop. Purely cosmetic, no zone-collision logic needed (unlike
@@ -284,6 +288,20 @@ const achievementNames = [
   "No Mistake Run","Comeback Kid","Super Solver","Guardian Helper","Town Complete","Guardian of the Arctic",
   "Two Week Streak","One Month Streak","Animal's Best Friend"
 ];
+// RU achievement names, same order/index as achievementNames.
+const achievementNamesRu = [
+  "Первая рыбка","Первый верный ответ","10 верных ответов","25 верных ответов","50 верных ответов",
+  "100 верных ответов","Первое здание","Основатель города","Усердный строитель","Первое спасение","Пять друзей",
+  "Герой животных","Первая звезда","Собиратель монет","Хранитель сокровищ","Помощник с подсказками","Смелая попытка",
+  "Разведчик Снежного пляжа","Моряк Рыбной бухты","Чудо Китового берега","Друг Островов пингвинов","Мыслитель Пещеры осьминога",
+  "Учёный Полярной академии","Рыцарь Северного королевства","Чемпион Арктики","Мастер сложения",
+  "Мастер вычитания","Мастер умножения","Ныряльщик деления","Искатель закономерностей","Исследователь уравнений",
+  "Волшебник задач","Идеальный поход","Быстрый ласт","Ежедневный гость","Серия 3 дня","Серия 7 дней",
+  "Собиратель костюмов","Друг питомцев","Транжира монет","Копитель звёзд","Рыбный пир","Уровень 5","Уровень 10",
+  "Забег без ошибок","Возвращение в игру","Супер-решала","Помощник Хранителя","Город построен","Хранитель Арктики",
+  "Серия 2 недели","Серия 1 месяц","Лучший друг животных"
+];
+function achievementName(i) { return currentLang === "ru" ? (achievementNamesRu[i] || achievementNames[i]) : achievementNames[i]; }
 
 // P16: one emoji badge per achievement instead of a generic ⭐ for all 53 —
 // cheap (no new SVG art), but gives each one a distinct, recognizable
@@ -303,6 +321,15 @@ const dailySpecialNames = [
   "Glitter Shell","Aurora Scarf Pin","Crystal Fish Badge","Snowflake Sticker",
   "Tiny Crown Charm","Moonlit Pebble","Golden Flipper Token"
 ];
+// RU display names, keyed by the (English) canonical name that gets stored in
+// state.dailySpecial — so the stored value stays a stable key.
+const DAILY_SPECIAL_NAMES_RU = {
+  "Glitter Shell":"Блестящая ракушка", "Aurora Scarf Pin":"Значок-шарф «Аврора»",
+  "Crystal Fish Badge":"Хрустальный значок-рыбка", "Snowflake Sticker":"Наклейка-снежинка",
+  "Tiny Crown Charm":"Крошечная корона-подвеска", "Moonlit Pebble":"Лунный камушек",
+  "Golden Flipper Token":"Золотой жетон-ласт"
+};
+function dailySpecialDisplay(name) { return currentLang === "ru" ? (DAILY_SPECIAL_NAMES_RU[name] || name) : name; }
 
 // P16: one icon per daily-special instead of a generic ✨ for all of them.
 const DAILY_SPECIAL_ICONS = {
@@ -320,6 +347,16 @@ const dailyNarratives = [
   { who:"Miska",   text:"Miska set up an extra training session at the Academy. Show off your skills today!" },
   { who:"Nova",    text:"Nova is delivering supplies to the castle. Answer 5 questions and help carry the load!" },
   { who:"Tumble",  text:"Tumble is practising for the Arctic Games. Be their training partner for 5 rounds!" }
+];
+// RU narratives, same order/index as dailyNarratives.
+const dailyNarrativesRu = [
+  "Пипу сегодня нужна помощь с завтраком. Реши 5 задач и наполни миску рыбками!",
+  "Нори заметила грозовую тучу над пристанью. Помоги всё закрепить вовремя!",
+  "Блюбелл хочет научить тебя новой песне. Реши 5 задач и выучи первый куплет!",
+  "Пебл потерял любимый камушек в снегу. Поможешь найти его за 5 ответов?",
+  "Миска устроил дополнительную тренировку в Академии. Покажи сегодня, на что ты способен!",
+  "Нова везёт припасы в замок. Реши 5 задач и помоги донести груз!",
+  "Тамбл готовится к Арктическим играм. Стань его напарником на 5 раундов!"
 ];
 
 // ─── Word problem templates (P4) ─────────────────────────────────────────────
@@ -3291,7 +3328,7 @@ function makeProblem() {
   currentProblem = generateProblem(topic);
   currentProblem.started = Date.now();
   $("topicLabel").innerHTML    = currentLang === "learn"
-    ? `${wName} - ${details.title}<span class="learn-ru">${topicLabelLearn(topic)}</span>`
+    ? `${wName} - ${details.title}<span class="learn-ru">${topicLabelRu(topic)}</span>`
     : `${wName} - ${details.title}`;
   $("missionTitle").textContent  = trip.daily ? t("dailyRescue") : `${t("missionOf")} ${trip.mission+1}: ${details.title}`;
   if (trip.mission === 4) {
@@ -4455,15 +4492,23 @@ function renderTown() {
       const btn = e.target.closest("[data-building]");
       if (!btn) return;
       const building = buildings[Number(btn.dataset.building)];
-      toast(`${building.name} has a visitor today!`);
+      const bName = currentLang === "ru" ? (buildingNamesRu[building.id] || building.name) : building.name;
+      toast(currentLang === "ru" ? `Сегодня в «${bName}» гость!` : `${bName} has a visitor today!`);
       speak("town");
     });
   }
+  const ru = currentLang === "ru";
   $("townGrid").innerHTML = buildings.map(b => {
     const built = state.buildings.includes(b.id);
     const starsNeeded = Math.max(0, b.cost - state.stars);
-    return `<article class="item-card ${built?"":"locked"}">${buildingSvg(b.id)}<h3>${b.name}</h3>
-      <p>${built ? "Open, animated, and part of Arctic Town." : starsNeeded > 0 ? `Need ${starsNeeded} more stars and mission progress.` : "Keep completing missions to unlock."}</p></article>`;
+    const bName = ru ? (buildingNamesRu[b.id] || b.name) : b.name;
+    const desc = built
+      ? t("buildingOpen")
+      : starsNeeded > 0
+        ? (ru ? `Нужно ещё ${starsNeeded} звёзд и прогресс в миссиях.` : `Need ${starsNeeded} more stars and mission progress.`)
+        : t("buildingLocked");
+    return `<article class="item-card ${built?"":"locked"}">${buildingSvg(b.id)}<h3>${bName}</h3>
+      <p>${desc}</p></article>`;
   }).join("");
   // P9: Town Decorations grid — coins-based, same buy-row pattern as the shop
   $("decorGrid").innerHTML = decorations.map(d => {
@@ -4552,10 +4597,10 @@ function renderShop() {
     const owned    = state.shop.includes(s.id);
     const equipped = state.equipped[s.type] === s.id;
     const statusText = owned ? (equipped ? t("equippedOnSausage") : t("ownedEquipInMySeal")) : t("visibleReward");
-    return `<article class="item-card">${costumeSvg(s.id)}<h3>${s.name}</h3>
+    return `<article class="item-card">${costumeSvg(s.id)}<h3>${shopName(s)}</h3>
       <p>${statusText}</p>
-      <div class="buy-row"><b>${s.cost} coins</b>
-        <button data-shop="${s.id}" ${owned||state.coins<s.cost?"disabled":""} aria-label="${owned?t("owned"):(t("buy")+" "+s.name+" — "+s.cost)}">${owned?t("owned"):t("buy")}</button>
+      <div class="buy-row"><b>${s.cost} ${t("coins")}</b>
+        <button data-shop="${s.id}" ${owned||state.coins<s.cost?"disabled":""} aria-label="${owned?t("owned"):(t("buy")+" "+shopName(s)+" — "+s.cost)}">${owned?t("owned"):t("buy")}</button>
       </div></article>`;
   }).join("");
   const shopGrid = $("shopGrid");
@@ -4576,7 +4621,7 @@ function buyItem(id) {
     equipWithZoneCheck(item);
     playSound("coin");
     react("excited");
-    toast(`${item.name} ${t("unlockedAndEquipped")}`);
+    toast(`${shopName(item)} ${t("unlockedAndEquipped")}`);
     checkAchievements();
     save();
     renderAll();
@@ -4590,7 +4635,7 @@ function renderCloset() {
     return { slot, item };
   });
   const overlayHtml = `<div class="equipment-overlay">${equippedItems.map(({slot,item}) =>
-    item ? `<div class="equip-badge"><span class="equip-slot">${slot}:</span>${item.name}</div>` : ""
+    item ? `<div class="equip-badge"><span class="equip-slot">${slot}:</span>${shopName(item)}</div>` : ""
   ).join("")}</div>`;
 
   // S6: Summary chips row
@@ -4648,11 +4693,13 @@ function renderCloset() {
 
 function renderAchievements() {
   const unlocked = new Set(state.achievements);
-  $("achievementProgress").textContent = `${unlocked.size} of ${achievementNames.length} unlocked`;
+  $("achievementProgress").textContent = currentLang === "ru"
+    ? `${unlocked.size} из ${achievementNames.length} открыто`
+    : `${unlocked.size} of ${achievementNames.length} unlocked`;
   $("achievementGrid").innerHTML = achievementNames.map((name,i) =>
     `<article class="item-card achievement ${unlocked.has(i)?"unlocked":"locked"}">
       <span class="achievement-badge">${ACHIEVEMENT_ICONS[i] || "⭐"}</span>
-      <h3>${name}</h3><p>${unlocked.has(i)?"Unlocked!":"Keep adventuring to discover this badge."}</p>
+      <h3>${achievementName(i)}</h3><p>${unlocked.has(i)?t("achUnlocked"):t("achLocked")}</p>
     </article>`
   ).join("");
 }
@@ -4666,20 +4713,27 @@ function renderDaily() {
   if (!state.dailySpecial) state.dailySpecial = dailySpecialName();
 
   // P9: pick a narrative based on day of week
-  const narrative = dailyNarratives[new Date().getDay() % dailyNarratives.length];
+  const dayIdx = new Date().getDay() % dailyNarratives.length;
+  const narrativeText = currentLang === "ru" ? dailyNarrativesRu[dayIdx] : dailyNarratives[dayIdx].text;
+  const remaining = Math.max(0, 5 - state.daily.solved);
 
   $("dailyText").textContent = state.daily.claimed
     ? t("dailyClaimed")
-    : narrative.text + ` (${Math.max(0,5-state.daily.solved)} more to go)`;
-  $("dailyBonus").textContent = `Today's treasure: ${DAILY_SPECIAL_ICONS[state.dailySpecial]||"✨"} ${state.dailySpecial}. Streak bonus: +${Math.min(20, state.streak.count*3)} fish and coins.`;
+    : narrativeText + (currentLang === "ru" ? ` (осталось ${remaining})` : ` (${remaining} more to go)`);
+  const streakBonus = Math.min(20, state.streak.count*3);
+  const specialName = dailySpecialDisplay(state.dailySpecial);
+  const specialIcon = DAILY_SPECIAL_ICONS[state.dailySpecial]||"✨";
+  $("dailyBonus").textContent = currentLang === "ru"
+    ? `Приз дня: ${specialIcon} ${specialName}. Бонус за серию: +${streakBonus} рыбок и монет.`
+    : `Today's treasure: ${specialIcon} ${specialName}. Streak bonus: +${streakBonus} fish and coins.`;
   $("dailyBtn").disabled      = state.daily.claimed;
 
   // P9: show collected daily specials if any
   const collectedEl = $("dailyCollected");
   if (collectedEl) {
     if (state.specialCosmetics.length > 0) {
-      collectedEl.innerHTML = `<p class="daily-collected-label">Your collection (${state.specialCosmetics.length}):</p>
-        <div class="daily-collected-grid">${state.specialCosmetics.map(n=>`<span class="daily-badge">${DAILY_SPECIAL_ICONS[n]||"✨"} ${n}</span>`).join("")}</div>`;
+      collectedEl.innerHTML = `<p class="daily-collected-label">${t("yourCollection")} (${state.specialCosmetics.length}):</p>
+        <div class="daily-collected-grid">${state.specialCosmetics.map(n=>`<span class="daily-badge">${DAILY_SPECIAL_ICONS[n]||"✨"} ${dailySpecialDisplay(n)}</span>`).join("")}</div>`;
       collectedEl.hidden = false;
     } else {
       collectedEl.hidden = true;
@@ -4741,9 +4795,9 @@ function renderDashboard() {
         </div>
         <div class="accuracy-stats-list">
           <div class="accuracy-stat-item">${t("solvedProblems")} <span>${state.solved}</span></div>
-          <div class="accuracy-stat-item">Correct <span>${state.correct}</span></div>
-          <div class="accuracy-stat-item">Wrong <span>${state.wrong}</span></div>
-          <div class="accuracy-stat-item">${t("timePlayed")} <span>${minutes} min</span></div>
+          <div class="accuracy-stat-item">${t("correctLabel")} <span>${state.correct}</span></div>
+          <div class="accuracy-stat-item">${t("wrongLabel")} <span>${state.wrong}</span></div>
+          <div class="accuracy-stat-item">${t("timePlayed")} <span>${minutes} ${t("minutesShort")}</span></div>
         </div>
       </div>
     </div>`;
@@ -4756,7 +4810,7 @@ function renderDashboard() {
     .slice(0, 8);
   const topicBarsHtml = playedTopics.length > 0 ? `
     <div class="parent-chart-area">
-      <p class="parent-chart-title">Topic Performance</p>
+      <p class="parent-chart-title">${t("topicPerformance")}</p>
       <div class="topic-bar-chart">
         ${playedTopics.map(({ key, acc }) => {
           const cls = acc === null ? "mid" : acc >= 80 ? "strong" : acc >= 55 ? "mid" : "weak";
@@ -4780,7 +4834,7 @@ function renderDashboard() {
   const worldLabels = worlds.map(w => `<span class="timeline-label">${w.id+1}</span>`).join("");
   const timelineHtml = `
     <div class="parent-chart-area">
-      <p class="parent-chart-title">Island Progress</p>
+      <p class="parent-chart-title">${t("islandProgressTitle")}</p>
       <div class="progress-timeline">${worldBars}</div>
       <div class="timeline-labels">${worldLabels}</div>
     </div>`;
@@ -4802,7 +4856,7 @@ function renderDashboard() {
     ${accuracyRingHtml}
     ${topicBarsHtml}
     ${timelineHtml}
-    <p class="parent-section-title">Overview</p>
+    <p class="parent-section-title">${t("overview")}</p>
     <div style="display:grid;gap:10px;grid-template-columns:repeat(auto-fill,minmax(148px,1fr))">${statCards}</div>
   `;
 }
@@ -5549,6 +5603,7 @@ function dailySpecialName() {
 }
 
 function topicLabel(topic) {
+  if (currentLang === "ru") return topicLabelRu(topic);
   return {
     add10:"Addition within 10", add20:"Addition within 20", sub20:"Subtraction within 20",
     add100:"Addition within 100", sub100:"Subtraction within 100", carryBorrow:"Carrying and borrowing",
@@ -5561,7 +5616,7 @@ function topicLabel(topic) {
   }[topic] || "Math adventure";
 }
 
-function topicLabelLearn(topic) {
+function topicLabelRu(topic) {
   return {
     add10:"Сложение до 10", add20:"Сложение до 20", sub20:"Вычитание до 20",
     add100:"Сложение до 100", sub100:"Вычитание до 100", carryBorrow:"Перенос и заём",
@@ -5617,7 +5672,7 @@ function checkAchievements() {
     if (ok && !state.achievements.includes(i)) {
       state.achievements.push(i);
       playSound("achievement");
-      toast(`Achievement: ${achievementNames[i]} 🏆`);
+      toast(`${t("achievementToast")}: ${achievementName(i)} 🏆`);
     }
   });
 }
@@ -6479,6 +6534,21 @@ const STRINGS = {
     surpriseFish:"Lost fish found their way home! +8 fish 🐟",
     surpriseVisitor:"Mystery visitor waved from the snow! 👋",
     surpriseWhale:"Bonus whale splash! +2 stars 🐋",
+    // Town buildings, achievements, daily, parent dashboard
+    buildingOpen:"Open, animated, and part of Arctic Town.",
+    buildingLocked:"Keep completing missions to unlock.",
+    yourCollection:"Your collection",
+    achUnlocked:"Unlocked!",
+    achLocked:"Keep adventuring to discover this badge.",
+    achievementToast:"Achievement",
+    correctLabel:"Correct", wrongLabel:"Wrong", minutesShort:"min",
+    topicPerformance:"Topic Performance", islandProgressTitle:"Island Progress", overview:"Overview",
+    mySealPanel:"My Seal", mySealPanelDesc:"Choose Sausage's costume, accessory, and pet. Equipped rewards appear in missions and town.",
+    costumesPanel:"Costumes and Pets", achievementsPanel:"Achievements",
+    dailyChallengePanel:"Daily Challenge", parentDashboardPanel:"Parent Dashboard",
+    parentSavedNote:"Progress is saved on this device only.",
+    albumPanel:"Rescue Album", albumPanelDesc:"Every rescued friend brings a fun Arctic fact.",
+    goFishing:"🎣 Go Fishing",
     // Quest panel progress
     islandProgress:"Island Progress",
     missionsLabel:"missions — level",
@@ -6600,6 +6670,21 @@ const STRINGS = {
     surpriseFish:"Потерянные рыбки нашли дорогу домой! +8 рыбок 🐟",
     surpriseVisitor:"Таинственный гость помахал из снега! 👋",
     surpriseWhale:"Бонусный всплеск кита! +2 звезды 🐋",
+    // Town buildings, achievements, daily, parent dashboard
+    buildingOpen:"Открыто, оживлённое и часть Арктического города.",
+    buildingLocked:"Проходи миссии, чтобы открыть.",
+    yourCollection:"Твоя коллекция",
+    achUnlocked:"Открыто!",
+    achLocked:"Продолжай приключение, чтобы открыть этот значок.",
+    achievementToast:"Достижение",
+    correctLabel:"Верно", wrongLabel:"Ошибки", minutesShort:"мин",
+    topicPerformance:"Успехи по темам", islandProgressTitle:"Прогресс по островам", overview:"Обзор",
+    mySealPanel:"Мой Тюлень", mySealPanelDesc:"Выбери Тюленю костюм, аксессуар и питомца. Надетые награды появляются в миссиях и городе.",
+    costumesPanel:"Костюмы и питомцы", achievementsPanel:"Достижения",
+    dailyChallengePanel:"Ежедневное задание", parentDashboardPanel:"Родителям",
+    parentSavedNote:"Прогресс сохраняется только на этом устройстве.",
+    albumPanel:"Альбом спасений", albumPanelDesc:"Каждый спасённый друг приносит интересный факт об Арктике.",
+    goFishing:"🎣 На рыбалку",
     // Island names (used in map)
     islandLocked:"Закрыто", missionsCount:"миссий",
     // Achievement descriptions shown in UI

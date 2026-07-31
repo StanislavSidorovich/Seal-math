@@ -2577,9 +2577,12 @@ body.learning-mode .problem-box h2 {
   font-size: .8rem;
   font-weight: 800;
   color: var(--deep);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
+  /* Longer RU topic names ("Обратное умножение") wrap to a second line
+     instead of being clipped with an ellipsis. line-height keeps the two
+     lines compact and vertically centered against the bar. */
+  line-height: 1.15;
+  overflow-wrap: break-word;
+  hyphens: auto;
 }
 .topic-bar-track {
   height: 14px;
