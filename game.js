@@ -5293,9 +5293,9 @@ function renderSchoolTable() {
   if (!grid) return;
   const isRu = currentLang === "ru";
   let html = `<button class="school-cell corner" tabindex="-1" aria-hidden="true">×</button>`;
-  for (let c = 1; c <= 10; c++) html += `<div class="school-cell head">${c}</div>`;
+  for (let c = 1; c <= 10; c++) html += `<div class="school-cell head head-col">${c}</div>`;
   for (let r = 1; r <= 10; r++) {
-    html += `<div class="school-cell head">${r}</div>`;
+    html += `<div class="school-cell head head-row">${r}</div>`;
     for (let c = 1; c <= 10; c++) {
       html += `<button class="school-cell" data-r="${r}" data-c="${c}" aria-label="${r} × ${c} = ${r*c}">${r*c}</button>`;
     }
