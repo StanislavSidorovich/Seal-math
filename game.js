@@ -643,7 +643,7 @@ function defaultState() {
     hintsUsed:0, perfectTrips:0, missions:{}, equipped:{ costume:null, accessory:null, pet:null },
     miniGamesPlayed:0, rareTreasures:0, visitors:[], specialCosmetics:[],
     dialogueHistory:{}, dailySpecial:"", doubleRewardsUntil:0, mysteryVisits:0, animalFeeds:{},
-    onboarded: false, gameVersion: GAME_VERSION, guardianCrowned:false,
+    onboarded: false, tourDone: false, gameVersion: GAME_VERSION, guardianCrowned:false,
     activeTrip: null
   };
 }
@@ -1275,6 +1275,15 @@ function attachEvents() {
   if (schoolOverlay) schoolOverlay.addEventListener("click", e => {
     if (e.target === schoolOverlay) closeSchool();
   });
+  // First-run coach-mark tour
+  const tourNextBtn = $("tourNext");
+  const tourSkipBtn = $("tourSkip");
+  if (tourNextBtn) tourNextBtn.addEventListener("click", nextTour);
+  if (tourSkipBtn) tourSkipBtn.addEventListener("click", endTour);
+  window.addEventListener("resize", () => {
+    const ov = $("tourOverlay");
+    if (ov && !ov.hidden) showTourStep();
+  });
   document.querySelectorAll(".tab").forEach(btn => btn.addEventListener("click", () => switchView(btn.dataset.view)));
   document.addEventListener("pointerdown", initAudio, { once:true });
   // S5: Rescue celebration close
@@ -1354,6 +1363,7 @@ function setupHardwareBackButton() {
       ["rescueCelebration",  closeRescueCelebration],
       ["briefingModal",      closeBriefing],
       ["onboardingModal",    closeOnboarding],
+      ["tourOverlay",        endTour],
       ["luckyCatchModal",    closeLuckyCatch],
       ["schoolModal",        closeSchool],
       ["smartHintPanel",     closeSmartHint],
@@ -6560,6 +6570,107 @@ function closeOnboarding() {
   const modal = $("onboardingModal");
   if (modal) modal.hidden = true;
   state.onboarded = true;
+  save();
+  // First-run coach-mark tour follows the welcome slides (new players only —
+  // existing saves never pass through here again, so they're never interrupted).
+  if (!state.tourDone) setTimeout(startTour, 380);
+}
+
+// ── First-run coach-mark tour ──────────────────────────────────────────────
+// Spotlights the real nav tabs and the Sea School building one at a time, then
+// lands the player on Adventure. Handles the mobile edge case where the nav is
+// a collapsed hamburger drawer (opens it for tab steps, closes it for the
+// in-scene School step).
+let tourStep = 0;
+
+function tourStepsDef() {
+  const ru = currentLang === "ru";
+  return [
+    { view:"adventure", openTabs:true,  target:() => document.querySelector('.tab[data-view="adventure"]'),
+      text: ru ? "Здесь ты играешь и спасаешь друзей по островам! 🌊"
+               : "Here you play and rescue friends across the islands! 🌊" },
+    { view:"seal", openTabs:true, target:() => document.querySelector('.tab[data-view="seal"]'),
+      text: ru ? "Тут наряжаешь тюленя — костюмы, друзья и питомцы. 🎨"
+               : "Dress up your seal — costumes, friends and pets. 🎨" },
+    { view:"town", openTabs:false, scroll:true, target:() => document.querySelector('.town-school'),
+      text: ru ? "🎓 Морская школа: таблица умножения и правила. Заглядывай, когда нужно вспомнить!"
+               : "🎓 Sea School: the times table and rules. Pop in whenever you need a reminder!" },
+    { view:"daily", openTabs:true, target:() => document.querySelector('.tab[data-view="daily"]'),
+      text: ru ? "Заходи каждый день за наградой и не теряй серию! ⭐"
+               : "Come back each day for a treat and keep your streak going! ⭐" },
+  ];
+}
+
+function startTour() {
+  const overlay = $("tourOverlay");
+  if (!overlay) return;
+  tourStep = 0;
+  overlay.hidden = false;
+  showTourStep();
+}
+
+function showTourStep() {
+  const overlay = $("tourOverlay");
+  if (!overlay || overlay.hidden) return;
+  const steps = tourStepsDef();
+  const step  = steps[tourStep];
+  const ru    = currentLang === "ru";
+
+  if (step.view) switchView(step.view);
+  const tabs = $("tabs");
+  if (tabs) tabs.classList.toggle("open", !!step.openTabs);
+
+  $("tourText").textContent = step.text;
+  $("tourSkip").textContent = ru ? "Пропустить" : "Skip";
+  $("tourNext").textContent = tourStep < steps.length - 1
+    ? (ru ? "Дальше →" : "Next →")
+    : (ru ? "Играть! 🎮" : "Play! 🎮");
+
+  // Wait for the view switch + drawer transition (max-height .25s) to settle
+  // before measuring the target's on-screen position.
+  setTimeout(() => {
+    if (overlay.hidden) return;
+    const el = step.target && step.target();
+    if (!el) { nextTour(); return; }               // target missing → don't stall
+    if (step.scroll) el.scrollIntoView({ block: "center", behavior: "auto" });
+    requestAnimationFrame(() => positionTour(el));
+  }, 300);
+}
+
+function positionTour(el) {
+  const pad = 8, gap = 14;
+  const r   = el.getBoundingClientRect();
+  const spot = $("tourSpot");
+  spot.style.left   = (r.left - pad) + "px";
+  spot.style.top    = (r.top  - pad) + "px";
+  spot.style.width  = (r.width  + pad * 2) + "px";
+  spot.style.height = (r.height + pad * 2) + "px";
+
+  const tip = $("tourTip");
+  const tw = tip.offsetWidth, th = tip.offsetHeight;
+  const vw = window.innerWidth, vh = window.innerHeight;
+  let top = r.bottom + gap;
+  if (top + th > vh - 10) top = r.top - th - gap;  // no room below → go above
+  top = Math.max(10, Math.min(top, vh - th - 10));
+  let left = r.left + r.width / 2 - tw / 2;
+  left = Math.max(10, Math.min(left, vw - tw - 10));
+  tip.style.left = left + "px";
+  tip.style.top  = top  + "px";
+}
+
+function nextTour() {
+  const steps = tourStepsDef();
+  if (tourStep < steps.length - 1) { tourStep++; showTourStep(); }
+  else endTour();
+}
+
+function endTour() {
+  const overlay = $("tourOverlay");
+  if (overlay) overlay.hidden = true;
+  const tabs = $("tabs");
+  if (tabs) tabs.classList.remove("open");
+  switchView("adventure");
+  state.tourDone = true;
   save();
 }
 
