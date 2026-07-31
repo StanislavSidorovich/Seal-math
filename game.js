@@ -3444,8 +3444,10 @@ function generateProblem(topic) {
         () => { const a=rand(3)+1; return { text:`${prefix}${a}, ${a*2}, ${a*4}, ${a*8}, ?`, answer:a*16, hint: isRu?"Каждое число удваивается.":"Each number doubles." }; },
         // ×3
         () => { const a=rand(2)+1; return { text:`${prefix}${a}, ${a*3}, ${a*9}, ?`, answer:a*27, hint: isRu?"Каждое число умножается на 3.":"Each number is multiplied by 3." }; },
-        // subtract pattern
-        () => { const a=rand(10)+20, b=rand(4)+2; return { text:`${prefix}${a}, ${a-b}, ${a-b*2}, ${a-b*3}, ?`, answer:a-b*4, hint: isRu?`Закономерность уменьшается на ${b} каждый шаг.`:`The pattern decreases by ${b} each step.` }; },
+        // subtract pattern — start high enough that the 5th term (the answer)
+        // never goes negative: a∈[31,40], b∈[3,6] ⇒ a−b*4 ≥ 31−24 = 7.
+        // (was a∈[21,30], which could produce a negative "next number".)
+        () => { const a=rand(10)+30, b=rand(4)+2; return { text:`${prefix}${a}, ${a-b}, ${a-b*2}, ${a-b*3}, ?`, answer:a-b*4, hint: isRu?`Закономерность уменьшается на ${b} каждый шаг.`:`The pattern decreases by ${b} each step.` }; },
         // skip counting by 5s/10s
         () => { const start=rand(8)*5, step=[5,10,25][rand(3)-1]; return { text:`${prefix}${start}, ${start+step}, ${start+step*2}, ${start+step*3}, ?`, answer:start+step*4, hint: isRu?`Считай по ${step}.`:`Count by ${step}s.` }; },
       ];
