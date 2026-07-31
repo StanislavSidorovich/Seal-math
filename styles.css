@@ -713,6 +713,26 @@ button { font: inherit; color: inherit; }
 }
 .school-cell.hl { background: #ffe9a8; }
 .school-cell.sel { background: #ffd45a; color: #6a3a00; font-weight: 900; }
+
+/* Sea School Town landmark — always present, gently bobs + glows to draw the
+   eye. Bob uses the `translate` property (not `transform`) so the hover
+   `transform: scale()` on .town-building still works. */
+.town-school { z-index: 5; animation: schoolAttract 2.6s ease-in-out infinite; }
+.town-school svg { position: relative; z-index: 1; }
+@keyframes schoolAttract { 0%, 100% { translate: 0 0; } 50% { translate: 0 -5px; } }
+.town-school::before {
+  content: ""; position: absolute; left: 8%; right: 8%; top: 20%; bottom: 6%;
+  border-radius: 50%; z-index: 0; pointer-events: none;
+  background: radial-gradient(closest-side, rgba(255,212,90,.55), rgba(255,212,90,0) 72%);
+  animation: schoolGlow 2.6s ease-in-out infinite;
+}
+@keyframes schoolGlow { 0%, 100% { opacity: .28; transform: scale(.85); } 50% { opacity: .72; transform: scale(1.06); } }
+.town-school-label {
+  position: absolute; left: 50%; top: -10px; transform: translateX(-50%);
+  background: #ffd45a; color: #6a3a00; font-weight: 900; font-size: .72rem;
+  padding: 2px 10px; border-radius: 999px; white-space: nowrap;
+  box-shadow: 0 2px 6px rgba(0,0,0,.18); z-index: 3; pointer-events: none;
+}
 .school-eq {
   margin: 16px 0 4px; text-align: center; font-size: 1.4rem; font-weight: 900;
   color: var(--deep); min-height: 1.5em;

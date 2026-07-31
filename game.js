@@ -4482,6 +4482,7 @@ function renderTown() {
       const finale = b.id === 7 ? " is-finale" : "";
       return `<button class="town-building${finale}" style="left:${left}%;top:${top}%" data-building="${b.id}" aria-label="${b.name}">${buildingSvg(b.id)}</button>`;
     }).join("") +
+    `<button class="town-building town-school" style="left:40%;top:54%" data-school="1" aria-label="${currentLang==="ru"?"Морская школа — таблица и правила":"Sea School — times table and rules"}"><span class="town-school-label">${currentLang==="ru"?"🎓 Школа":"🎓 School"}</span>${schoolBuildingSvg()}</button>` +
     townGhostHtml(positions) +
     decorations.map(d => {
       if (!state.decorations.includes(d.id)) return "";
@@ -4506,6 +4507,8 @@ function renderTown() {
         if (!feedBtn.disabled) feedAnimal(Number(feedBtn.dataset.feed));
         return;
       }
+      const schoolBtn = e.target.closest("[data-school]");
+      if (schoolBtn) { playSound("tap"); openSchool(); return; }
       const btn = e.target.closest("[data-building]");
       if (!btn) return;
       const building = buildings[Number(btn.dataset.building)];
@@ -6041,6 +6044,31 @@ function attachTimeTracking() {
 function shuffle(arr) { return arr.sort(()=>Math.random()-.5); }
 
 // ─── SVG helpers ──────────────────────────────────────────────────────────────
+// Sea School building — a dedicated, NEVER-gated Town landmark (unlike the
+// star-unlocked cosmetic buildings). Warm roof + book + bell so it reads as
+// "school/learning" to adults at a glance. Same 120×110 viewBox convention.
+function schoolBuildingSvg() {
+  return `<svg viewBox="0 0 120 110" aria-hidden="true">
+    <ellipse cx="60" cy="103" rx="48" ry="6" fill="rgba(0,80,120,.10)"/>
+    <rect x="22" y="56" width="76" height="44" rx="6" fill="#fff3da" stroke="#f2d9a8" stroke-width="1.5"/>
+    <path d="M16 58 L60 32 L104 58 Z" fill="#ff9d6e"/>
+    <rect x="16" y="54" width="88" height="8" rx="3" fill="#f5854f"/>
+    <path d="M60 40 Q54 37 47 39 L47 49 Q54 47 60 50 Q66 47 73 49 L73 39 Q66 37 60 40 Z" fill="#fff"/>
+    <path d="M60 40 L60 50" stroke="#f5854f" stroke-width="1.3"/>
+    <rect x="53" y="20" width="14" height="14" rx="2" fill="#ffd45a"/>
+    <path d="M51 22 L60 12 L69 22 Z" fill="#f5b800"/>
+    <circle cx="60" cy="27" r="3.2" fill="#8a5a00"/>
+    <rect x="59" y="6" width="2" height="8" fill="#8a6030"/>
+    <path d="M61 6 L69 9 L61 12 Z" fill="#ff7b7b"/>
+    <rect x="30" y="66" width="14" height="14" rx="2" fill="#8fdaf0"/>
+    <path d="M37 66 L37 80 M30 73 L44 73" stroke="#fff" stroke-width="1.2"/>
+    <rect x="76" y="66" width="14" height="14" rx="2" fill="#8fdaf0"/>
+    <path d="M83 66 L83 80 M76 73 L90 73" stroke="#fff" stroke-width="1.2"/>
+    <rect x="52" y="74" width="16" height="26" rx="3" fill="#7bc8e8"/>
+    <circle cx="64" cy="88" r="1.4" fill="#fff"/>
+  </svg>`;
+}
+
 function buildingSvg(i) {
   const svgs = [
     // 0: Fish Market — stall with awning, fish hanging
