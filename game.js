@@ -3121,7 +3121,9 @@ function setupIslandScene(scene, worldId) {
 // Mission count and the "reached the friend" mission are pulled from the
 // same values used elsewhere (startMission's needed formula, dialogFor's
 // 5-line arc) rather than re-guessed here.
-const SEAL_SWIM_START_LEFT_PCT  = -12; // just off-screen, about to swim in
+const SEAL_SWIM_START_LEFT_PCT  = 0;   // fully on-screen from question 1 (was -12,
+                                       // which cut the tail off: the v2 seal art sits
+                                       // ~18px inside its own box, not flush to the edge)
 const SEAL_SWIM_FRIEND_LEFT_PCT = 14;  // arrived, at the friend's side
 const SEAL_SWIM_FINAL_LEFT_PCT  = 60;  // island fully cleared, swum on together
 const SEAL_SWIM_MISSION_COUNT   = 5;   // missions per island (0-indexed 0..4)
