@@ -9,6 +9,7 @@ console.log("Running Arctic Math Rescue test suite...\n");
 
 require("./generators.test");
 require("./i18n.test");
+require("./seal-rig.test");
 
 const { pass, fail } = lib.counts;
 console.log(`\n─────────────────────────────────────`);

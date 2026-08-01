@@ -162,7 +162,7 @@
             <svg class="island-path-svg" id="islandPathSvg" aria-hidden="true"></svg>
             <div class="map" id="worldMap" aria-label="Arctic world map"></div>
             <div class="travel-seal" id="travelSeal" aria-hidden="true">
-              <svg id="travelSealSvg" viewBox="0 0 260 220"><use href="#sausage-body"/><use href="" class="seal-costume-layer" id="travelSealCostume"/><use href="" class="seal-accessory-layer" id="travelSealAccessory"/><use href="" class="seal-pet-layer" id="travelSealPet"/></svg>
+              <svg id="travelSealSvg" viewBox="0 0 260 220"><use href="#sausage-body"/><g class="seal-overlays" id="travelSealOverlays"></g></svg>
             </div>
           </div>
           <aside class="quest-panel">
@@ -171,9 +171,9 @@
                 <svg class="seal-svg seal-avatar idle" id="heroSeal" viewBox="0 0 260 220" aria-label="Sausage the seal">
                 <use href="#sausage-body"/>
 
-                <use href="" class="seal-costume-layer" id="heroSealCostume"/>
-                <use href="" class="seal-accessory-layer" id="heroSealAccessory"/>
-                <use href="" class="seal-pet-layer" id="heroSealPet"/>
+                <!-- filled by applySealLook(): one <use> per equipped part,
+                     each retargeted onto the active seal's rig anchors -->
+                <g class="seal-overlays" id="heroSealOverlays"></g>
               </svg>
               </div><!-- /seal-svg-wrap -->
               <div>
@@ -213,7 +213,7 @@
               <span class="mission-trail-marker" id="missionTrailMarker">⭐</span>
             </div>
             <div class="mission-seal-rig" id="missionSealRig">
-              <svg class="small-seal seal-avatar swim" id="missionSeal" viewBox="0 0 260 220" aria-hidden="true"><use href="#sausage-body"/><use href="" class="seal-costume-layer" id="missionSealCostume"/><use href="" class="seal-accessory-layer" id="missionSealAccessory"/><use href="" class="seal-pet-layer" id="missionSealPet"/></svg>
+              <svg class="small-seal seal-avatar swim" id="missionSeal" viewBox="0 0 260 220" aria-hidden="true"><use href="#sausage-body"/><g class="seal-overlays" id="missionSealOverlays"></g></svg>
             </div>
             <div class="fish-stream" id="fishStream"></div>
           </div>
@@ -247,7 +247,7 @@
       <section class="view" id="seal">
         <div class="seal-room">
           <div class="seal-preview">
-            <svg class="seal-svg seal-avatar excited" id="customSeal" viewBox="0 0 260 220" aria-label="Customized Sausage"><use href="#sausage-body"/><use href="" class="seal-costume-layer" id="customSealCostume"/><use href="" class="seal-accessory-layer" id="customSealAccessory"/><use href="" class="seal-pet-layer" id="customSealPet"/></svg>
+            <svg class="seal-svg seal-avatar excited" id="customSeal" viewBox="0 0 260 220" aria-label="Customized Sausage"><use href="#sausage-body"/><g class="seal-overlays" id="customSealOverlays"></g></svg>
             <div class="equipped-list" id="equippedList"></div>
           </div>
           <div>
@@ -538,7 +538,13 @@
          SAUSAGE — kawaii baby seal, Option B style + tail
          viewBox 260×220, lying pose, thick outlines
          ═══════════════════════════════════════════════════════ -->
-    <symbol id="sausage-body" viewBox="0 0 260 220">
+    <!-- The art the whole game draws through is #sausage-body. It is an
+         indirection symbol (defined right after this one) whose single <use>
+         points at either #sausage-body-v1 or #sausage-body-v2. Flipping that
+         one href swaps the seal everywhere at once — including the two spots
+         game.js builds at runtime (rescue overlay, ice-slide mini-game),
+         which a DOMContentLoaded querySelectorAll sweep would miss. -->
+    <symbol id="sausage-body-v1" viewBox="0 0 260 220">
       <!-- shadow -->
       <ellipse cx="124" cy="210" rx="90" ry="9" fill="rgba(100,160,200,.12)"/>
 
@@ -627,8 +633,15 @@
       <ellipse cx="144" cy="44" rx="6" ry="5" fill="#C8DCE8" stroke="#3A2E28" stroke-width="2.5" transform="rotate(10 144 44)"/>
     </symbol>
 
-<!-- SAUSAGE v2 — vectorised trace, recoloured + silhouette-masked, faces LEFT (matches #sausage-body) -->
-    <symbol id="sausage-body-v2" viewBox="0 0 1254 1254">
+    <!-- Active seal art. setSealArt() in game.js retargets #sealArtRef. -->
+    <symbol id="sausage-body" viewBox="0 0 260 220">
+      <use id="sealArtRef" href="#sausage-body-v1"/>
+    </symbol>
+
+<!-- SAUSAGE v2 — vectorised trace, recoloured + silhouette-masked, faces LEFT (matches #sausage-body-v1).
+     Raw art, authored in its own 1254² space. Never referenced directly by the
+     game: #sausage-body-v2 below repacks it into the shared 260×220 frame. -->
+    <symbol id="sausage-body-v2-art" viewBox="0 0 1254 1254">
       <defs>
   <mask id="sv2sil" maskUnits="userSpaceOnUse" x="0" y="0" width="1254" height="1254">
     <image href="data:image/png;base64,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" x="0" y="0" width="1254" height="1254" preserveAspectRatio="none"/>
@@ -692,6 +705,24 @@
 <g><path fill="#3A2E28" d="M 470.02,437.08 c -0.1,0.99 -1.72,0.84 -1.15,1.74 c -1.18,0.29 -1.99,-0.11 -2.44,-1.21 c 0.63,-1.05 2.57,-0.5 3.59,-0.53 Z"/></g>
 <g><path fill="#3A2E28" d="M 609.95,420.02 c -1.7,0.03 -0.12,-3.17 -2.05,-3.04 c 0.66,-3.67 1.21,-7.34 1.64,-10.99 c 0.37,1.78 0.61,3.62 0.72,5.5 c -0.08,2.84 -0.18,5.69 -0.31,8.53 Z"/></g>
 <g><path fill="#3A2E28" d="M 606.76,361.04 c -0.63,0.25 -1.22,0.58 -1.76,0.99 c -0.09,-1.56 -0.18,-3.12 -0.27,-4.68 c -0.11,-0.6 0.07,-1.07 0.52,-1.41 c 1.26,0.94 0.57,3.65 1.51,5.1 Z"/></g>
+    </symbol>
+
+    <!-- v2 repacked into the shared 260×220 frame.
+         Measured from the silhouette mask, the v2 art's ink sits at
+         (163.7, 203.8) 1011.9×830.8 in its own 1254² space; v1's ink fills
+         (16, 18) 222×180. Both are ~1.23:1, so one uniform scale lands v2 on
+         exactly v1's footprint — same baseline, same mass, same margins.
+           scale  = 180 / 830.8            = 0.2166
+           translate = 17.4 - 163.7*0.2166 = -18.05
+                       18   - 203.8*0.2166 = -26.14
+         width/height on the <use> give the inner viewport its natural 1254²
+         size, which cancels the letterboxing a bare <use> would apply. Without
+         this the 1254² symbol shrank to fit 220 of height and sat centred,
+         ~18px inside its own box — the offset SEAL_SWIM_START_LEFT_PCT was
+         nudged to work around. -->
+    <symbol id="sausage-body-v2" viewBox="0 0 260 220">
+      <use href="#sausage-body-v2-art" width="1254" height="1254"
+           transform="translate(-18.05,-26.14) scale(0.2166)"/>
     </symbol>
 
     <!-- ═══════════════════════════════════════════════════
@@ -764,13 +795,22 @@
          Crown geometry reused from costume-king, cape geometry reused from
          costume-superhero, just recolored to the Champion island's icy
          teal/gold palette (#fff8b8 / #2dd6a6) — zero new shapes, only colors. -->
+    <!-- Split into two symbols because the crown rides the head and the cape
+         rides the shoulders. Kept as one symbol they could only share a single
+         anchor, so retargeting to a differently-proportioned seal dragged the
+         crown down onto the chest. COSTUME_SYMBOLS pairs them back up. -->
     <symbol id="costume-guardiancape" viewBox="0 0 260 220">
-      <!-- cape, drawn first so the crown/badge sit on top of it -->
       <path d="M50 148 Q30 176 36 204 Q68 190 90 196 Q112 190 144 204 Q150 176 130 148 Q112 162 90 164 Q68 162 50 148Z"
             fill="#17869f"/>
       <path d="M50 148 Q68 162 90 164 Q112 162 130 148" fill="none" stroke="#0e5567" stroke-width="2"/>
       <path d="M36 204 Q56 188 90 192 Q90 204 66 208Z" fill="rgba(0,0,0,.12)"/>
-      <!-- crown -->
+      <!-- star badge on chest -->
+      <circle cx="90" cy="144" r="16" fill="#fff8b8" stroke="#2dd6a6" stroke-width="2"/>
+      <text x="90" y="150" text-anchor="middle" font-size="17" font-weight="900" fill="#17869f">★</text>
+    </symbol>
+
+    <!-- Guardian crown — head half of the Guardian Cape reward. -->
+    <symbol id="costume-guardiancrown" viewBox="0 0 260 220">
       <rect x="48" y="14" width="84" height="12" rx="4" fill="#bdf3ea" stroke="#1a9b7a" stroke-width="1"/>
       <polygon points="48,14 58,0 68,14" fill="#e8fffb" stroke="#1a9b7a" stroke-width="1"/>
       <polygon points="80,14 90,0 100,14" fill="#e8fffb" stroke="#1a9b7a" stroke-width="1"/>
@@ -780,9 +820,6 @@
       <circle cx="122" cy="4" r="3.5" fill="#60c8ff"/>
       <circle cx="74" cy="20" r="3" fill="#fff8b8"/>
       <circle cx="106" cy="20" r="3" fill="#fff8b8"/>
-      <!-- star badge on chest -->
-      <circle cx="90" cy="144" r="16" fill="#fff8b8" stroke="#2dd6a6" stroke-width="2"/>
-      <text x="90" y="150" text-anchor="middle" font-size="17" font-weight="900" fill="#17869f">★</text>
     </symbol>
 
     <!-- Sunny hat (accessory) -->
@@ -889,6 +926,15 @@
     </symbol>
   </svg>
 
+  <!-- SEAL_V2 flag — set to false to go back to the original seal.
+       Read by setSealArt() in game.js, which points #sealArtRef at the chosen
+       art and switches applySealLook() to that version's rig anchors, so
+       costumes/accessories/pets follow the pose instead of being hidden.
+       Must load before game.js: game.js calls init() synchronously. -->
+  <script>
+    window.USE_SEAL_V2 = true;
+  </script>
+
   <script src="game.js"></script>
   <script>
     // Registers sw.js for offline support + proper PWA installability.
@@ -899,18 +945,6 @@
         navigator.serviceWorker.register("./sw.js").catch(() => {
           // Non-fatal — the game still works fully online without it.
         });
-      });
-    }
-  </script>
-  <!-- SEAL_V2 flag — preview the redesigned seal. Set to false to revert to #sausage-body. -->
-  <script>
-    window.USE_SEAL_V2 = true;
-    if (window.USE_SEAL_V2) {
-      document.addEventListener("DOMContentLoaded", () => {
-        document.querySelectorAll('use[href="#sausage-body"]').forEach(u => u.setAttribute("href", "#sausage-body-v2"));
-        // costume overlays are built for the old pose — hide them for the v2 preview
-        document.querySelectorAll('.seal-costume-layer,.seal-accessory-layer,.seal-pet-layer')
-          .forEach(u => u.style.display = "none");
       });
     }
   </script>

@@ -1484,10 +1484,9 @@ button { font: inherit; color: inherit; }
 .lang-btn:hover { background: #e8fbff; }
 .lang-btn:active { transform: translateY(1px); }
 
-/* S2: SVG costume layers — hidden by default, shown by applySealLook */
-.seal-costume-layer,
-.seal-accessory-layer,
-.seal-pet-layer {
+/* S2: SVG costume layers — applySealLook() fills this group with one <use>
+   per equipped part, so the child count varies; style the container. */
+.seal-overlays {
   pointer-events: none;
 }
 

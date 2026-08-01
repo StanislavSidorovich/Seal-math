@@ -963,6 +963,8 @@ function sealPose(pose) {
 
 
 function init() {
+  // Before any seal is drawn — picks the art and the rig applySealLook() uses.
+  setSealArt(window.USE_SEAL_V2 ? "v2" : "v1");
   initProfiles();
   // If no active profile → show profile screen
   if (!activeProfileId || !getActiveProfile()) {
@@ -3121,9 +3123,12 @@ function setupIslandScene(scene, worldId) {
 // Mission count and the "reached the friend" mission are pulled from the
 // same values used elsewhere (startMission's needed formula, dialogFor's
 // 5-line arc) rather than re-guessed here.
-const SEAL_SWIM_START_LEFT_PCT  = 0;   // fully on-screen from question 1 (was -12,
-                                       // which cut the tail off: the v2 seal art sits
-                                       // ~18px inside its own box, not flush to the edge)
+const SEAL_SWIM_START_LEFT_PCT  = -12; // just entering frame from the left edge.
+                                       // Briefly 0 while the v2 art letterboxed
+                                       // itself ~18px inside its own box and -12%
+                                       // cropped the tail; #sausage-body-v2 now
+                                       // repacks onto v1's exact footprint, so the
+                                       // original hand-tuned value is right again.
 const SEAL_SWIM_FRIEND_LEFT_PCT = 14;  // arrived, at the friend's side
 const SEAL_SWIM_FINAL_LEFT_PCT  = 60;  // island fully cleared, swum on together
 const SEAL_SWIM_MISSION_COUNT   = 5;   // missions per island (0-indexed 0..4)
@@ -4228,20 +4233,107 @@ function react(type) {
 }
 
 // ─── SVG costume layer system ────────────────────────────────────────────────
+// Which overlay symbols each shop item puts on the seal. An item can name more
+// than one — the Guardian Cape is a crown plus a cape, and those ride different
+// parts of the body, so they have to be placed independently.
 const COSTUME_SYMBOLS = {
-  pirate:    { costume:"costume-pirate",      accessory:null,               pet:null },
-  astronaut: { costume:"costume-astronaut",   accessory:null,               pet:null },
-  king:      { costume:"costume-king",        accessory:null,               pet:null },
-  superhero: { costume:"costume-superhero",   accessory:null,               pet:null },
-  guardiancape: { costume:"costume-guardiancape", accessory:null,           pet:null },
-  wizard:    { costume:"costume-wizard",      accessory:null,               pet:null },
-  sunny:     { costume:null,                  accessory:"accessory-sunny",  pet:null },
-  scarf:     { costume:null,                  accessory:"accessory-scarf",  pet:null },
-  goggles:   { costume:null,                  accessory:"accessory-goggles",pet:null },
-  bowtie:    { costume:null,                  accessory:"accessory-bowtie", pet:null },
-  pet:       { costume:null,                  accessory:null,               pet:"pet-fish" },
-  owlpet:    { costume:null,                  accessory:null,               pet:"pet-owl" }
+  pirate:       { parts:["costume-pirate"] },
+  astronaut:    { parts:["costume-astronaut"] },
+  king:         { parts:["costume-king"] },
+  superhero:    { parts:["costume-superhero"] },
+  guardiancape: { parts:["costume-guardiancape","costume-guardiancrown"] },
+  wizard:       { parts:["costume-wizard"] },
+  sunny:        { parts:["accessory-sunny"] },
+  scarf:        { parts:["accessory-scarf"] },
+  goggles:      { parts:["accessory-goggles"] },
+  bowtie:       { parts:["accessory-bowtie"] },
+  pet:          { parts:["pet-fish"] },
+  owlpet:       { parts:["pet-owl"] }
 };
+
+// ─── Seal rig ────────────────────────────────────────────────────────────────
+// Every overlay symbol is drawn against the *v1* seal's anatomy, in the shared
+// 260×220 frame. To hang the same art on a differently-posed seal we don't
+// redraw it — we retarget it: each part declares which body landmark it belongs
+// to, each seal version publishes where its landmarks are, and the part gets a
+// similarity transform mapping one onto the other.
+//
+// An anchor is a circle: {x, y} is where the landmark sits, r is how big it is
+// on that seal, so r sets the scale. Adding a future seal pose costs one entry
+// here, not twelve redrawn symbols.
+//
+// v2's numbers come from its silhouette mask, measured in the 1254² art space
+// and mapped through the same repack transform #sausage-body-v2 applies
+// (p260 = p1254 * 0.2166 + t, t = (-18.05, -26.14)):
+//   head   skull circle, crown of head y≈204 to chin y≈500 → (443,350) r 155
+//   neck   collar line where the neck meets the chest       → (450,545) r 150
+//   pet    clear floor to the right of the rear flippers    → (1080,955) r 90
+// The `eyes` anchor exists because v2's eyes sit both closer together and
+// higher on a smaller head than v1's — the one landmark that does NOT scale
+// with the skull. Goggles (the only overlay worn *on* the eyes rather than on
+// top of the head) hang off it; hats keep using `head`. r is half the
+// eye-to-eye span, measured the same way on both seals so the ratio is a true
+// scale. v2's eye centres come from rasterising #sausage-body-v2 and clustering
+// the dark pixels: (52.1, 48.9) and (94.5, 53.8).
+const SEAL_RIG = {
+  v1: {
+    head: { x:  90, y:  90, r: 72 },
+    eyes: { x:  87, y:  78, r: 25 },
+    neck: { x:  90, y: 144, r: 40 },
+    pet:  { x: 210, y: 165, r: 20 }
+  },
+  v2: {
+    head: { x: 77.9, y:  49.7, r: 33.6 },
+    eyes: { x: 73.3, y:  51.3, r: 21.2 },
+    neck: { x: 79.4, y:  91.9, r: 32.5 },
+    pet:  { x: 215.9, y: 180.7, r: 19.5 }
+  }
+};
+
+// Body landmark each overlay symbol hangs off, plus its stacking order within
+// the overlay group (low draws first). Capes go under their badge and crown;
+// pets sit on top of everything since they're beside the seal, not on it.
+const OVERLAY_PARTS = {
+  "costume-superhero":     { anchor:"neck", z: 10 },
+  "costume-guardiancape":  { anchor:"neck", z: 10 },
+  "accessory-scarf":       { anchor:"neck", z: 20 },
+  "accessory-bowtie":      { anchor:"neck", z: 20 },
+  "costume-pirate":        { anchor:"head", z: 30 },
+  "costume-king":          { anchor:"head", z: 30 },
+  "costume-wizard":        { anchor:"head", z: 30 },
+  "accessory-sunny":       { anchor:"head", z: 30 },
+  "costume-guardiancrown": { anchor:"head", z: 30 },
+  "costume-astronaut":     { anchor:"head", z: 40 },
+  "accessory-goggles":     { anchor:"eyes", z: 40 },
+  "pet-fish":              { anchor:"pet",  z: 50 },
+  "pet-owl":               { anchor:"pet",  z: 50 }
+};
+
+// Which seal art is live. Set once at boot from the USE_SEAL_V2 flag.
+let sealArtVersion = "v1";
+
+// Point the game's single art reference at the chosen seal. Everything draws
+// through #sausage-body, including the rescue overlay and the ice-slide seal
+// that game.js builds at runtime, so this one href covers all of them.
+function setSealArt(version) {
+  sealArtVersion = SEAL_RIG[version] ? version : "v1";
+  const ref = $("sealArtRef");
+  if (ref) ref.setAttribute("href", "#sausage-body-" + sealArtVersion);
+}
+
+// Similarity transform taking a part from the pose it was drawn for (v1) to
+// where it belongs on the active seal. Identity when v1 is active.
+function overlayTransform(symbol) {
+  const part = OVERLAY_PARTS[symbol];
+  if (!part) return null;
+  const from = SEAL_RIG.v1[part.anchor];
+  const to   = (SEAL_RIG[sealArtVersion] || SEAL_RIG.v1)[part.anchor];
+  if (!from || !to) return null;
+  const k = to.r / from.r;
+  if (k === 1 && to.x === from.x && to.y === from.y) return null;
+  return `translate(${+to.x.toFixed(2)},${+to.y.toFixed(2)}) scale(${+k.toFixed(4)}) ` +
+         `translate(${-from.x},${-from.y})`;
+}
 
 // P12: each costume/accessory occupies a region of the seal's body. Pirate,
 // Astronaut and King are all drawn on the head, same as the Sunny Hat
@@ -4278,32 +4370,38 @@ function equipWithZoneCheck(item) {
   return replaced;
 }
 
-function applySealLook() {
-  let costumeSymbol   = null;
-  let accessorySymbol = null;
-  let petSymbol       = null;
-
+// Collect the overlay symbols the equipped items call for, in draw order.
+// Exported shape is a plain array of symbol ids so it can be asserted on
+// without a DOM.
+function equippedOverlayParts() {
+  const parts = [];
   Object.values(state.equipped || {}).forEach(itemId => {
     if (itemId === null || itemId === undefined) return;
     const item = shop.find(s => s.id === itemId);
     if (!item) return;
     const mapping = COSTUME_SYMBOLS[item.className];
     if (!mapping) return;
-    if (mapping.costume)   costumeSymbol   = mapping.costume;
-    if (mapping.accessory) accessorySymbol = mapping.accessory;
-    if (mapping.pet)       petSymbol       = mapping.pet;
+    mapping.parts.forEach(sym => {
+      if (OVERLAY_PARTS[sym] && !parts.includes(sym)) parts.push(sym);
+    });
   });
+  return parts.sort((a, b) => OVERLAY_PARTS[a].z - OVERLAY_PARTS[b].z);
+}
 
-  const setLayer = (id, symbol) => {
-    const el = $(id);
-    if (!el) return;
-    el.setAttribute("href", symbol ? "#" + symbol : "");
-  };
+function applySealLook() {
+  const parts = equippedOverlayParts();
 
   ["heroSeal","missionSeal","customSeal","travelSeal"].forEach(prefix => {
-    setLayer(prefix + "Costume",   costumeSymbol);
-    setLayer(prefix + "Accessory", accessorySymbol);
-    setLayer(prefix + "Pet",       petSymbol);
+    const group = $(prefix + "Overlays");
+    if (!group) return;
+    group.textContent = "";
+    parts.forEach(sym => {
+      const use = document.createElementNS("http://www.w3.org/2000/svg", "use");
+      use.setAttribute("href", "#" + sym);
+      const t = overlayTransform(sym);
+      if (t) use.setAttribute("transform", t);
+      group.appendChild(use);
+    });
   });
 }
 
