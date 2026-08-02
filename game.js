@@ -5597,12 +5597,25 @@ function handleSchoolFillCellTap(cell) {
   cell.classList.add("sel");
   schoolFillState.selected = { r:Number(cell.dataset.r), c:Number(cell.dataset.c), cell };
   renderSchoolFillChoices(schoolFillState.selected);
+  // The grid is tall on a phone, so the choices below can sit off-screen —
+  // bring them (and the prompt) into view so the child sees where to answer.
+  const choices = $("schoolFillChoices");
+  if (choices) requestAnimationFrame(() => choices.scrollIntoView({ behavior:"smooth", block:"center" }));
 }
 
 function renderSchoolFillChoices(target) {
   const wrap = $("schoolFillChoices");
+  const prompt = $("schoolFillPrompt");
   if (!wrap) return;
-  if (!target) { wrap.hidden = true; wrap.innerHTML = ""; return; }
+  if (!target) {
+    wrap.hidden = true; wrap.innerHTML = "";
+    if (prompt) { prompt.hidden = true; prompt.textContent = ""; }
+    return;
+  }
+  if (prompt) {
+    prompt.hidden = false;
+    prompt.innerHTML = `<span class="school-fill-eq">${target.r} × ${target.c} = ?</span> — ${t("schoolFillPick")}`;
+  }
   const problem = { topic:"multiply", text:`${target.r} × ${target.c} = ?`, answer:target.r*target.c };
   const options = shuffle([problem.answer, ...wrongAnswers(problem)]);
   wrap.hidden = false;
@@ -7073,6 +7086,7 @@ const STRINGS = {
     openSchool:"🎓 Sea School", seaSchool:"🎓 Sea School",
     schoolTable:"Times table", schoolRules:"Rules", schoolTapCell:"Tap a cell 👆",
     schoolTrain:"Practice", schoolQuiz:"Quiz", schoolFillMode:"Fill the grid", schoolNewPuzzle:"New puzzle",
+    schoolFillPick:"pick the answer below 👇",
     parentGateTitle:"Grown-ups Only", parentGateContinue:"Continue", parentGateCancel:"Cancel",
     parentGateAnswerPh:"Answer", parentGateErr:"Not quite — try again.",
     // Quest panel progress
@@ -7215,6 +7229,7 @@ const STRINGS = {
     openSchool:"🎓 Морская школа", seaSchool:"🎓 Морская школа",
     schoolTable:"Таблица", schoolRules:"Правила", schoolTapCell:"Нажми на клетку 👆",
     schoolTrain:"Тренировка", schoolQuiz:"Викторина", schoolFillMode:"Заполни таблицу", schoolNewPuzzle:"Новая головоломка",
+    schoolFillPick:"выбери ответ ниже 👇",
     parentGateTitle:"Только для взрослых", parentGateContinue:"Продолжить", parentGateCancel:"Отмена",
     parentGateAnswerPh:"Ответ", parentGateErr:"Не совсем — попробуйте ещё раз.",
     // Island names (used in map)

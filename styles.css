@@ -802,6 +802,17 @@ button { font: inherit; color: inherit; }
 .school-cell.blank { background: #fff3da; border-color: #f5d896; color: #c98a00; font-weight: 900; }
 .school-cell.filled { background: #d8f8e6; border-color: #7bdba0; color: #1c8a4e; cursor: default; }
 .school-fill-choices { margin-top: 14px; }
+/* Prompt that appears under the grid when a blank is tapped. Amber palette
+   matches the "?" blank cells so the child links the tapped cell to the
+   answer strip; the brief pulse pulls the eye down to the choices. */
+.school-fill-prompt {
+  margin: 14px 0 0; padding: 10px 12px; text-align: center;
+  font-size: .95rem; font-weight: 700; color: #8a6100;
+  background: #fff3da; border: 2px solid #f5d896; border-radius: 12px;
+  animation: fillPromptPulse 1s ease-in-out 2;
+}
+.school-fill-prompt .school-fill-eq { font-size: 1.15rem; font-weight: 900; color: #c98a00; }
+@keyframes fillPromptPulse { 0%,100% { transform: scale(1); } 50% { transform: scale(1.035); } }
 .guardian-badge { font-size: 1rem; line-height: 1; }
 
 .section-head { padding: 18px; margin-bottom: 14px; }
