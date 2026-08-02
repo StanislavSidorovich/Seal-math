@@ -58,9 +58,14 @@
         <h1 id="profileScreenTitle">Sausage the Seal</h1>
         <p class="profile-screen-sub">Arctic Math Adventure</p>
       </div>
-      <h2 class="profile-choose-label">Choose Player</h2>
+      <div class="profile-lang-select" id="profileLangSelect" role="group" aria-label="Language · Язык">
+        <button class="profile-lang-btn" data-lang="en" type="button">🇬🇧 English</button>
+        <button class="profile-lang-btn" data-lang="ru" type="button">🇷🇺 Русский</button>
+        <button class="profile-lang-btn" data-lang="learn" type="button">📖 EN·RU</button>
+      </div>
+      <h2 class="profile-choose-label" data-i18n="chooseProfile">Choose Player</h2>
       <div class="profile-list" id="profileList"></div>
-      <button class="profile-add-btn" id="profileAddBtn">➕ New Player</button>
+      <button class="profile-add-btn" id="profileAddBtn" data-i18n="newPlayerBtn">➕ New Player</button>
     </div>
   </div>
 
@@ -71,7 +76,7 @@
       <div class="profile-emoji-row" id="profileEmojiRow"></div>
       <input type="text" id="profileNameInput" class="profile-name-input" maxlength="20" placeholder="Name…" autocomplete="off"/>
       <div class="profile-modal-actions" id="profileModalActions"></div>
-      <button class="profile-modal-cancel" id="profileModalCancel">Cancel</button>
+      <button class="profile-modal-cancel" id="profileModalCancel" data-i18n="cancelBtn">Cancel</button>
     </div>
   </div>
 

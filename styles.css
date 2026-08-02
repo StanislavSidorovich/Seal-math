@@ -1942,6 +1942,32 @@ button { font: inherit; color: inherit; }
   color: var(--muted);
   font-weight: 700;
 }
+.profile-lang-select {
+  display: flex;
+  gap: 8px;
+  justify-content: center;
+  flex-wrap: wrap;
+  margin: 0 0 16px;
+}
+.profile-lang-btn {
+  font: inherit;
+  font-size: .95rem;
+  font-weight: 800;
+  color: var(--deep);
+  background: rgba(255,255,255,.6);
+  border: 2px solid rgba(39,199,222,.35);
+  border-radius: 999px;
+  padding: 8px 16px;
+  cursor: pointer;
+  transition: all .15s;
+}
+.profile-lang-btn:hover { border-color: var(--aqua); transform: translateY(-1px); }
+.profile-lang-btn.active {
+  background: var(--aqua);
+  color: #fff;
+  border-color: var(--aqua);
+  box-shadow: 0 2px 8px rgba(39,199,222,.35);
+}
 .profile-choose-label {
   font-size: 1.1rem;
   font-weight: 900;

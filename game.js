@@ -4,6 +4,7 @@
 const SAVE_KEY        = "sausage-arctic-math-save-v1";  // legacy (migration)
 const PROFILES_KEY    = "sausage-profiles-v1";
 const ACTIVE_KEY      = "sausage-active-profile";
+const APP_LANG_KEY    = "sausage-app-lang";
 const MAX_PROFILES    = 20;
 
 const PROFILE_EMOJIS  = ["🦭","🐧","🐻","🦊","🐳","🦁","🐼","🦋","🐸","🦄",
@@ -500,6 +501,15 @@ function setActiveProfileId(id) {
   try { localStorage.setItem(ACTIVE_KEY, id); } catch {}
 }
 
+// App-level language default (used on the profile screen, before any profile
+// is active, and to seed the language of the next new profile).
+function getAppLang() {
+  try { return localStorage.getItem(APP_LANG_KEY) || "en"; } catch { return "en"; }
+}
+function setAppLang(lang) {
+  try { localStorage.setItem(APP_LANG_KEY, lang); } catch {}
+}
+
 function createProfile(name, emoji) {
   return {
     id:        Date.now().toString(36) + Math.random().toString(36).slice(2,6),
@@ -507,7 +517,7 @@ function createProfile(name, emoji) {
     emoji:     emoji || "🦭",
     createdAt: Date.now(),
     lastPlayed:Date.now(),
-    lang:      "en",
+    lang:      currentLang,   // inherit the language chosen on the profile screen
     state:     defaultState()
   };
 }
@@ -965,6 +975,9 @@ function sealPose(pose) {
 function init() {
   // Before any seal is drawn — picks the art and the rig applySealLook() uses.
   setSealArt(window.USE_SEAL_V2 ? "v2" : "v1");
+  // Seed the language from the remembered app-level choice so the profile
+  // screen greets the user in their language before any profile is picked.
+  currentLang = getAppLang();
   initProfiles();
   // If no active profile → show profile screen
   if (!activeProfileId || !getActiveProfile()) {
@@ -1028,31 +1041,55 @@ function showProfileScreen() {
   const ps  = $("profileScreen");
   if (app) app.hidden = true;
   if (ps)  ps.style.display = "";
-  renderProfileList();
   // Bind add button once
   const addBtn = $("profileAddBtn");
   if (addBtn && !addBtn.dataset.bound) {
     addBtn.dataset.bound = "1";
     addBtn.addEventListener("click", () => openProfileEdit(null));
   }
+  // Bind the language picker once; selecting re-renders this screen in that
+  // language and remembers the choice for boot + the next new profile.
+  const langSel = $("profileLangSelect");
+  if (langSel && !langSel.dataset.bound) {
+    langSel.dataset.bound = "1";
+    langSel.querySelectorAll(".profile-lang-btn").forEach(btn => {
+      btn.addEventListener("click", () => {
+        currentLang = btn.dataset.lang;
+        setAppLang(currentLang);
+        const prof = getActiveProfile();
+        if (prof) { prof.lang = currentLang; saveProfiles(profiles); }
+        applyProfileScreenLang();
+      });
+    });
+  }
+  applyProfileScreenLang();
+}
+
+// Refresh every translatable bit of the profile screen for the current lang.
+function applyProfileScreenLang() {
+  applyLangToDOM();           // static [data-i18n] labels + button
+  const langSel = $("profileLangSelect");
+  if (langSel) langSel.querySelectorAll(".profile-lang-btn").forEach(b =>
+    b.classList.toggle("active", b.dataset.lang === currentLang));
+  renderProfileList();        // cards use t()
 }
 
 function renderProfileList() {
   const list = $("profileList");
   if (!list) return;
   if (profiles.length === 0) {
-    list.innerHTML = `<div class="profile-empty">No players yet.<br>Tap ➕ to create one!</div>`;
+    list.innerHTML = `<div class="profile-empty">${t("noPlayers")}<br>${t("tapToCreate")}</div>`;
     return;
   }
   list.innerHTML = profiles.map(p => {
-    const last = p.lastPlayed ? formatLastPlayed(p.lastPlayed) : "Never";
+    const last = p.lastPlayed ? formatLastPlayed(p.lastPlayed) : t("lastNever");
     const safeName = escapeHtml(p.name);
     return `<div class="profile-card" data-pid="${p.id}">
       <button class="profile-play-btn" data-pid="${p.id}" aria-label="Play as ${safeName}">
         <span class="profile-card-emoji">${p.emoji}</span>
         <div class="profile-card-info">
           <strong class="profile-card-name">${safeName}</strong>
-          <span class="profile-card-sub">Level ${p.state?.level||1} · ${p.state?.animals?.length||0}/${animals.length} friends · ${last}</span>
+          <span class="profile-card-sub">${t("profLevel")} ${p.state?.level||1} · ${p.state?.animals?.length||0}/${animals.length} ${t("profFriends")} · ${last}</span>
         </div>
       </button>
       <button class="profile-edit-btn" data-pid="${p.id}" aria-label="Edit ${safeName}">✏️</button>
@@ -1068,12 +1105,12 @@ function renderProfileList() {
 }
 
 function formatLastPlayed(ts) {
-  if (!ts) return "Never";
+  if (!ts) return t("lastNever");
   const diff = Date.now() - ts;
   const days = Math.floor(diff / 86400000);
-  if (days === 0) return "Today";
-  if (days === 1) return "Yesterday";
-  if (days < 7)  return `${days} days ago`;
+  if (days === 0) return t("lastToday");
+  if (days === 1) return t("lastYesterday");
+  if (days < 7)  return t("lastDaysAgo").replace("{n}", days);
   return new Date(ts).toLocaleDateString();
 }
 
@@ -1100,8 +1137,9 @@ function openProfileEdit(id) {
   const existing = id ? profiles.find(p => p.id === id) : null;
   let chosenEmoji = existing?.emoji || "🦭";
 
-  title.textContent     = existing ? "Edit Player" : "New Player";
+  title.textContent     = existing ? t("editPlayerTitle") : t("newPlayerTitle");
   nameInp.value         = existing?.name || "";
+  nameInp.placeholder   = t("namePh");
 
   // Emoji picker
   emojiRow.innerHTML = PROFILE_EMOJIS.map(e =>
@@ -1117,9 +1155,9 @@ function openProfileEdit(id) {
   // Action buttons
   if (existing) {
     actions.innerHTML = `
-      <button class="primary profile-save-btn" id="pmSave">Save</button>
-      <button class="secondary profile-dupe-btn" id="pmDupe">Duplicate</button>
-      <button class="secondary danger profile-delete-btn" id="pmDelete">Delete</button>`;
+      <button class="primary profile-save-btn" id="pmSave">${t("savePlayer")}</button>
+      <button class="secondary profile-dupe-btn" id="pmDupe">${t("dupePlayer")}</button>
+      <button class="secondary danger profile-delete-btn" id="pmDelete">${t("deletePlayer")}</button>`;
     actions.querySelector("#pmSave").addEventListener("click", () => {
       const name = nameInp.value.trim() || "Player";
       existing.name  = name;
@@ -1129,7 +1167,7 @@ function openProfileEdit(id) {
       renderProfileList();
     });
     actions.querySelector("#pmDupe").addEventListener("click", () => {
-      if (profiles.length >= MAX_PROFILES) { alert("Maximum 20 players reached."); return; }
+      if (profiles.length >= MAX_PROFILES) { alert(t("maxPlayers")); return; }
       const dupe = JSON.parse(JSON.stringify(existing));
       dupe.id   = Date.now().toString(36) + Math.random().toString(36).slice(2,6);
       dupe.name = existing.name + " 2";
@@ -1140,7 +1178,7 @@ function openProfileEdit(id) {
       renderProfileList();
     });
     actions.querySelector("#pmDelete").addEventListener("click", () => {
-      if (!confirm(`Delete ${existing.name}? All progress will be lost.`)) return;
+      if (!confirm(t("deletePlayerConfirm").replace("{name}", existing.name))) return;
       profiles = profiles.filter(p => p.id !== existing.id);
       if (activeProfileId === existing.id) { activeProfileId = null; setActiveProfileId(""); }
       saveProfiles(profiles);
@@ -1149,9 +1187,9 @@ function openProfileEdit(id) {
     });
   } else {
     // New profile
-    actions.innerHTML = `<button class="primary profile-save-btn" id="pmCreate">Create Player</button>`;
+    actions.innerHTML = `<button class="primary profile-save-btn" id="pmCreate">${t("createPlayer")}</button>`;
     actions.querySelector("#pmCreate").addEventListener("click", () => {
-      if (profiles.length >= MAX_PROFILES) { alert("Maximum 20 players reached."); return; }
+      if (profiles.length >= MAX_PROFILES) { alert(t("maxPlayers")); return; }
       const name = nameInp.value.trim() || "Player";
       const p = createProfile(name, chosenEmoji);
       profiles.push(p);
@@ -7087,6 +7125,14 @@ const STRINGS = {
     schoolTable:"Times table", schoolRules:"Rules", schoolTapCell:"Tap a cell 👆",
     schoolTrain:"Practice", schoolQuiz:"Quiz", schoolFillMode:"Fill the grid", schoolNewPuzzle:"New puzzle",
     schoolFillPick:"pick the answer below 👇",
+    // Profile screen + editor
+    chooseProfile:"Choose Player", newPlayerBtn:"➕ New Player",
+    noPlayers:"No players yet.", tapToCreate:"Tap ➕ to create one!",
+    profLevel:"Level", profFriends:"friends",
+    lastNever:"Never", lastToday:"Today", lastYesterday:"Yesterday", lastDaysAgo:"{n} days ago",
+    editPlayerTitle:"Edit Player", newPlayerTitle:"New Player", namePh:"Name…",
+    createPlayer:"Create Player", savePlayer:"Save", dupePlayer:"Duplicate", deletePlayer:"Delete", cancelBtn:"Cancel",
+    maxPlayers:"Maximum 20 players reached.", deletePlayerConfirm:"Delete {name}? All progress will be lost.",
     parentGateTitle:"Grown-ups Only", parentGateContinue:"Continue", parentGateCancel:"Cancel",
     parentGateAnswerPh:"Answer", parentGateErr:"Not quite — try again.",
     // Quest panel progress
@@ -7230,6 +7276,14 @@ const STRINGS = {
     schoolTable:"Таблица", schoolRules:"Правила", schoolTapCell:"Нажми на клетку 👆",
     schoolTrain:"Тренировка", schoolQuiz:"Викторина", schoolFillMode:"Заполни таблицу", schoolNewPuzzle:"Новая головоломка",
     schoolFillPick:"выбери ответ ниже 👇",
+    // Экран профиля + редактор
+    chooseProfile:"Выбери игрока", newPlayerBtn:"➕ Новый игрок",
+    noPlayers:"Пока нет игроков.", tapToCreate:"Нажми ➕, чтобы создать!",
+    profLevel:"Уровень", profFriends:"друзей",
+    lastNever:"Никогда", lastToday:"Сегодня", lastYesterday:"Вчера", lastDaysAgo:"{n} дн. назад",
+    editPlayerTitle:"Изменить игрока", newPlayerTitle:"Новый игрок", namePh:"Имя…",
+    createPlayer:"Создать игрока", savePlayer:"Сохранить", dupePlayer:"Копия", deletePlayer:"Удалить", cancelBtn:"Отмена",
+    maxPlayers:"Достигнут максимум — 20 игроков.", deletePlayerConfirm:"Удалить {name}? Весь прогресс будет потерян.",
     parentGateTitle:"Только для взрослых", parentGateContinue:"Продолжить", parentGateCancel:"Отмена",
     parentGateAnswerPh:"Ответ", parentGateErr:"Не совсем — попробуйте ещё раз.",
     // Island names (used in map)
