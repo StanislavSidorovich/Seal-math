@@ -222,7 +222,40 @@ button { font: inherit; color: inherit; }
 }
 .quest-panel { padding: 16px; display: flex; flex-direction: column; gap: 16px; }
 .seal-card { display: grid; gap: 10px; }
+.seal-svg-wrap { position: relative; }
 .seal-svg { width: min(260px, 100%); margin: 0 auto; animation: bob 2.8s ease-in-out infinite, breathe 3.4s ease-in-out infinite; }
+/* Quick-read nudge for pre-readers: 2-4 words, sits in the empty art space
+   to the right of the seal's head (the 260x220 viewBox draws the seal in
+   its left half). Positioned by % so it tracks the scaled SVG. Separate
+   from #dialogBox, which carries the longer story-flavour lines. */
+.seal-quick-bubble {
+  position: absolute;
+  top: 8%;
+  left: 58%;
+  max-width: 40%;
+  background: #fff;
+  border: 3px solid #d8f5ff;
+  border-radius: 16px;
+  padding: 6px 12px;
+  font-weight: 900;
+  font-size: clamp(.85rem, 3vw, 1.05rem);
+  color: var(--deep);
+  text-align: center;
+  line-height: 1.2;
+  box-shadow: 0 4px 10px rgba(0,0,0,.08);
+  animation: bob 2.8s ease-in-out infinite;
+}
+.seal-quick-bubble:empty { display: none; }
+.seal-quick-bubble:before {
+  content: "";
+  position: absolute;
+  left: -9px;
+  top: 50%;
+  transform: translateY(-50%);
+  border-right: 10px solid #fff;
+  border-top: 8px solid transparent;
+  border-bottom: 8px solid transparent;
+}
 @keyframes bob { 50% { transform: translateY(-8px) rotate(-1deg); } }
 @keyframes breathe { 50% { scale: 1.025 .985; } }
 .seal-avatar { transform-origin: 50% 72%; }

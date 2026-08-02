@@ -3260,6 +3260,21 @@ function renderQuest() {
   $("missionMeter").style.width  = `${done >= 5 ? 100 : 0}%`;
   $("nextRewardText").textContent = `${t("objective")}: ${details.objective}. ${t("rewardLabel")}: ${details.reward}.`;
   $("startChallengeBtn").textContent = done >= 5 ? t("replayMission") : `${t("startMission")} ${mission+1}`;
+  updateSealQuickBubble(done, mission, rec);
+}
+
+// Small 2-4 word nudge chip beside the seal's head, for players who can't
+// read the longer #dialogBox story lines yet. Priority: underleveled
+// warning > island-complete > last-mission urgency > generic go.
+function updateSealQuickBubble(done, mission, rec) {
+  const el = $("sealQuickBubble");
+  if (!el) return;
+  el.textContent =
+    state.level < rec ? t("sealNudgeTricky") :
+    done >= 5         ? t("sealNudgeIslandDone") :
+    mission === 4      ? t("sealNudgeLastPush") :
+    mission === 0      ? t("sealNudgeGo") :
+                          t("sealNudgeAlmost");
 }
 
 function dialogFor(world, mission) {
@@ -7189,6 +7204,10 @@ const STRINGS = {
     onboardNext:"Next →", onboardStart:"Start Adventure! 🚀", onboardSkip:"Skip",
     // Briefing buttons
     skip:"Skip", next:"Next →", letsGoBtn:"Let's go! 🦭",
+    // Seal quick-nudge bubble (2-4 words, pre-readers) — see renderQuest()
+    sealNudgeGo:"Let's go! 🦭", sealNudgeAlmost:"Almost there!",
+    sealNudgeLastPush:"One last push!", sealNudgeIslandDone:"Island done! 🎉",
+    sealNudgeTricky:"This one's tricky!",
   },
   ru: {
     // Nav
@@ -7353,6 +7372,10 @@ const STRINGS = {
     onboard4_title:"Получай награды!",
     onboard4_text:"За каждый правильный ответ — рыбки 🐟, монеты 💰 и звёзды ⭐. Используй их, чтобы открыть костюмы и построить свой Арктический Город!",
     onboardNext:"Далее →", onboardStart:"Начать приключение! 🚀", onboardSkip:"Пропустить",
+    // Seal quick-nudge bubble (2-4 words, pre-readers) — see renderQuest()
+    sealNudgeGo:"Поплыли! 🦭", sealNudgeAlmost:"Ещё чуть-чуть!",
+    sealNudgeLastPush:"Последний рывок!", sealNudgeIslandDone:"Остров наш! 🎉",
+    sealNudgeTricky:"Тут трудно!",
   }
 };
 
