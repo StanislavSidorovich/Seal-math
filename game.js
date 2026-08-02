@@ -3479,7 +3479,7 @@ function generateProblem(topic) {
       hint= isRu ? "Выстрой единицы и десятки в столбик, как кубики." : "Line up the ones and tens like blocks."; break;
     }
     case "multiply":    a=rand(8+boost); b=rand(10); answer=a*b; text=`${a} × ${b} = ?`; hint= isRu ? "Умножение — это равные группы." : "Multiplication is equal groups."; break;
-    case "divide":      b=rand(9)+1; answer=rand(10); a=b*answer; text=`${a} ÷ ${b} = ?`; hint= isRu ? "Подумай, какая таблица умножения даёт первое число." : "Think which times-table makes the first number."; break;
+    case "divide":      b=rand(9)+1; answer=rand(10); a=b*answer; text=`${a} ÷ ${b} = ?`; hint= isRu ? `Подумай: ${b} × ? = ${a}` : `Think: ${b} × ? = ${a}`; break;
     case "mixed":       return generateProblem(["add20","sub20","multiply","divide"][rand(4)-1]);
     case "missing":     a=rand(20); answer=rand(15); text=`${a} + ☐ = ${a+answer}`; hint= isRu ? "Найди пропущенное число вычитанием." : "Find what is missing by subtracting."; break;
     case "patterns": {
@@ -3965,7 +3965,7 @@ function hideRetryNudge() {
 function showCorrectReveal(problem) {
   const el = $("correctReveal");
   if (!el) return;
-  let answerText = `The answer is ${problem.answer}`;
+  let answerText = `${t("answerIs")} ${problem.answer}`;
   if (problem.topic === "equations") answerText = `x = ${problem.answer}`;
 
   let vocabHtml = "";
@@ -4012,7 +4012,7 @@ function showContinueButton() {
   const btn = document.createElement("button");
   btn.id = "continueBtn";
   btn.className = "continue-btn";
-  btn.textContent = "Next Question →";
+  btn.textContent = t("nextQuestion");
   btn.setAttribute("aria-label", "Continue to next question");
   btn.addEventListener("click", () => {
     btn.remove();
@@ -7045,7 +7045,8 @@ const STRINGS = {
     exitMissionConfirm:"Exit this mission? Your progress on this question will be lost.",
     exitMissionTitle:"Leave this mission?", exitMissionYes:"Yes, go to map", keepPlaying:"Keep playing",
     stormCovers:"Storm clouds still cover that island.",
-    keepExploring:"Keep Exploring",
+    keepExploring:"Keep Exploring", keepExploringMap:"Keep Exploring 🗺️",
+    answerIs:"The answer is", nextQuestion:"Next Question →", joinedTown:"Joined Arctic Town!",
     missionComplete:"Mission Complete!", rareTreasure:"Rare Treasure!",
     rescued:"Rescued!",
     // Surprise (town) events
@@ -7186,7 +7187,8 @@ const STRINGS = {
     exitMissionConfirm:"Выйти из миссии? Прогресс по этому вопросу будет потерян.",
     exitMissionTitle:"Покинуть миссию?", exitMissionYes:"Да, на карту", keepPlaying:"Остаться",
     stormCovers:"Этот остров ещё закрыт бурей.",
-    keepExploring:"Продолжить!",
+    keepExploring:"Продолжить!", keepExploringMap:"Продолжить! 🗺️",
+    answerIs:"Ответ:", nextQuestion:"Следующий вопрос →", joinedTown:"Теперь в Арктическом городе!",
     missionComplete:"Миссия выполнена!", rareTreasure:"Редкое сокровище!",
     rescued:"Спасён!",
     // Surprise (town) events
