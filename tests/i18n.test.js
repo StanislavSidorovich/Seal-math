@@ -107,3 +107,21 @@ const LAT = s => /[A-Za-z]/.test(s);
   check("reward EN building: title 'Mission Complete!'", r.title === "Mission Complete!", r.title);
   check("reward EN building: 'built Lighthouse'", /built Lighthouse/.test(r.body), r.body);
 }
+
+// ── 6. SMART_HINTS_RU covers every SMART_HINTS topic, fully Cyrillic ────────
+{
+  const topics = run("Object.keys(SMART_HINTS)");
+  const ruHas = run("(function(){const o={};for(const k of Object.keys(SMART_HINTS_RU))o[k]=true;return o;})()");
+  const missing = topics.filter(k => !ruHas[k]);
+  check("SMART_HINTS_RU covers every SMART_HINTS topic", missing.length === 0, `missing: ${missing.join(", ")}`);
+  for (const tp of topics) {
+    const hint = run(`SMART_HINTS_RU[${JSON.stringify(tp)}]`);
+    if (!hint) continue;
+    check(`SMART_HINTS_RU "${tp}" title is Cyrillic`, CYR(hint.title), hint.title);
+    check(`SMART_HINTS_RU "${tp}" text is Cyrillic`, CYR(hint.text), hint.text);
+  }
+  setLang("ru");
+  check("smartHintsFor('multiply') is RU", run(`smartHintsFor("multiply").title`) === run(`SMART_HINTS_RU.multiply.title`));
+  setLang("en");
+  check("smartHintsFor('multiply') is EN", run(`smartHintsFor("multiply").title`) === run(`SMART_HINTS.multiply.title`));
+}

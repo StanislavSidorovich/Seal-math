@@ -789,6 +789,30 @@ const SMART_HINTS = {
   orderOfOps: { title:"× and ÷ go first", text:"Always do multiplication and division BEFORE addition and subtraction — left to right.", example:"2 + 3 × 4  →  2 + 12  →  14  (not 20!)" },
   brackets:   { title:"Brackets first — always", text:"Whatever is inside (   ) must be solved before anything outside.", example:"(6 + 2) × 3  →  8 × 3  →  24" },
 };
+// S8: RU mirror of SMART_HINTS — same keys, picked via smartHintsFor().
+const SMART_HINTS_RU = {
+  add10:      { title:"Совет по сложению", text:"Считай дальше от большего числа. Если нужно — помогай себе пальцами!", example:"4 + 7  →  начни с 7, посчитай дальше на 4  →  11" },
+  add20:      { title:"Дополни до десятка", text:"Раздели одно число так, чтобы сначала получить круглый десяток — так намного проще.", example:"8 + 6  →  8 + 2 + 4  →  10 + 4  →  14" },
+  sub20:      { title:"Думай через сложение", text:"Вместо вычитания спроси: что нужно ПРИБАВИТЬ, чтобы получить это число?", example:"13 - 8 = ?  →  8 + ? = 13  →  5" },
+  add100:     { title:"Сначала десятки, потом единицы", text:"Сложи сначала десятки, потом единицы.", example:"46 + 32  →  40+30=70,  6+2=8  →  78" },
+  sub100:     { title:"Метод счёта вперёд", text:"Считай от меньшего числа к большему.", example:"73 - 48  →  48→50 (+2),  50→73 (+23)  →  25" },
+  carryBorrow:{ title:"Выстрой в столбик", text:"Единицы под единицами, десятки под десятками. Переноси или занимай, когда в столбце больше 9 или не хватает.", example:"57 + 36:  7+6=13, пишем 3, переносим 1, 5+3+1=9  →  93" },
+  multiply:   { title:"Группы по", text:"Умножение — это равные группы. Нарисуй группы, если это поможет!", example:"3 × 5 = три группы по пять = 5+5+5 = 15" },
+  divide:     { title:"Вспомни таблицу умножения", text:"Подумай: какое умножение даёт это число?", example:"24 ÷ 6 = ?  →  6 × ? = 24  →  4" },
+  reverseMul: { title:"Дели, чтобы найти", text:"Чтобы найти неизвестный множитель, раздели произведение на известное число.", example:"? × 7 = 42  →  42 ÷ 7 = 6" },
+  missing:    { title:"Вычитай, чтобы найти", text:"Пропущенное число = большое число минус известное число.", example:"9 + ☐ = 16  →  16 - 9 = 7" },
+  patterns:   { title:"Найди правило", text:"Посмотри, как меняется каждое число. Это +что-то? ×что-то?", example:"3, 6, 12, 24…  каждое ×2  →  дальше 48" },
+  logic:      { title:"Сравнивай по шагам", text:"Сравнивай только два числа за раз. Потом сравни победителя со следующим.", example:"A > B,  B > C  →  A самое большое" },
+  equations:  { title:"Делай наоборот", text:"Сложение и вычитание — противоположности. Умножение и деление тоже. Используй обратное действие, чтобы найти x.", example:"x + 9 = 14  →  x = 14 - 9  →  x = 5" },
+  advEquations:{ title:"Найди x", text:"Что бы ни делали с x, отмени это действие с обеих сторон от знака равенства.", example:"3 × x = 21  →  x = 21 ÷ 3  →  x = 7" },
+  fractions:  { title:"Знаменатель = частей", text:"Нижнее число показывает, на сколько равных частей разделено целое.", example:"¼ от 20  →  20 ÷ 4  →  5 частей" },
+  fracCompare:{ title:"Одинаковые по размеру дольки", text:"Чем больше знаменатель — тем меньше дольки. Представь пиццу, разрезанную на 2 и на 8 кусков.", example:"½ > ¼  потому что половинки крупнее четвертинок" },
+  twoStep:    { title:"Шаг за шагом", text:"Не спеши! Реши ПЕРВУЮ часть, запиши ответ, потом реши ВТОРУЮ часть.", example:"Было: 15 рыбок.  Шаг 1: отдал 4 → 11.  Шаг 2: поймал ещё 7 → 18" },
+  word:       { title:"Подчеркни числа", text:"Читай медленно. Подчеркни каждое число. Потом реши: сложить, вычесть, умножить или разделить?", example:"«3 лодки, по 6 рыбок» → 3 × 6 = 18 рыбок всего" },
+  orderOfOps: { title:"× и ÷ идут первыми", text:"Всегда выполняй умножение и деление ПЕРЕД сложением и вычитанием — слева направо.", example:"2 + 3 × 4  →  2 + 12  →  14  (а не 20!)" },
+  brackets:   { title:"Сначала скобки — всегда", text:"Всё, что внутри (   ), нужно решить раньше того, что снаружи.", example:"(6 + 2) × 3  →  8 × 3  →  24" },
+};
+function smartHintsFor(topic) { return (currentLang === "ru" ? SMART_HINTS_RU : SMART_HINTS)[topic]; }
 
 // ── Consecutive mistake tracker ───────────────────────────────
 let _consecutiveMistakes = 0;
@@ -824,7 +848,9 @@ function renderBriefingSlide() {
   ).join("");
   // next button label
   const nextBtn = $("briefingNext");
-  if (nextBtn) nextBtn.textContent = _briefingSlide < total-1 ? "Next →" : "Let's go! 🦭";
+  if (nextBtn) nextBtn.textContent = _briefingSlide < total-1 ? t("next") : t("letsGoBtn");
+  const skipBtn = $("briefingSkip");
+  if (skipBtn) skipBtn.textContent = t("skip");
 }
 
 function briefingNext() {
@@ -848,7 +874,7 @@ function closeBriefing() {
 function maybeShowSmartHint(topic) {
   _consecutiveMistakes++;
   if (_consecutiveMistakes < 2) return;          // only after 2nd mistake
-  const hint = SMART_HINTS[topic];
+  const hint = smartHintsFor(topic);
   if (!hint) return;
   const panel = $("smartHintPanel");
   if (!panel) return;
@@ -7161,6 +7187,8 @@ const STRINGS = {
     onboard4_title:"Earn Rewards!",
     onboard4_text:"Every correct answer earns fish 🐟, coins 💰, and stars ⭐. Use them to unlock costumes and build your Arctic Town!",
     onboardNext:"Next →", onboardStart:"Start Adventure! 🚀", onboardSkip:"Skip",
+    // Briefing buttons
+    skip:"Skip", next:"Next →", letsGoBtn:"Let's go! 🦭",
   },
   ru: {
     // Nav
