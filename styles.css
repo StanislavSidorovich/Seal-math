@@ -355,6 +355,13 @@ button { font: inherit; color: inherit; }
   overflow: hidden;
   background: linear-gradient(#bff5ff 0 45%, #34bfd9 45% 100%);
 }
+/* P17: bespoke island scenes are authored at 800x500 (8:5) and "slice" to
+   cover the box — matching that ratio means nothing gets cropped, instead
+   of the old fixed min-height cropping top/bottom or sides depending on
+   the device's actual width. Scoped to islands with bespoke art only
+   (toggled in setupIslandScene()); islands using the generic gradient
+   fallback keep the old fixed height its iceberg/watermark art expects. */
+.challenge-scene.has-custom-bg { aspect-ratio: 8 / 5; min-height: 220px; height: auto; }
 /* Bespoke per-island scene art (Snow Beach, Fish Bay, Whale Coast,
    Penguin Islands...). Sits behind everything else in the scene — the
    iceberg/watermark/ground-accent layers are display:none'd by

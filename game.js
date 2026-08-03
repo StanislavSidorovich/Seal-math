@@ -3135,6 +3135,17 @@ function setupIslandScene(scene, worldId) {
     bg.innerHTML = "";
     delete bg.dataset.world;
   }
+  // P17: bespoke scenes are drawn at an 800x500 (8:5) canvas and use
+  // preserveAspectRatio="...slice" to cover the box, which crops whatever
+  // doesn't match that ratio. .challenge-scene's old fixed min-height
+  // (320px, tuned for the generic gradient+iceberg fallback used by
+  // islands with no bespoke art) doesn't track that ratio, so on wider
+  // screens the art got cropped top+bottom — friends/props near the top
+  // or bottom of the canvas (the driftwood shelter, shells, etc.) went
+  // missing. Only applied when bespoke art is active — the generic
+  // fallback's absolutely-positioned iceberg/watermark are tuned for the
+  // old fixed height and shouldn't be touched.
+  scene.classList.toggle("has-custom-bg", !!svg);
   // The generic per-island layers would otherwise sit on top of (and
   // visually clash with) the bespoke art, so hide just those three on
   // islands that have custom art.
