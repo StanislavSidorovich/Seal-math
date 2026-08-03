@@ -260,7 +260,15 @@ button { font: inherit; color: inherit; }
 @keyframes bob { 50% { transform: translateY(-8px) rotate(-1deg); } }
 @keyframes breathe { 50% { scale: 1.025 .985; } }
 .seal-avatar { transform-origin: 50% 72%; }
-.seal-avatar use { animation: blink 5s steps(1) infinite; }
+/* Was meant to blink just the eyes, but the eyes are plain <ellipse>
+   shapes drawn inside the symbol, not their own <use> — this selector
+   can only ever reach the single top-level <use href="#sausage-body"/>,
+   so it was dimming the WHOLE seal to .82 opacity for ~200ms every 5s.
+   Measured live: 10/249 samples over 6s at .82, rest at 1 — a real,
+   repeating whole-body flicker, not a rendering illusion. Confirmed
+   via getComputedStyle polling on #missionSeal's <use>, matching a
+   tester's "seal looks transparent" report across several screenshots.
+   Removing until eyes are their own referenceable element. */
 @keyframes blink { 0%, 94%, 100% { opacity: 1; } 96% { opacity: .82; } }
 .seal-avatar.happy { animation: happySeal .7s ease; }
 .seal-avatar.sad { animation: sadSeal .65s ease; }
