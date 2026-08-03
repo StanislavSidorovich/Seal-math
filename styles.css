@@ -1202,7 +1202,7 @@ button { font: inherit; color: inherit; }
   .resources { grid-column: 1 / -1; justify-content: center; }
   .hero, .challenge, .daily-wrap { grid-template-columns: 1fr; }
   .seal-room { grid-template-columns: 1fr; }
-  .map-panel, .map { min-height: 520px; }
+  .map-panel, .map { min-height: 640px; }
   .map { grid-template-columns: repeat(2, minmax(120px, 1fr)); }
   .quest-panel { order: -1; }
 }
@@ -1222,7 +1222,7 @@ button { font: inherit; color: inherit; }
   .tabs.open { max-height: 360px; padding-bottom: 4px; }
   .tab { min-width: 0; padding: 0 8px; }
   .resources span { flex: 1; text-align: center; padding: 8px 6px; }
-  .map-panel, .map { min-height: 720px; }
+  .map-panel, .map { min-height: 880px; }
   .map { gap: 8px; padding: 12px; }
   .answers { grid-template-columns: 1fr; }
   .streak { grid-template-columns: repeat(2, 1fr); }
