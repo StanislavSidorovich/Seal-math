@@ -3320,6 +3320,8 @@ function confirmExitMission() {
   state.activeTrip = null;
   save(true);
   $("challenge").hidden = true;
+  const heroEl = document.querySelector(".hero");
+  if (heroEl) heroEl.hidden = false;
   const old = $("backToMapBtn");
   if (old) old.remove();
   renderQuest();
@@ -3347,7 +3349,13 @@ function startMission(daily, resumeTrip = null) {
   syncMissionSeal();
   $("challenge").hidden = false;
   $("miniGame").hidden  = true;
-  $("challenge").scrollIntoView({ behavior: "smooth", block: "start" });
+  // P16: hide the map+seal-card instead of scrolling past them — on phones
+  // their combined height left no scrollable room below the fold for
+  // scrollIntoView to fully clear them, so a sliver of the map stayed
+  // visible above the question card. Hiding is the reliable fix.
+  const heroEl = document.querySelector(".hero");
+  if (heroEl) heroEl.hidden = true;
+  window.scrollTo({ top: 0, behavior: "smooth" });
   const stormEl  = $("stormOverlay");
   const cloudsEl = $("stormClouds");
   if (stormEl)  { stormEl.classList.remove("calm-flash"); stormEl.hidden  = trip.mission !== 4; }
@@ -4152,6 +4160,8 @@ function clearStorm() {
 
 function completeMission() {
   $("challenge").hidden = true;
+  const heroEl = document.querySelector(".hero");
+  if (heroEl) heroEl.hidden = false;
   // Previously left unset after completion, so trip.active stayed stuck true
   // (the hardware back button's "mission in progress?" check relies on this
   // being accurate) and a completed mission's snapshot lingered in

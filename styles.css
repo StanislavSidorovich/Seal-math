@@ -128,6 +128,7 @@ button { font: inherit; color: inherit; }
 @keyframes lift { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
 
 .hero { display: grid; grid-template-columns: 1.5fr .8fr; gap: 16px; align-items: stretch; }
+.hero[hidden] { display: none; }
 .map-panel {
   position: relative;
   min-height: 610px;
