@@ -528,7 +528,7 @@ button { font: inherit; color: inherit; }
 .problem-box { display: flex; flex-direction: column; justify-content: center; gap: 12px; }
 .back-to-map-btn {
   position: absolute;
-  top: 6px;
+  top: 2px;
   left: 12px;
   z-index: 5;
   display: inline-flex;
