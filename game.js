@@ -2308,7 +2308,7 @@ const SNOW_BEACH_SCENE_SVG      = `<svg viewBox="0 0 800 500" xmlns="http://www.
          match ANIMAL_SVGS[1] exactly (dark navy-black #1a2030, belly
          #f0f4f8, beak #f0c060) so she's recognizably "the same Pip"
          seen elsewhere in the game. ── -->
-    <g id="islandFriendSpot" transform="translate(60,0)">
+    <g id="islandFriendSpot" transform="translate(300,0)">
     <g class="scn-pip">
       <ellipse cx="60" cy="452" rx="24" ry="11" fill="#f0c060" opacity=".9"/>
       <ellipse cx="60" cy="448" rx="26" ry="30" fill="#1a2030" stroke="#1d3a4a" stroke-width="2.2"/>
