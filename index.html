@@ -44,9 +44,27 @@
     #pmDupe { background:linear-gradient(180deg,#e4fbff,#a9ecff); color:#17446a; }
     #pmDelete { background:linear-gradient(180deg,#ffe0e0,#ffaaa8); color:#6d1717; }
     .profile-modal-cancel { border:0; background:transparent; color:#5f7487; font-size:.95rem; font-weight:700; cursor:pointer; padding:8px; width:100%; font:inherit; }
+    /* Title screen — same fallback treatment as the profile screen above, so
+       it stays usable (and dismissable) even if styles.css fails to load. */
+    .title-screen { position:fixed; inset:0; z-index:70; display:flex; flex-direction:column; align-items:center; justify-content:space-between; text-align:center; padding:34px 20px 40px; background:linear-gradient(170deg,#0b3f6b,#126f97 42%,#48b7d4 78%,#bfeeff); overflow:hidden; }
+    .title-screen[hidden] { display:none; }
+    .title-play-btn { position:relative; z-index:1; border:0; border-radius:999px; padding:16px 54px; font:inherit; font-size:1.35rem; font-weight:900; color:#0b3f6b; background:linear-gradient(180deg,#ffffff,#bfeeff); cursor:pointer; }
   </style>
 </head>
 <body>
+
+  <!-- ═══ TITLE SCREEN (shown on every launch, before the profile picker) ═══
+       Deliberately NOT hidden by default: it is the first thing painted, so
+       the profile screen below never flashes before JS runs. hideTitleScreen()
+       removes it. -->
+  <div id="titleScreen" class="title-screen" role="dialog" aria-labelledby="titleScreenHeading">
+    <div class="title-screen-art" aria-hidden="true"></div>
+    <div class="title-screen-top">
+      <h1 id="titleScreenHeading" class="title-screen-title">Arctic Math Rescue</h1>
+      <p class="title-screen-sub" data-i18n="titleTagline">Arctic Math Adventure</p>
+    </div>
+    <button class="title-play-btn" id="titlePlayBtn" data-i18n="titlePlay" type="button">▶ Play</button>
+  </div>
 
   <!-- ═══ PROFILE SCREEN (shown before app) ═══ -->
   <div id="profileScreen" class="profile-screen" role="dialog" aria-labelledby="profileScreenTitle">

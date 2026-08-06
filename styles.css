@@ -2065,6 +2065,84 @@ button { font: inherit; color: inherit; }
    SPRINT 3 — PROFILE SYSTEM + LEARNING MODE
    ═══════════════════════════════════════════════════════ */
 
+/* ── Title Screen ──
+   Shown on every launch before the profile picker: for a 6-year-old the
+   "press Play" beat is the point, so it is not a one-time intro.
+   The artwork is a BACKGROUND layer and the title/button are real DOM on
+   top — deliberately not baked into the image, so both languages work,
+   the button is a real focusable button, and no text can be misrendered
+   by whatever produced the art. If title-art.png is missing the gradient
+   below still reads as an arctic scene, so a lost asset degrades instead
+   of showing a broken page. */
+.title-screen {
+  position: fixed;
+  inset: 0;
+  z-index: 70;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: space-between;
+  text-align: center;
+  overflow: hidden;
+  background: linear-gradient(170deg, #0b3f6b 0%, #126f97 42%, #48b7d4 78%, #bfeeff 100%);
+  padding:
+    calc(34px + env(safe-area-inset-top)) 20px
+    calc(40px + env(safe-area-inset-bottom));
+}
+/* .title-screen sets display:flex, which would beat the native `hidden`
+   behaviour — same reason .hero[hidden] and .challenge[hidden] exist. */
+.title-screen[hidden] { display: none; }
+.title-screen-art {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  background-image: url("title-art.png");
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+}
+.title-screen-top,
+.title-play-btn { position: relative; z-index: 1; }
+.title-screen-title {
+  margin: 0;
+  font-size: clamp(2rem, 10vw, 3.1rem);
+  line-height: 1.05;
+  letter-spacing: .5px;
+  color: #fff;
+  text-transform: uppercase;
+  /* Readable over ANY art — the scene behind it is not under our control
+     once the image is swapped, so the shadow does the contrast work. */
+  text-shadow: 0 3px 0 #17446a, 0 6px 20px rgba(4,30,55,.65);
+}
+.title-screen-sub {
+  margin: 10px 0 0;
+  font-size: clamp(.95rem, 4.2vw, 1.2rem);
+  font-weight: 800;
+  color: #eaf9ff;
+  text-shadow: 0 2px 10px rgba(4,30,55,.8);
+}
+.title-play-btn {
+  border: 0;
+  border-radius: 999px;
+  padding: 16px 54px;
+  font: inherit;
+  font-size: clamp(1.15rem, 5.5vw, 1.5rem);
+  font-weight: 900;
+  color: #0b3f6b;
+  background: linear-gradient(180deg, #ffffff, #bfeeff);
+  box-shadow: 0 10px 26px rgba(4,30,55,.45), inset 0 -3px 0 rgba(11,63,107,.18);
+  cursor: pointer;
+  animation: titlePlayPulse 2.2s ease-in-out infinite;
+}
+.title-play-btn:active { transform: translateY(2px); }
+@keyframes titlePlayPulse {
+  0%, 100% { transform: scale(1); }
+  50%      { transform: scale(1.05); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .title-play-btn { animation: none; }
+}
+
 /* ── Profile Screen ── */
 .profile-screen {
   min-height: 100vh;

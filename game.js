@@ -1033,6 +1033,13 @@ function init() {
   // screen greets the user in their language before any profile is picked.
   currentLang = getAppLang();
   initProfiles();
+  // Title screen first (every launch — see showTitleScreen); everything that
+  // used to run here now runs when the child presses Play.
+  showTitleScreen(bootIntoProfileOrGame);
+}
+
+// The original body of init(), split out so the title screen can defer it.
+function bootIntoProfileOrGame() {
   // If no active profile → show profile screen
   if (!activeProfileId || !getActiveProfile()) {
     showProfileScreen();
@@ -1044,6 +1051,32 @@ function init() {
   currentLang = prof.lang || "en";
   selectedWorld = Math.min(state.unlockedWorld, worlds.length - 1);
   launchGame();
+}
+
+// ═══════════════════════════════════════════════════════════════
+// TITLE SCREEN
+// ═══════════════════════════════════════════════════════════════
+// Shown on EVERY launch, not just the first: pressing Play is the launch
+// ritual the screen exists for, and skipping it after run 1 would take that
+// away. It is also the app's first guaranteed user gesture, which is what
+// mobile AudioContext needs to unlock — so the tap doubles as audio priming
+// and the first sound of the session isn't swallowed.
+function showTitleScreen(onPlay) {
+  const ts = $("titleScreen");
+  // No title screen in the DOM (older cached index.html) → don't strand the
+  // player on a blank page, just boot straight through.
+  if (!ts) { onPlay(); return; }
+  ts.hidden = false;
+  applyLangToDOM();
+  const btn = $("titlePlayBtn");
+  if (btn) {
+    btn.addEventListener("click", () => {
+      playSound("tap");
+      ts.hidden = true;
+      onPlay();
+    }, { once: true });   // one-shot: the screen is gone after the first tap
+    btn.focus();
+  }
 }
 
 function launchGame() {
@@ -7674,6 +7707,8 @@ const STRINGS = {
     schoolTable:"Times table", schoolRules:"Rules", schoolTapCell:"Tap a cell 👆",
     schoolTrain:"Practice", schoolQuiz:"Quiz", schoolFillMode:"Fill the grid", schoolNewPuzzle:"New puzzle",
     schoolFillPick:"pick the answer below 👇",
+    // Title screen
+    titleTagline:"Arctic Math Adventure", titlePlay:"▶ Play",
     // Profile screen + editor
     chooseProfile:"Choose Player", newPlayerBtn:"➕ New Player",
     noPlayers:"No players yet.", tapToCreate:"Tap ➕ to create one!",
@@ -7845,6 +7880,9 @@ const STRINGS = {
     schoolTrain:"Тренировка", schoolQuiz:"Викторина", schoolFillMode:"Заполни таблицу", schoolNewPuzzle:"Новая головоломка",
     schoolFillPick:"выбери ответ ниже 👇",
     // Экран профиля + редактор
+    // Title screen
+    titleTagline:"Арктическая математика: миссия спасения", titlePlay:"▶ Играть",
+    // Profile screen + editor
     chooseProfile:"Выбери игрока", newPlayerBtn:"➕ Новый игрок",
     noPlayers:"Пока нет игроков.", tapToCreate:"Нажми ➕, чтобы создать!",
     profLevel:"Уровень", profFriends:"друзей",
