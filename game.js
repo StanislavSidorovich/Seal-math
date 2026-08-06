@@ -6274,6 +6274,10 @@ function startMatchPairs() {
   stage.innerHTML = "";
   stage.className = "mini-stage mini-pairs";
   addMiniScenery(stage, "pairs");
+  // The moves counter lives OUTSIDE the stage (stage is the card grid), so
+  // clearing stage.innerHTML doesn't remove it — every replay used to leave
+  // another dead "moves: N" line stacked above the board.
+  document.querySelectorAll(".pairs-info").forEach(el => el.remove());
 
   const EMOJIS = ["🐧","🐟","🐻","🦊","🐳","🦭","🌟","❄"];
   const GRID_SIZE = EMOJIS.length;  // 8 pairs = 16 cards
