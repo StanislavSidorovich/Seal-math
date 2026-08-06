@@ -5539,85 +5539,138 @@ function startTreasureHunt() {
 }
 
 // Mini-game 3: Find the Penguin — solve a problem, tap the iceberg with the right answer
-function startFindPenguin() {
+// Difficulty -> topic pools. "Обычно" (normal) matches the old fixed mix;
+// easy drops multiply/divide, hard drops the addition topics and adds
+// missing-number problems.
+const PENGUIN_DIFFICULTY_TOPICS = {
+  easy:   ["add10","sub20"],
+  normal: ["add20","sub20","multiply"],
+  hard:   ["multiply","divide","missing"]
+};
+const PENGUIN_ROUNDS = 5;
+
+// initialDifficulty carries the child's choice across the restart a
+// difficulty change triggers — same contract as startSnowballCatch's
+// initialSpeed (a closure variable would snap back to "normal" instead).
+function startFindPenguin(initialDifficulty) {
   $("miniTitle").textContent = t("findPenguin_title");
   $("miniText").textContent  = t("findPenguin_text");
   const stage = $("miniStage");
-  ++miniGen;
+  const gen = ++miniGen;
   stage.innerHTML = "";
   stage.className = "mini-stage mini-penguin";
   addMiniScenery(stage, "penguin");
 
-  const topic   = chooseTopic(["add10","add20","sub20","multiply","divide"]);
-  const problem = generateProblem(topic);
+  const difficulty = PENGUIN_DIFFICULTY_TOPICS[initialDifficulty] ? initialDifficulty : "normal";
 
-  // Build 4 distinct wrong numbers alongside the correct answer
-  let spread  = problem.answer < 10 ? 2 : problem.answer < 30 ? 4 : problem.answer < 100 ? 10 : 20;
-  const wrong = [...wrongAnswers(problem)];
-  let attempts = 0;
-  while (wrong.length < 4 && attempts < 80) {
-    attempts++;
-    if (attempts % 15 === 0) spread += 3; // widen the search if small numbers run out of room
-    const offset = Math.floor(Math.random()*(spread*2+1)) - spread || (Math.random()<.5?-1:1);
-    const v = Math.max(0, problem.answer + offset);
-    if (v !== problem.answer && !wrong.includes(v)) wrong.push(v);
-  }
-  const values    = shuffle([problem.answer, ...wrong.slice(0,4)]);
-  const secretIdx = values.indexOf(problem.answer);
+  const diffBar = document.createElement("div");
+  diffBar.className = "mini-speed-bar";
+  diffBar.innerHTML = [
+    ["easy",   "🐣", t("penguinDiffEasy")],
+    ["normal", "🐧", t("penguinDiffNormal")],
+    ["hard",   "🦈", t("penguinDiffHard")]
+  ].map(([key,icon,label]) => `<button class="speed-btn${key === difficulty ? " active" : ""}" data-diff="${key}">${icon} ${label}</button>`).join("");
+  stage.appendChild(diffBar);
+  diffBar.querySelectorAll(".speed-btn").forEach(btn => {
+    btn.addEventListener("click", () => {
+      if (btn.dataset.diff === difficulty) return;
+      startFindPenguin(btn.dataset.diff);
+    });
+  });
+
+  const scoreEl = document.createElement("div");
+  scoreEl.className = "slide-score";
+  stage.appendChild(scoreEl);
 
   const problemEl = document.createElement("div");
   problemEl.className = "penguin-problem";
-  problemEl.textContent = problem.text;
   stage.appendChild(problemEl);
 
-  let done  = false;
-  let round = 0;
-
   const colors = ["#e0f7ff","#c8f0ff","#b0e8ff","#d8f4ff","#f0fbff"];
-  const finishWith = (berg, bonus, result) => {
-    berg.querySelector(".iceberg-number")?.remove();
-    berg.innerHTML += `<div class="penguin-found">${animalSvg(1)}</div>`;
-    state.coins += bonus; state.fish += bonus;
-    playSound("coin");
-    react("excited");
-    toast(currentLang === "ru" ? `Нашёл Пебла! +${bonus} рыбок и монет 🐧` : `Found Pebble! +${bonus} fish & coins 🐧`);
-    renderHeader();
-    if (miniGameTimer) clearTimeout(miniGameTimer);
-    miniGameTimer = setTimeout(() => finishMiniGame(result, "penguin"), 1400);
-  };
+  let roundIdx     = 0; // rounds completed so far
+  let correctTotal = 0;
 
-  values.forEach((val, i) => {
-    const berg = document.createElement("button");
-    berg.className = "iceberg-btn";
-    berg.setAttribute("aria-label", currentLang === "ru" ? `Айсберг с числом ${val}` : `Iceberg showing ${val}`);
-    berg.style.left   = `${8+(i*18)}%`;
-    berg.style.bottom = `${25+Math.random()*15}%`;
-    berg.innerHTML = `<svg viewBox="0 0 90 80" aria-hidden="true">
-      <ellipse cx="45" cy="68" rx="40" ry="14" fill="${colors[i]}"/>
-      <path d="M12 65 Q25 20 45 15 Q65 20 78 65z" fill="white"/>
-      <path d="M20 65 Q32 35 45 28 Q58 35 70 65z" fill="${colors[i]}"/>
-    </svg><span class="iceberg-number">${val}</span>`;
-    berg.addEventListener("click", () => {
-      if (done) return;
-      round++;
-      if (i === secretIdx) {
-        done = true;
-        finishWith(berg, Math.max(3, 10-round), 5);
-      } else {
-        berg.style.opacity = ".45";
-        berg.disabled = true;
-        playSound("wrong");
-        const remaining = stage.querySelectorAll(".iceberg-btn:not(:disabled)");
-        if (remaining.length <= 1 && !done) {
-          done = true;
-          if (remaining[0]) finishWith(remaining[0], 3, 4);
-        }
+  function nextRound() {
+    if (gen !== miniGen) return;
+    if (roundIdx >= PENGUIN_ROUNDS) {
+      finishMiniGame(correctTotal, "penguin");
+      return;
+    }
+    scoreEl.textContent = t("findPenguin_progress").replace("{n}", roundIdx+1).replace("{total}", PENGUIN_ROUNDS);
+    stage.querySelectorAll(".iceberg-btn").forEach(b => b.remove());
+
+    const topic   = chooseTopic(PENGUIN_DIFFICULTY_TOPICS[difficulty]);
+    const problem = generateProblem(topic);
+    problemEl.textContent = problem.text;
+
+    // Build 4 distinct wrong numbers alongside the correct answer
+    let spread  = problem.answer < 10 ? 2 : problem.answer < 30 ? 4 : problem.answer < 100 ? 10 : 20;
+    const wrong = [...wrongAnswers(problem)];
+    let attempts = 0;
+    while (wrong.length < 4 && attempts < 80) {
+      attempts++;
+      if (attempts % 15 === 0) spread += 3; // widen the search if small numbers run out of room
+      const offset = Math.floor(Math.random()*(spread*2+1)) - spread || (Math.random()<.5?-1:1);
+      const v = Math.max(0, problem.answer + offset);
+      if (v !== problem.answer && !wrong.includes(v)) wrong.push(v);
+    }
+    const values    = shuffle([problem.answer, ...wrong.slice(0,4)]);
+    const secretIdx = values.indexOf(problem.answer);
+
+    let done = false;
+
+    const endRound = (correct, berg) => {
+      if (done || gen !== miniGen) return;
+      done = true;
+      if (miniGameTimer) clearTimeout(miniGameTimer);
+      if (berg) {
+        berg.querySelector(".iceberg-number")?.remove();
+        berg.innerHTML += `<div class="penguin-found">${animalSvg(1)}</div>`;
       }
-    });
-    stage.appendChild(berg);
-  });
+      if (correct) {
+        correctTotal++;
+        state.fish += 2;
+        playSound("coin");
+        react("excited");
+      } else {
+        playSound("wrong");
+      }
+      renderHeader();
+      roundIdx++;
+      miniGameTimer = setTimeout(() => { if (gen === miniGen) nextRound(); }, berg ? 1200 : 400);
+    };
 
-  miniGameTimer = setTimeout(() => { if (!done) finishMiniGame(0,"penguin"); }, 30000);
+    values.forEach((val, i) => {
+      const berg = document.createElement("button");
+      berg.className = "iceberg-btn";
+      berg.setAttribute("aria-label", currentLang === "ru" ? `Айсберг с числом ${val}` : `Iceberg showing ${val}`);
+      berg.style.left   = `${8+(i*18)}%`;
+      berg.style.bottom = `${25+Math.random()*15}%`;
+      berg.innerHTML = `<svg viewBox="0 0 90 80" aria-hidden="true">
+        <ellipse cx="45" cy="68" rx="40" ry="14" fill="${colors[i]}"/>
+        <path d="M12 65 Q25 20 45 15 Q65 20 78 65z" fill="white"/>
+        <path d="M20 65 Q32 35 45 28 Q58 35 70 65z" fill="${colors[i]}"/>
+      </svg><span class="iceberg-number">${val}</span>`;
+      berg.addEventListener("click", () => {
+        if (done || gen !== miniGen) return;
+        if (i === secretIdx) {
+          endRound(true, berg);
+        } else {
+          berg.style.opacity = ".45";
+          berg.disabled = true;
+          playSound("wrong");
+          const remaining = stage.querySelectorAll(".iceberg-btn:not(:disabled)");
+          if (remaining.length <= 1) endRound(false, remaining[0] || null);
+        }
+      });
+      stage.appendChild(berg);
+    });
+
+    if (miniGameTimer) clearTimeout(miniGameTimer);
+    miniGameTimer = setTimeout(() => endRound(false, null), 30000);
+  }
+
+  nextRound();
 }
 
 // ─── P14: Lucky Catch — fish-gated math bonus game (the main fish sink) ──────
@@ -7467,6 +7520,8 @@ const STRINGS = {
     speedSlow:"Slow", speedNormal:"Normal", speedFast:"Fast",
     treasureHunt_title:"Treasure Hunt!", treasureHunt_text:"One shell hides a treasure chest. Find it!",
     findPenguin_title:"Find the Penguin!", findPenguin_text:"Solve it, then tap the iceberg with the right answer!",
+    findPenguin_progress:"Round {n} of {total}",
+    penguinDiffEasy:"Easier", penguinDiffNormal:"Normal", penguinDiffHard:"Harder",
     miniWellDone:"Well done!", miniGoodEffort:"Good effort!",
     miniPlayAgain:"Play Again", miniNextGame:"Next Mini-game", miniReturnMap:"Return to Map",
     // In-stage HUD labels — these were hardcoded English and showed up
@@ -7636,6 +7691,8 @@ const STRINGS = {
     speedSlow:"Медленно", speedNormal:"Нормально", speedFast:"Быстро",
     treasureHunt_title:"Охота за сокровищем!", treasureHunt_text:"В одной ракушке спрятан сундук с сокровищем. Найди её!",
     findPenguin_title:"Найди пингвина!", findPenguin_text:"Реши задачу, потом нажми на айсберг с правильным ответом!",
+    findPenguin_progress:"Раунд {n} из {total}",
+    penguinDiffEasy:"Полегче", penguinDiffNormal:"Обычно", penguinDiffHard:"Посложнее",
     miniWellDone:"Отлично!", miniGoodEffort:"Хорошая попытка!",
     miniPlayAgain:"Играть снова", miniNextGame:"Следующая игра", miniReturnMap:"На карту",
     miniDodged:"Уклонился", miniCaught:"Поймал", miniSkip:"Другая игра",
