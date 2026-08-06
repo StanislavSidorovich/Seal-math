@@ -1411,8 +1411,10 @@ button { font: inherit; color: inherit; }
 }
 .penguin-found svg { width: 100%; }
 .penguin-problem {
+  /* 58px clears the difficulty/timer bar (.mini-speed-bar, top:8px, ~40px
+     tall) — both are centered on the same axis so they'd stack otherwise. */
   position: absolute;
-  top: 10px;
+  top: 58px;
   left: 50%;
   transform: translateX(-50%);
   z-index: 5;
@@ -1427,6 +1429,22 @@ button { font: inherit; color: inherit; }
   max-width: 90%;
   white-space: nowrap;
 }
+/* Round countdown chip — mirrors .slide-score's opposite corner (Ice
+   Slide's lives/score pairing) so it reads as the same HUD language. */
+.penguin-timer {
+  position: absolute;
+  top: 10px;
+  left: 12px;
+  background: rgba(255,255,255,.85);
+  border-radius: 10px;
+  padding: 4px 10px;
+  font-weight: 900;
+  font-size: .95rem;
+  color: var(--deep);
+  z-index: 5;
+}
+.penguin-timer.urgent { color: #c62828; }
+.penguin-timer-toggle { margin-left: 8px; }
 .iceberg-number {
   position: absolute;
   top: 46%;

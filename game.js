@@ -5548,11 +5548,15 @@ const PENGUIN_DIFFICULTY_TOPICS = {
   hard:   ["multiply","divide","missing"]
 };
 const PENGUIN_ROUNDS = 5;
+// Optional per-round countdown — off by default (see roadmap note: rushing
+// hurts a skill still being formed). Long enough that reading + solving a
+// hard-difficulty problem isn't itself the challenge.
+const PENGUIN_TIMER_SECONDS = 15;
 
-// initialDifficulty carries the child's choice across the restart a
-// difficulty change triggers — same contract as startSnowballCatch's
-// initialSpeed (a closure variable would snap back to "normal" instead).
-function startFindPenguin(initialDifficulty) {
+// initialDifficulty/initialTimerOn carry the child's choices across the
+// restart either toggle triggers — same contract as startSnowballCatch's
+// initialSpeed (closure variables would snap back to defaults instead).
+function startFindPenguin(initialDifficulty, initialTimerOn) {
   $("miniTitle").textContent = t("findPenguin_title");
   $("miniText").textContent  = t("findPenguin_text");
   const stage = $("miniStage");
@@ -5562,6 +5566,7 @@ function startFindPenguin(initialDifficulty) {
   addMiniScenery(stage, "penguin");
 
   const difficulty = PENGUIN_DIFFICULTY_TOPICS[initialDifficulty] ? initialDifficulty : "normal";
+  const timerOn = !!initialTimerOn;
 
   const diffBar = document.createElement("div");
   diffBar.className = "mini-speed-bar";
@@ -5569,18 +5574,27 @@ function startFindPenguin(initialDifficulty) {
     ["easy",   "🐣", t("penguinDiffEasy")],
     ["normal", "🐧", t("penguinDiffNormal")],
     ["hard",   "🦈", t("penguinDiffHard")]
-  ].map(([key,icon,label]) => `<button class="speed-btn${key === difficulty ? " active" : ""}" data-diff="${key}">${icon} ${label}</button>`).join("");
+  ].map(([key,icon,label]) => `<button class="speed-btn${key === difficulty ? " active" : ""}" data-diff="${key}">${icon} ${label}</button>`).join("")
+    + `<button class="speed-btn penguin-timer-toggle${timerOn ? " active" : ""}" data-timer-toggle aria-pressed="${timerOn}" aria-label="${t("penguinTimerToggle")}">⏱</button>`;
   stage.appendChild(diffBar);
-  diffBar.querySelectorAll(".speed-btn").forEach(btn => {
+  diffBar.querySelectorAll(".speed-btn[data-diff]").forEach(btn => {
     btn.addEventListener("click", () => {
       if (btn.dataset.diff === difficulty) return;
-      startFindPenguin(btn.dataset.diff);
+      startFindPenguin(btn.dataset.diff, timerOn);
     });
+  });
+  diffBar.querySelector("[data-timer-toggle]").addEventListener("click", () => {
+    startFindPenguin(difficulty, !timerOn);
   });
 
   const scoreEl = document.createElement("div");
   scoreEl.className = "slide-score";
   stage.appendChild(scoreEl);
+
+  const timerEl = document.createElement("div");
+  timerEl.className = "penguin-timer";
+  timerEl.hidden = true;
+  stage.appendChild(timerEl);
 
   const problemEl = document.createElement("div");
   problemEl.className = "penguin-problem";
@@ -5618,10 +5632,13 @@ function startFindPenguin(initialDifficulty) {
     const secretIdx = values.indexOf(problem.answer);
 
     let done = false;
+    let countdownInterval = null;
+    const clearCountdown = () => { if (countdownInterval) { clearInterval(countdownInterval); countdownInterval = null; } };
 
     const endRound = (correct, berg) => {
       if (done || gen !== miniGen) return;
       done = true;
+      clearCountdown();
       if (miniGameTimer) clearTimeout(miniGameTimer);
       if (berg) {
         berg.querySelector(".iceberg-number")?.remove();
@@ -5667,7 +5684,25 @@ function startFindPenguin(initialDifficulty) {
     });
 
     if (miniGameTimer) clearTimeout(miniGameTimer);
-    miniGameTimer = setTimeout(() => endRound(false, null), 30000);
+    if (timerOn) {
+      let secondsLeft = PENGUIN_TIMER_SECONDS;
+      timerEl.hidden = false;
+      timerEl.classList.remove("urgent");
+      timerEl.textContent = `⏱ ${secondsLeft}`;
+      countdownInterval = setInterval(() => {
+        if (done || gen !== miniGen) { clearCountdown(); return; }
+        secondsLeft--;
+        timerEl.textContent = `⏱ ${secondsLeft}`;
+        timerEl.classList.toggle("urgent", secondsLeft <= 5);
+        if (secondsLeft <= 0) endRound(false, null);
+      }, 1000);
+      // Safety net in case the tab is backgrounded and setInterval stalls —
+      // same guard pattern as the always-on 30s fallback below.
+      miniGameTimer = setTimeout(() => endRound(false, null), (PENGUIN_TIMER_SECONDS + 3) * 1000);
+    } else {
+      timerEl.hidden = true;
+      miniGameTimer = setTimeout(() => endRound(false, null), 30000);
+    }
   }
 
   nextRound();
@@ -7522,6 +7557,7 @@ const STRINGS = {
     findPenguin_title:"Find the Penguin!", findPenguin_text:"Solve it, then tap the iceberg with the right answer!",
     findPenguin_progress:"Round {n} of {total}",
     penguinDiffEasy:"Easier", penguinDiffNormal:"Normal", penguinDiffHard:"Harder",
+    penguinTimerToggle:"Toggle round timer",
     miniWellDone:"Well done!", miniGoodEffort:"Good effort!",
     miniPlayAgain:"Play Again", miniNextGame:"Next Mini-game", miniReturnMap:"Return to Map",
     // In-stage HUD labels — these were hardcoded English and showed up
@@ -7693,6 +7729,7 @@ const STRINGS = {
     findPenguin_title:"Найди пингвина!", findPenguin_text:"Реши задачу, потом нажми на айсберг с правильным ответом!",
     findPenguin_progress:"Раунд {n} из {total}",
     penguinDiffEasy:"Полегче", penguinDiffNormal:"Обычно", penguinDiffHard:"Посложнее",
+    penguinTimerToggle:"Таймер раунда",
     miniWellDone:"Отлично!", miniGoodEffort:"Хорошая попытка!",
     miniPlayAgain:"Играть снова", miniNextGame:"Следующая игра", miniReturnMap:"На карту",
     miniDodged:"Уклонился", miniCaught:"Поймал", miniSkip:"Другая игра",
