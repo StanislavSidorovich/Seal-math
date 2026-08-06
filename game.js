@@ -2521,7 +2521,14 @@ const WHALE_COAST_SCENE_SVG     = `<svg viewBox="0 0 800 500" xmlns="http://www.
          match ANIMAL_SVGS[5] exactly (body #4a9ecf, fin accent
          #3a8ebf, belly sheen #7fd0f0) so she's recognizably the same
          Bluebell seen elsewhere in the game. ── -->
-    <g id="islandFriendSpot" transform="translate(-440,0)">
+    <!-- P-collision-audit: was translate(-440,0), which put Bluebell inside
+         the seal rig's ~150px-wide landing box at 14% (measured 42%/38% bbox
+         overlap at 538px/375px scene widths — worse than Snow Beach's
+         accepted 16%/24% baseline). Shifted right; still reads as "out in
+         the open sea" (well clear of the sea-arch/kelp at x636-800), now 0%
+         overlap at both widths, same fix pattern as Pip's translate(300,0)
+         in Snow Beach. -->
+    <g id="islandFriendSpot" transform="translate(-120,0)">
       <g class="scn-bluebell">
         <path d="M480 322 Q490 292 530 290 Q580 286 620 302 Q630 318 610 326 Q560 338 510 334 Q484 332 480 322Z" fill="#4a9ecf" stroke="#1d3a4a" stroke-width="2.6"/>
         <path d="M500 308 Q540 300 600 310 Q560 316 520 316Z" fill="#7fd0f0" opacity=".5"/>
@@ -2742,7 +2749,15 @@ const PENGUIN_ISLANDS_SCENE_SVG = `<svg viewBox="0 0 800 500" xmlns="http://www.
          #1a1a2a body, bright orange #ff8820 beak AND flippers — the
          orange flippers are the easiest "this isn't a penguin" tell
          next to the colony's navy ones). ── -->
-    <g id="islandFriendSpot" transform="translate(-525,0)">
+    <!-- P-collision-audit: was translate(-525,0), landing Pebble inside the
+         seal rig's landing box (25%/40% bbox overlap at 375px/538px — worse
+         than Snow Beach's accepted 24%/16% baseline). Shifted right toward
+         the parade group (x420-600) — 0% overlap at both widths, and now
+         narratively closer to "rejoining the group". -255 cleared the seal
+         but left Pebble brushing the parade's first penguin (12% of her
+         box); -275 clears both — still 0%/8% seal overlap at 538/375px,
+         comfortably under Snow Beach's 16%/24% baseline. -->
+    <g id="islandFriendSpot" transform="translate(-275,0)">
       <g class="scn-pebble">
         <ellipse cx="645" cy="476" rx="22" ry="8" fill="#ff8820" opacity=".85"/>
         <ellipse cx="645" cy="462" rx="22" ry="26" fill="#1a1a2a" stroke="#1d3a4a" stroke-width="2.4"/>
@@ -2879,7 +2894,12 @@ const POLAR_ACADEMY_SCENE_SVG   = `<svg viewBox="0 0 800 500" xmlns="http://www.
 
     <!-- ── MISKA — stuck in a snowdrift partway to the academy door,
          blocked by the storm. Colours match ANIMAL_SVGS[3] exactly. ── -->
-    <g id="islandFriendSpot">
+    <!-- P-collision-audit: had no outer transform, landing Miska inside the
+         seal rig's landing box (38%/24% bbox overlap at 538px/375px — worse
+         than Snow Beach's accepted 16%/24% baseline). Shifted right toward
+         the academy door (still clear of the building, which starts at
+         local x460) — down to 7%/19%, both better than baseline. -->
+    <g id="islandFriendSpot" transform="translate(300,0)">
       <g transform="translate(95,330)">
         <g class="scn-miska">
           <ellipse cx="0" cy="58" rx="40" ry="14" fill="#fff" opacity=".9"/>
@@ -3081,7 +3101,12 @@ const OCTOPUS_CAVE_SCENE_SVG    = `<svg viewBox="0 0 800 500" xmlns="http://www.
          #2aa89c, highlight #6fe0d4) so he's recognizably the same
          Octo seen on his rescue card. Round glasses are this scene's
          own touch, tying back to his "*adjusts glasses*" line. ── -->
-    <g id="islandFriendSpot">
+    <!-- P-collision-audit: had no outer transform, landing Octo inside the
+         seal rig's landing box (40% bbox overlap at 538px — worse than Snow
+         Beach's accepted 16% baseline). Shifted right, clear of the
+         riddle-stone (x370-490 local) and kelp (x170-210) — 0% overlap at
+         both 375/538px widths. -->
+    <g id="islandFriendSpot" transform="translate(300,0)">
       <g transform="translate(95,330)">
         <g class="scn-octo">
           <path d="M-30 50 Q-44 60 -40 76 Q-32 84 -24 74 Q-18 62 -26 52Z" fill="#2aa89c"/>
@@ -6269,12 +6294,23 @@ function playSound(type) {
     build:       [[320,520,720,900]],
     level:       [[440,660,880,1180]],
     // P7: perfect mission fanfare
-    perfect:     [[440,550,660,880,1100,1320]]
+    perfect:     [[440,550,660,880,1100,1320]],
+    // Short, light double-click — School's table-cell/building taps. Was
+    // missing from this map entirely, so both call sites fell through to
+    // the single-note [[440]] fallback (the same flat "error beep"-ish
+    // tone as every other unmapped type, on the two most frequently
+    // repeated taps in the app).
+    tap:         [[880,660]]
   };
   const pool  = variants[type] || [[440]];
   const notes = pool[Math.floor(Math.random()*pool.length)];
   const wave  = type === "wrong" ? "sawtooth" : type === "build" ? "square" : "sine";
-  notes.forEach((freq,i) => setTimeout(()=>tone(freq,.08+i*.01,wave),i*90));
+  // `tap` fires on every times-table cell — keep it quiet and tight so it
+  // reads as UI feedback, not as a reward chime competing with `correct`.
+  const isTap = type === "tap";
+  const vol   = isTap ? .09 : .18;
+  const gap   = isTap ? 55  : 90;
+  notes.forEach((freq,i) => setTimeout(()=>tone(freq,(isTap?.05:.08)+i*.01,wave,vol),i*gap));
 }
 
 // S14: ambient soundscape — replaces the short melodic loop (at speed it
@@ -6361,8 +6397,35 @@ function playCritterCall(kind) {
   }
 }
 
+// Per-island musical motif. worlds[].music has always described one
+// ("bright bells", "royal horns", ...) but nothing ever read the field —
+// the ambience was waves + a critter call, identical in musical character
+// on every island. These are the descriptors turned into an actual short
+// phrase: 3-4 notes, low volume, fired SPARSELY (see motifTimer below) so
+// each island has a recognisable sound signature without turning into a
+// background loop a child hears on repeat for twenty minutes.
+// Index matches worlds[] exactly; `wave` picks the timbre implied by the
+// descriptor (triangle = bell/sparkle, square = horn/drum, sine = soft).
+const WORLD_MOTIFS = [
+  { notes: [1046, 1318, 1568],       wave: "triangle", gap: 190, len: .34 }, // 0 bright bells
+  { notes: [659, 880, 659, 988],     wave: "sine",     gap: 130, len: .16 }, // 1 bouncy marimba
+  { notes: [523, 784, 659],          wave: "sine",     gap: 420, len: .70 }, // 2 slow ocean chimes
+  { notes: [330, 330, 440, 330],     wave: "square",   gap: 115, len: .10 }, // 3 tap-dance drums
+  { notes: [440, 622, 523],          wave: "sine",     gap: 260, len: .38 }, // 4 mysterious bubbles
+  { notes: [1318, 1568, 1975],       wave: "triangle", gap: 150, len: .26 }, // 5 sparkly classroom
+  { notes: [392, 523, 659],          wave: "square",   gap: 230, len: .34 }, // 6 royal horns
+  { notes: [523, 659, 784, 1046],    wave: "square",   gap: 165, len: .28 }  // 7 victory fanfare
+];
+
+function playWorldMotif(worldId) {
+  const m = WORLD_MOTIFS[worldId];
+  if (!m) return;
+  m.notes.forEach((freq, i) => setTimeout(() => tone(freq, m.len, m.wave, .05), i * m.gap));
+}
+
 let waveTimer    = null;
 let critterTimer = null;
+let motifTimer   = null;
 let musicWorld   = null;
 
 function startWorldMusic(worldId) {
@@ -6378,13 +6441,24 @@ function startWorldMusic(worldId) {
     if (!state.muted) playCritterCall(worldAmbience[worldId] || "gull");
     critterTimer = setTimeout(scheduleCritter, 11000 + Math.random() * 9000); // periodic, not frequent
   };
+  // Sparser than the critter call on purpose: a pitched melody draws far
+  // more attention than a one-shot animal noise, so it has to stay rare
+  // enough to feel like a place having a mood rather than a loop.
+  const scheduleMotif = () => {
+    if (!state.muted) playWorldMotif(worldId);
+    motifTimer = setTimeout(scheduleMotif, 26000 + Math.random() * 16000);
+  };
   waveTimer    = setTimeout(scheduleWave, 600);
   critterTimer = setTimeout(scheduleCritter, 4000 + Math.random() * 4000);
+  // First motif comes early — it's the island's "signature", so it should
+  // land while the child is still looking at the island they just picked.
+  motifTimer   = setTimeout(scheduleMotif, 1400);
 }
 
 function stopWorldMusic() {
   if (waveTimer)    { clearTimeout(waveTimer);    waveTimer = null; }
   if (critterTimer) { clearTimeout(critterTimer); critterTimer = null; }
+  if (motifTimer)   { clearTimeout(motifTimer);   motifTimer = null; }
   musicWorld = null;
 }
 
