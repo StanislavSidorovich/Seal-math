@@ -2092,14 +2092,41 @@ button { font: inherit; color: inherit; }
 /* .title-screen sets display:flex, which would beat the native `hidden`
    behaviour — same reason .hero[hidden] and .challenge[hidden] exist. */
 .title-screen[hidden] { display: none; }
+/* Two crops of the same scene rather than one image stretched to both:
+   portrait is 688x1529 (~9:20, phones), landscape 1312x816 (~8:5, tablets).
+   `cover` crops the overflowing axis from the centre, and the composition is
+   symmetric around the seal, so the crop only ever eats empty sky/water. */
 .title-screen-art {
   position: absolute;
   inset: 0;
   z-index: 0;
-  background-image: url("title-art.png");
+  background-image: url("sealvert.jpeg");
   background-size: cover;
   background-position: center;
   background-repeat: no-repeat;
+}
+@media (orientation: landscape) {
+  .title-screen-art { background-image: url("sealhor.jpeg"); }
+}
+/* Scrim behind the title (top) and the Play button (bottom).
+   NOT cosmetic — required for legibility. `cover` crops a different part of
+   the art on every screen aspect, so what sits under the UI changes per
+   device: measured across real crops, the button zone runs from dark water
+   (avg luminance 65/255) on an exact-fit phone to the WHITE ICEBERG on a
+   portrait tablet (avg 172, 81% of pixels above 150), where a light button
+   would vanish. The scrim makes contrast a property of the layout instead of
+   a property of whichever crop the device happens to produce.
+   The middle band stays clear so the seal and scene read normally. */
+.title-screen-art::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background:
+    linear-gradient(to bottom,
+      rgba(4,30,55,.62) 0%,
+      rgba(4,30,55,0)   26%,
+      rgba(4,30,55,0)   58%,
+      rgba(4,30,55,.84) 100%);
 }
 .title-screen-top,
 .title-play-btn { position: relative; z-index: 1; }
@@ -2121,6 +2148,12 @@ button { font: inherit; color: inherit; }
   color: #eaf9ff;
   text-shadow: 0 2px 10px rgba(4,30,55,.8);
 }
+/* Amber, not the icy white/blue it started as: the scene it sits on is ice
+   and water, so a light button separates only by luminance — and `cover`
+   crops the bright iceberg under it on some screen aspects. Amber separates
+   by HUE, which no crop can take away. It is also the exact gradient
+   .primary uses in-game, so the first button a child ever presses looks
+   like every other "go" button they will meet later. */
 .title-play-btn {
   border: 0;
   border-radius: 999px;
@@ -2128,9 +2161,9 @@ button { font: inherit; color: inherit; }
   font: inherit;
   font-size: clamp(1.15rem, 5.5vw, 1.5rem);
   font-weight: 900;
-  color: #0b3f6b;
-  background: linear-gradient(180deg, #ffffff, #bfeeff);
-  box-shadow: 0 10px 26px rgba(4,30,55,.45), inset 0 -3px 0 rgba(11,63,107,.18);
+  color: #5b3400;
+  background: linear-gradient(180deg, #ffdd68, #ffb847);
+  box-shadow: 0 10px 26px rgba(4,30,55,.5), inset 0 -3px 0 rgba(120,70,0,.22);
   cursor: pointer;
   animation: titlePlayPulse 2.2s ease-in-out infinite;
 }

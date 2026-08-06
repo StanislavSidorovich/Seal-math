@@ -11,9 +11,12 @@
 // (e.g. a new icon or CSS file is added) — the activate handler below
 // deletes any cache that doesn't match the current version, so a bumped
 // version is what actually clears out old cached files.
-const CACHE_VERSION = "v1";
+const CACHE_VERSION = "v2";
 const CACHE_NAME = `sausage-seal-${CACHE_VERSION}`;
 
+// NOTE: cache.addAll() below is all-or-nothing — ONE missing file rejects the
+// whole install and the app silently loses offline support. Never add a path
+// here before the file actually exists in the deployed root.
 const ASSETS_TO_CACHE = [
   "./",
   "./index.html",
@@ -22,7 +25,9 @@ const ASSETS_TO_CACHE = [
   "./styles-mobile.css",
   "./manifest.json",
   "./icon-192.png",
-  "./icon-512.png"
+  "./icon-512.png",
+  "./sealvert.jpeg",   // title screen, portrait
+  "./sealhor.jpeg"     // title screen, landscape
 ];
 
 self.addEventListener("install", (event) => {
