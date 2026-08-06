@@ -10,7 +10,10 @@ const MAX_PROFILES    = 20;
 const PROFILE_EMOJIS  = ["🦭","🐧","🐻","🦊","🐳","🦁","🐼","🦋","🐸","🦄",
                           "🐨","🐯","🦀","🦆","🐬","🦭","🐺","🦝","🦥","🐙"];
 
-const GAME_VERSION = "1.0.0";
+// Shown in the About modal. MUST be kept in step with `versionName` in
+// android/app/build.gradle — it sat at 1.0.0 through five releases (QA M-05),
+// which made every user-reported "I'm on version X" untrustworthy.
+const GAME_VERSION = "1.3";
 
 // ─── Learning Mode (lang = "learn") ─────────────────────────────────────────
 // Shows English + Russian translation below every string.
@@ -395,6 +398,28 @@ function ruPluralQuestions(n) {
   if (mod10 === 1 && mod100 !== 11) return "вопрос";
   if (mod10 >= 2 && mod10 <= 4 && (mod100 < 10 || mod100 >= 20)) return "вопроса";
   return "вопросов";
+}
+
+// Russian plural forms for "звезда" (1 звезда, 2 звезды, 5 звёзд).
+function ruPluralStars(n) {
+  const mod10 = n % 10, mod100 = n % 100;
+  if (mod10 === 1 && mod100 !== 11) return "звезда";
+  if (mod10 >= 2 && mod10 <= 4 && (mod100 < 10 || mod100 >= 20)) return "звезды";
+  return "звёзд";
+}
+
+// The full "N questions remaining" HUD line. Single source of truth — the
+// three call sites used to repeat the same isRu ternary, and every one of
+// them printed the English plural unconditionally ("1 questions remaining",
+// QA M-04) because only the Russian side had plural handling.
+function questionsLeftLabel(n) {
+  if (currentLang === "ru") {
+    // Russian puts the verb first and agrees it with the number:
+    // "остался 1 вопрос" / "осталось 2 вопроса" / "осталось 5 вопросов".
+    const verb = (n % 10 === 1 && n % 100 !== 11) ? "остался" : "осталось";
+    return `${verb} ${n} ${ruPluralQuestions(n)}`;
+  }
+  return `${n} ${n === 1 ? t("questionSingular") : t("questionPlural")} ${t("remainingWord")}`;
 }
 
 const wordTemplates = [
@@ -1181,6 +1206,21 @@ function openProfileEdit(id) {
     });
   });
 
+  // QA M-02: an empty Name silently became the literal "Player", so a
+  // multi-child household could end up with several identical "Player"
+  // entries and no way to tell them apart. The field implies validation, so
+  // give it some — inline, next to the input, rather than an alert() a
+  // pre-reader can't dismiss meaningfully.
+  const nameErr = $("profileNameError");
+  const clearNameError = () => { if (nameErr) nameErr.hidden = true; nameInp.classList.remove("input-invalid"); };
+  const showNameError = () => {
+    if (nameErr) { nameErr.textContent = t("nameRequired"); nameErr.hidden = false; }
+    nameInp.classList.add("input-invalid");
+    nameInp.focus();
+  };
+  clearNameError();
+  nameInp.oninput = clearNameError;
+
   // Action buttons
   if (existing) {
     actions.innerHTML = `
@@ -1188,7 +1228,8 @@ function openProfileEdit(id) {
       <button class="secondary profile-dupe-btn" id="pmDupe">${t("dupePlayer")}</button>
       <button class="secondary danger profile-delete-btn" id="pmDelete">${t("deletePlayer")}</button>`;
     actions.querySelector("#pmSave").addEventListener("click", () => {
-      const name = nameInp.value.trim() || "Player";
+      const name = nameInp.value.trim();
+      if (!name) { showNameError(); return; }
       existing.name  = name;
       existing.emoji = chosenEmoji;
       saveProfiles(profiles);
@@ -1219,7 +1260,8 @@ function openProfileEdit(id) {
     actions.innerHTML = `<button class="primary profile-save-btn" id="pmCreate">${t("createPlayer")}</button>`;
     actions.querySelector("#pmCreate").addEventListener("click", () => {
       if (profiles.length >= MAX_PROFILES) { alert(t("maxPlayers")); return; }
-      const name = nameInp.value.trim() || "Player";
+      const name = nameInp.value.trim();
+      if (!name) { showNameError(); return; }
       const p = createProfile(name, chosenEmoji);
       profiles.push(p);
       saveProfiles(profiles);
@@ -1315,7 +1357,7 @@ function attachEvents() {
   $("startChallengeBtn").addEventListener("click", () => startMission(false));
   $("dailyBtn").addEventListener("click",          () => startMission(true));
   $("miniGameBtn").addEventListener("click",       startMiniGame);
-  $("closeMiniBtn").addEventListener("click",      () => { $("miniGame").hidden = true; miniGen++; if (miniGameTimer) { clearTimeout(miniGameTimer); miniGameTimer = null; } });
+  $("closeMiniBtn").addEventListener("click",      closeMiniGame);
   $("skipMiniBtn").addEventListener("click",       skipMiniGame);
   $("hintBtn").addEventListener("click",           showHint);
   $("rewardClose").addEventListener("click",       () => $("rewardModal").hidden = true);
@@ -1471,11 +1513,7 @@ function setupHardwareBackButton() {
 
     // Bonus mini-game panel open.
     const miniGameEl = $("miniGame");
-    if (miniGameEl && !miniGameEl.hidden) {
-      miniGameEl.hidden = true;
-      if (miniGameTimer) { clearTimeout(miniGameTimer); miniGameTimer = null; }
-      return;
-    }
+    if (miniGameEl && !miniGameEl.hidden) { closeMiniGame(); return; }
 
     // Mission in progress — same confirm dialog as the on-screen back-to-map button.
     if (trip && trip.active) { exitMission(); return; }
@@ -1597,8 +1635,13 @@ function renderMap() {
     const done     = completedMissions(world.id);
     const nameKey  = `world${world.id}`;
     const wName    = t(nameKey) || world.name;
+    // QA M-03: the badge used to be concatenated straight onto the island
+    // name with no separator, so a wrapping label read "КоролевствоУр. 15" /
+    // "KingdomLv 15". <small> is inline, so it needs a real space — and the
+    // badge goes on its own line via .island-level so a long name can never
+    // collide with it again.
     const levelBadge = locked
-      ? `<small>${currentLang === "ru" ? "Ур." : "Lv"} ${recommendedLevels[world.id]}</small>`
+      ? ` <small class="island-level">${currentLang === "ru" ? "Ур." : "Lv"} ${recommendedLevels[world.id]}</small>`
       : "";
     return `<button class="island island-${world.id} ${locked?"locked":""} ${world.id===selectedWorld?"selected":""}" data-world="${world.id}" aria-label="${wName}, ${done} of 5 missions complete${locked?" - locked":""}">
       ${islandSvg(world,locked)}<span>${world.id+1}. ${wName}${levelBadge}</span>
@@ -3513,9 +3556,7 @@ function makeProblem() {
   if (trip.mission === 4) {
     syncStormVisuals();
   } else {
-    $("questionsLeft").textContent = currentLang === "ru"
-      ? `${Math.max(0, trip.needed-trip.solved)} ${ruPluralQuestions(Math.max(0, trip.needed-trip.solved))}`
-      : `${Math.max(0, trip.needed-trip.solved)} ${t("questionsLeft")}`;
+    $("questionsLeft").textContent = questionsLeftLabel(Math.max(0, trip.needed-trip.solved));
     $("missionTrailMarker").style.left = `${missionTrailPos(trip.solved, trip.needed)}%`;
   }
   syncMissionSeal();
@@ -4042,9 +4083,7 @@ function answer(value, btn) {
       adjustStorm(-18);
       setTimeout(() => trip.stormIntensity <= 0 ? clearStorm() : makeProblem(), 1000);
     } else {
-      $("questionsLeft").textContent = currentLang === "ru"
-        ? `${Math.max(0, trip.needed-trip.solved)} ${ruPluralQuestions(Math.max(0, trip.needed-trip.solved))}`
-        : `${Math.max(0, trip.needed-trip.solved)} ${t("questionsLeft")}`;
+      $("questionsLeft").textContent = questionsLeftLabel(Math.max(0, trip.needed-trip.solved));
       $("missionMeter").style.width  = `${Math.round((trip.solved/trip.needed)*100)}%`;
       $("missionTrailMarker").style.left = `${missionTrailPos(trip.solved, trip.needed)}%`;
       syncMissionSeal();
@@ -4243,9 +4282,10 @@ function completeMission() {
       const next = buildings.find(b => !state.buildings.includes(b.id));
       if (next) {
         const need = Math.max(0, next.cost - state.stars);
+        // QA S-03: read "Need 1 more stars" before.
         toast(currentLang === "ru"
           ? `Ещё ${need} ⭐ до постройки: ${buildingName(next)}!`
-          : `Need ${need} more stars to build ${buildingName(next)}!`);
+          : `Need ${need} more ${need === 1 ? "star" : "stars"} to build ${buildingName(next)}!`);
       }
     }
   }
@@ -4784,7 +4824,9 @@ function renderTown() {
     const desc = built
       ? t("buildingOpen")
       : starsNeeded > 0
-        ? (ru ? `Нужно ещё ${starsNeeded} звёзд и прогресс в миссиях.` : `Need ${starsNeeded} more stars and mission progress.`)
+        // QA S-03: singular/plural on both sides ("1 звёзд"/"1 stars" before).
+        ? (ru ? `Нужно ещё ${starsNeeded} ${ruPluralStars(starsNeeded)} и прогресс в миссиях.`
+              : `Need ${starsNeeded} more ${starsNeeded === 1 ? "star" : "stars"} and mission progress.`)
         : t("buildingLocked");
     return `<article class="item-card ${built?"":"locked"}">${buildingSvg(b.id)}<h3>${bName}</h3>
       <p>${desc}</p></article>`;
@@ -5164,7 +5206,13 @@ let miniSkipOffset = 0;
 function startMiniGame() {
   $("miniGame").hidden  = false;
   $("challenge").hidden = true;
-  $("miniGame").scrollIntoView({ behavior: "smooth", block: "start" });
+  // Same treatment missions already get (P16): hide the map + seal card
+  // rather than scrolling past them. scrollIntoView left a sliver of the map
+  // above the stage on phones, which both wasted vertical space the game
+  // needs and made it ambiguous whether you were still "on the map".
+  const heroEl = document.querySelector(".hero");
+  if (heroEl) heroEl.hidden = true;
+  window.scrollTo({ top: 0, behavior: "smooth" });
   if (miniGameTimer) { clearTimeout(miniGameTimer); miniGameTimer = null; }
   const gameIndex = (state.miniGamesPlayed + miniSkipOffset) % 5;
   if      (gameIndex === 0) startCatchFish();
@@ -5172,6 +5220,19 @@ function startMiniGame() {
   else if (gameIndex === 2) startIceSlide();
   else if (gameIndex === 3) startSnowballCatch();
   else                       startMatchPairs();
+}
+
+// Single exit path for the mini-game panel. There are three ways out (the
+// header button, Android back, and the result screen's Return to Map) and
+// each one has to undo everything startMiniGame() did — most importantly
+// un-hide `.hero`, or the child lands on a page with no island map at all.
+function closeMiniGame() {
+  $("miniGame").hidden = true;
+  miniGen++;                       // stop any in-flight spawn loop
+  if (miniGameTimer) { clearTimeout(miniGameTimer); miniGameTimer = null; }
+  const heroEl = document.querySelector(".hero");
+  if (heroEl) heroEl.hidden = false;
+  window.scrollTo({ top: 0, behavior: "smooth" });
 }
 
 // "Not feeling this one" — jump straight to the next mini-game without
@@ -5984,7 +6045,7 @@ function finishMiniGame(caught, type) {
     startMiniGame();
   });
   stage.querySelector(".mini-map-btn").addEventListener("click", () => {
-    $("miniGame").hidden = true;
+    closeMiniGame();
     renderAll();
   });
   renderHeader();
@@ -7392,6 +7453,9 @@ const STRINGS = {
     playBonus:"Play Bonus Game",
     // Challenge
     questionsLeft:"questions remaining", showHint:"Show a friendly hint",
+    // Split out so questionsLeftLabel() can pick the right form (QA M-04).
+    questionSingular:"question", questionPlural:"questions", remainingWord:"remaining",
+    nameRequired:"Please enter a name.",
     tryAgainNudge:"Not quite — give it one more try!",
     // Mini-games
     returnToMap:"Return to Map",
@@ -7559,6 +7623,8 @@ const STRINGS = {
     playBonus:"Мини-игра",
     // Challenge
     questionsLeft:"вопросов осталось", showHint:"Подсказка",
+    questionSingular:"вопрос", questionPlural:"вопросов", remainingWord:"осталось",
+    nameRequired:"Пожалуйста, введи имя.",
     tryAgainNudge:"Почти! Попробуй ещё раз.",
     // Mini-games
     returnToMap:"На карту",

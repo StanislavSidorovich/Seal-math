@@ -213,6 +213,19 @@ button { font: inherit; color: inherit; }
   background: rgba(255,255,255,.9);
   font-weight: 900;
   font-size: .88rem;
+  /* QA M-03: the label sits on top of the island art, so it needs to stay
+     readable rather than blend into it. Opaque-ish plate + its own line for
+     the level badge, instead of the name and "Lv 15" running together. */
+  line-height: 1.25;
+  z-index: 2;
+}
+/* Locked-island level hint: own line, so a long island name can never mash
+   into it the way "КоролевствоУр. 15" did. */
+.island-level {
+  display: block;
+  font-size: .78rem;
+  font-weight: 800;
+  color: #5f7487;
 }
 
 .quest-panel, .challenge, .daily-card, .section-head {
@@ -2230,6 +2243,17 @@ button { font: inherit; color: inherit; }
   background: #f8fdff;
 }
 .profile-name-input:focus { outline: 3px solid var(--aqua); border-color: var(--aqua); }
+/* QA M-02: empty-name validation feedback. The input already carries a
+   14px bottom margin, so the message tucks into that gap. */
+.profile-name-input.input-invalid { border-color: #ff8fa1; background: #fff5f7; }
+.profile-name-error {
+  margin: -10px 0 12px;
+  color: #d4456a;
+  font-size: .9rem;
+  font-weight: 800;
+  text-align: center;
+}
+.profile-name-error[hidden] { display: none; }
 .profile-modal-actions {
   display: flex;
   flex-direction: column;
