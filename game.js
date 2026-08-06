@@ -5568,37 +5568,56 @@ function startFindPenguin(initialDifficulty, initialTimerOn) {
   const difficulty = PENGUIN_DIFFICULTY_TOPICS[initialDifficulty] ? initialDifficulty : "normal";
   const timerOn = !!initialTimerOn;
 
+  // The HUD (difficulty bar, round counter, timer, problem) is laid out in
+  // normal flow (.penguin-hud), NOT absolute-positioned pixel offsets —
+  // this game has more top-of-stage chrome than any other mini-game
+  // (Ice Slide/Snowball never combine a full difficulty bar with corner
+  // chips), and RU labels ("Полегче"/"Обычно"/"Посложнее") plus longer
+  // problem text (missing-number, 3-digit results) genuinely don't all fit
+  // one absolute-positioned row on a narrow phone — verified by measuring
+  // real rendered widths, not guessed. Flow layout adapts to any
+  // width/text length automatically instead of needing new hardcoded
+  // offsets every time content gets longer.
+  const hud = document.createElement("div");
+  hud.className = "penguin-hud";
+  stage.appendChild(hud);
+
   const diffBar = document.createElement("div");
   diffBar.className = "mini-speed-bar";
   diffBar.innerHTML = [
     ["easy",   "🐣", t("penguinDiffEasy")],
     ["normal", "🐧", t("penguinDiffNormal")],
     ["hard",   "🦈", t("penguinDiffHard")]
-  ].map(([key,icon,label]) => `<button class="speed-btn${key === difficulty ? " active" : ""}" data-diff="${key}">${icon} ${label}</button>`).join("")
-    + `<button class="speed-btn penguin-timer-toggle${timerOn ? " active" : ""}" data-timer-toggle aria-pressed="${timerOn}" aria-label="${t("penguinTimerToggle")}">⏱</button>`;
-  stage.appendChild(diffBar);
-  diffBar.querySelectorAll(".speed-btn[data-diff]").forEach(btn => {
+  ].map(([key,icon,label]) => `<button class="speed-btn${key === difficulty ? " active" : ""}" data-diff="${key}">${icon} ${label}</button>`).join("");
+  hud.appendChild(diffBar);
+  diffBar.querySelectorAll(".speed-btn").forEach(btn => {
     btn.addEventListener("click", () => {
       if (btn.dataset.diff === difficulty) return;
       startFindPenguin(btn.dataset.diff, timerOn);
     });
   });
-  diffBar.querySelector("[data-timer-toggle]").addEventListener("click", () => {
-    startFindPenguin(difficulty, !timerOn);
-  });
 
-  const scoreEl = document.createElement("div");
-  scoreEl.className = "slide-score";
-  stage.appendChild(scoreEl);
+  const hudRow2 = document.createElement("div");
+  hudRow2.className = "penguin-hud-row2";
+  hud.appendChild(hudRow2);
 
-  const timerEl = document.createElement("div");
-  timerEl.className = "penguin-timer";
-  timerEl.hidden = true;
-  stage.appendChild(timerEl);
+  // Doubles as the toggle (tap to switch) and, once on, the live countdown.
+  const timerEl = document.createElement("button");
+  timerEl.type = "button";
+  timerEl.className = "penguin-timer" + (timerOn ? " active" : "");
+  timerEl.setAttribute("aria-pressed", timerOn);
+  timerEl.setAttribute("aria-label", t("penguinTimerToggle"));
+  timerEl.textContent = "⏱";
+  timerEl.addEventListener("click", () => startFindPenguin(difficulty, !timerOn));
+  hudRow2.appendChild(timerEl);
 
   const problemEl = document.createElement("div");
   problemEl.className = "penguin-problem";
-  stage.appendChild(problemEl);
+  hudRow2.appendChild(problemEl);
+
+  const scoreEl = document.createElement("div");
+  scoreEl.className = "slide-score";
+  hudRow2.appendChild(scoreEl);
 
   const colors = ["#e0f7ff","#c8f0ff","#b0e8ff","#d8f4ff","#f0fbff"];
   let roundIdx     = 0; // rounds completed so far
@@ -5686,7 +5705,6 @@ function startFindPenguin(initialDifficulty, initialTimerOn) {
     if (miniGameTimer) clearTimeout(miniGameTimer);
     if (timerOn) {
       let secondsLeft = PENGUIN_TIMER_SECONDS;
-      timerEl.hidden = false;
       timerEl.classList.remove("urgent");
       timerEl.textContent = `⏱ ${secondsLeft}`;
       countdownInterval = setInterval(() => {
@@ -5700,7 +5718,7 @@ function startFindPenguin(initialDifficulty, initialTimerOn) {
       // same guard pattern as the always-on 30s fallback below.
       miniGameTimer = setTimeout(() => endRound(false, null), (PENGUIN_TIMER_SECONDS + 3) * 1000);
     } else {
-      timerEl.hidden = true;
+      timerEl.textContent = "⏱";
       miniGameTimer = setTimeout(() => endRound(false, null), 30000);
     }
   }
