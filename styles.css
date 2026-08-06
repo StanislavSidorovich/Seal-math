@@ -361,7 +361,16 @@ button { font: inherit; color: inherit; }
    the device's actual width. Scoped to islands with bespoke art only
    (toggled in setupIslandScene()); islands using the generic gradient
    fallback keep the old fixed height its iceberg/watermark art expects. */
-.challenge-scene.has-custom-bg { aspect-ratio: 8 / 5; min-height: 220px; height: auto; }
+/* P18: `align-self:start` is load-bearing, not cosmetic. `.challenge` is a
+   grid with `align-items:stretch`, so on a landscape tablet (two columns)
+   the row height comes from the taller .problem-box — the scene then got a
+   DEFINITE stretched height and `aspect-ratio` derived its WIDTH from that
+   height instead of from the column, overflowing into the question column
+   and painting the mission art over the problem text (measured live at
+   1280x720: scene 671px wide inside a 554px column). Opting out of the
+   stretch keeps height auto, so the ratio resolves the normal way —
+   width from the column, height from the width. */
+.challenge-scene.has-custom-bg { aspect-ratio: 8 / 5; min-height: 220px; height: auto; align-self: start; }
 /* Bespoke per-island scene art (Snow Beach, Fish Bay, Whale Coast,
    Penguin Islands...). Sits behind everything else in the scene — the
    iceberg/watermark/ground-accent layers are display:none'd by
@@ -766,6 +775,15 @@ button { font: inherit; color: inherit; }
 /* Sea School Town landmark — always present, gently bobs + glows to draw the
    eye. Bob uses the `translate` property (not `transform`) so the hover
    `transform: scale()` on .town-building still works. */
+/* The School is a hub, not just another building — ~25% larger than the
+   star-gated buildings (which are clamp(78px,15vw,128px)) so it reads as
+   "there is something special in here" at a glance. Its `left` in
+   renderTown() is nudged left to keep the extra width centred on the old
+   spot. */
+/* Two classes deliberately: the base `.town-building` width rule lives
+   LATER in this file, so a plain `.town-school` selector would lose to it
+   on source order (verified live — the width stayed 128px). */
+.town-building.town-school { width: clamp(96px, 18.6vw, 160px); }
 .town-school { z-index: 5; animation: schoolAttract 2.6s ease-in-out infinite; }
 .town-school svg { position: relative; z-index: 1; }
 @keyframes schoolAttract { 0%, 100% { translate: 0 0; } 50% { translate: 0 -5px; } }
@@ -778,7 +796,7 @@ button { font: inherit; color: inherit; }
 @keyframes schoolGlow { 0%, 100% { opacity: .28; transform: scale(.85); } 50% { opacity: .72; transform: scale(1.06); } }
 .town-school-label {
   position: absolute; left: 50%; top: -10px; transform: translateX(-50%);
-  background: #ffd45a; color: #6a3a00; font-weight: 900; font-size: .72rem;
+  background: #ffd45a; color: #6a3a00; font-weight: 900; font-size: .8rem;
   padding: 2px 10px; border-radius: 999px; white-space: nowrap;
   box-shadow: 0 2px 6px rgba(0,0,0,.18); z-index: 3; pointer-events: none;
 }

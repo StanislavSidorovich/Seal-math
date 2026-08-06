@@ -263,7 +263,7 @@ function shopName(item) { return currentLang === "ru" ? (shopNamesRu[item.id] ||
 // P9: economy expansion — Town Decorations, a second coin sink alongside
 // the costume shop. Purely cosmetic, no zone-collision logic needed (unlike
 // costumes you simply collect them all). Anchored to the scene edges
-// (bottom for ground props, top for the garland) rather than the building
+// (bottom, so every prop stands on the snow) rather than the building
 // cluster — the buildings/friends overlap each other so densely (by
 // design, resolved via z-index/DOM order) that there's no clean gap inside
 // that area to anchor a new prop to without it disappearing behind one.
@@ -272,7 +272,10 @@ const decorations = [
   ["Ice Lantern",      8, 88, 4, "bottom"],
   ["Park Bench",      12, 27, 2, "bottom"],
   ["Ice Sculpture",   16, 51, 3, "bottom"],
-  ["Garland Flags",   20, 38, 6, "top"],
+  // The garland is two poles with bunting strung between them — anchored to
+  // the ground like the other props, NOT to `top` (it used to sit at top:6%,
+  // i.e. its poles floated in the middle of the night sky).
+  ["Garland Flags",   20, 38, 3, "bottom"],
 ].map((d,i) => ({ id:i, name:d[0], cost:d[1], left:d[2], pos:d[3], anchor:d[4] }));
 const decorationNamesRu = ["Снеговик","Ледяной фонарь","Скамейка","Ледяная скульптура","Гирлянда флажков"];
 function decorName(i) { return currentLang === "ru" ? (decorationNamesRu[i] || decorations[i].name) : decorations[i].name; }
@@ -3275,17 +3278,18 @@ function renderQuest() {
 }
 
 // Small 2-4 word nudge chip beside the seal's head, for players who can't
-// read the longer #dialogBox story lines yet. Priority: underleveled
-// warning > island-complete > last-mission urgency > generic go.
+// read the longer #dialogBox story lines yet. It now names the ACTUAL job of
+// the mission about to start ("Спасаем друга!", "Открываем сундук!") instead
+// of a generic "Let's go!" — same 5 missions as missionDetails, in the same
+// order, so the chip, the mission title and the objective all agree.
+// Priority: underleveled warning > island-complete > this mission's job.
 function updateSealQuickBubble(done, mission, rec) {
   const el = $("sealQuickBubble");
   if (!el) return;
   el.textContent =
     state.level < rec ? t("sealNudgeTricky") :
     done >= 5         ? t("sealNudgeIslandDone") :
-    mission === 4      ? t("sealNudgeLastPush") :
-    mission === 0      ? t("sealNudgeGo") :
-                          t("sealNudgeAlmost");
+                        t(`sealNudgeM${Math.min(mission, 4)}`);
 }
 
 function dialogFor(world, mission) {
@@ -4711,7 +4715,7 @@ function renderTown() {
       const finale = b.id === 7 ? " is-finale" : "";
       return `<button class="town-building${finale}" style="left:${left}%;top:${top}%" data-building="${b.id}" aria-label="${b.name}">${buildingSvg(b.id)}</button>`;
     }).join("") +
-    `<button class="town-building town-school" style="left:40%;top:54%" data-school="1" aria-label="${currentLang==="ru"?"Морская школа — таблица и правила":"Sea School — times table and rules"}"><span class="town-school-label">${currentLang==="ru"?"🎓 Школа":"🎓 School"}</span>${schoolBuildingSvg()}</button>` +
+    `<button class="town-building town-school" style="left:38.5%;top:54%" data-school="1" aria-label="${currentLang==="ru"?"Морская школа — таблица и правила":"Sea School — times table and rules"}"><span class="town-school-label">${currentLang==="ru"?"🎓 Школа":"🎓 School"}</span>${schoolBuildingSvg()}</button>` +
     townGhostHtml(positions) +
     decorations.map(d => {
       if (!state.decorations.includes(d.id)) return "";
@@ -7225,10 +7229,12 @@ const STRINGS = {
     onboardNext:"Next →", onboardStart:"Start Adventure! 🚀", onboardSkip:"Skip",
     // Briefing buttons
     skip:"Skip", next:"Next →", letsGoBtn:"Let's go! 🦭",
-    // Seal quick-nudge bubble (2-4 words, pre-readers) — see renderQuest()
-    sealNudgeGo:"Let's go! 🦭", sealNudgeAlmost:"Almost there!",
-    sealNudgeLastPush:"One last push!", sealNudgeIslandDone:"Island done! 🎉",
-    sealNudgeTricky:"This one's tricky!",
+    // Seal quick-nudge bubble (2-4 words, pre-readers) — see renderQuest().
+    // sealNudgeM0..M4 mirror missionDetails[0..4]: same job, kid-sized wording.
+    sealNudgeIslandDone:"Island done! 🎉", sealNudgeTricky:"This one's tricky!",
+    sealNudgeM0:"Find the clues! 🔍", sealNudgeM1:"Rescue a friend! 🆘",
+    sealNudgeM2:"Gather supplies! 📦", sealNudgeM3:"Open the chest! 🎁",
+    sealNudgeM4:"Calm the storm! 🌊",
   },
   ru: {
     // Nav
@@ -7393,10 +7399,12 @@ const STRINGS = {
     onboard4_title:"Получай награды!",
     onboard4_text:"За каждый правильный ответ — рыбки 🐟, монеты 💰 и звёзды ⭐. Используй их, чтобы открыть костюмы и построить свой Арктический Город!",
     onboardNext:"Далее →", onboardStart:"Начать приключение! 🚀", onboardSkip:"Пропустить",
-    // Seal quick-nudge bubble (2-4 words, pre-readers) — see renderQuest()
-    sealNudgeGo:"Поплыли! 🦭", sealNudgeAlmost:"Ещё чуть-чуть!",
-    sealNudgeLastPush:"Последний рывок!", sealNudgeIslandDone:"Остров наш! 🎉",
-    sealNudgeTricky:"Тут трудно!",
+    // Seal quick-nudge bubble (2-4 words, pre-readers) — see renderQuest().
+    // sealNudgeM0..M4 mirror missionDetailsRu[0..4]: same job, kid-sized wording.
+    sealNudgeIslandDone:"Остров наш! 🎉", sealNudgeTricky:"Тут трудно!",
+    sealNudgeM0:"Ищем следы! 🔍", sealNudgeM1:"Спасаем друга! 🆘",
+    sealNudgeM2:"Собираем припасы! 📦", sealNudgeM3:"Откроем сундук! 🎁",
+    sealNudgeM4:"Успокоим бурю! 🌊",
   }
 };
 
