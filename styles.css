@@ -1426,13 +1426,37 @@ button { font: inherit; color: inherit; }
   pointer-events: none;
 }
 
-/* P5: mini-stage variants */
+/* P5: mini-stage variants. Each game's base gradient sets the LIGHT/water
+   split its gameplay assumes; the shapes on top come from .mini-scenery
+   (MINI_SCENERY in game.js), which is what actually makes the six games read
+   as six different places instead of one recoloured box. */
 .mini-stage.mini-treasure {
-  background: linear-gradient(#e8d4a8 0 52%, #c4b07a 52% 100%);
+  background: linear-gradient(#a8ddf0 0 40%, #7cc4de 40% 52%, #e8d4a8 52% 100%);
 }
 .mini-stage.mini-penguin {
   background: linear-gradient(#bff5ff 0 50%, #3bb9d9 50% 100%);
 }
+.mini-stage.mini-catchfish {
+  background: linear-gradient(#7fdcf2 0 30%, #2ba6c8 30% 68%, #167e9c 68% 100%);
+}
+
+/* Decorative art layer. Absolutely positioned so it is never a grid item in
+   Match Pairs' grid stage, and pointer-events:none so it cannot swallow the
+   stage-level pointermove/click that Snowball Catch steers its bucket with. */
+.mini-scenery {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  overflow: hidden;
+  border-radius: inherit;
+}
+.mini-scenery svg { width: 100%; height: 100%; display: block; }
+
+/* Row holding "back to map" + "next game" above the stage. */
+.mini-top-row { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
+.mini-skip-btn { background: rgba(255, 244, 208, .95); }
+.mini-skip-btn:hover { background: #fff4d0; }
 
 /* P6: challenge-scene bg is set inline per island, but ensure transition */
 .challenge-scene { transition: background .6s ease; }
@@ -1570,7 +1594,7 @@ button { font: inherit; color: inherit; }
 
 /* S2: Mini-game — Ice Slide */
 .mini-stage.mini-slide {
-  background: linear-gradient(#c8f0ff 0 55%, #99ddf5 55% 100%);
+  background: linear-gradient(#d6f0ff 0 30%, #eaf8ff 30% 100%);
   overflow: hidden;
 }
 .slide-seal {
@@ -1587,6 +1611,20 @@ button { font: inherit; color: inherit; }
   border-radius: 40% 44% 36% 48%;
   box-shadow: inset -5px -5px 0 rgba(0,0,0,.15), inset 4px 4px 0 rgba(255,255,255,.25);
   z-index: 2;
+}
+/* Remaining lives in Ice Slide, mirroring .slide-score on the opposite
+   corner so the two HUD chips frame the top of the stage. */
+.slide-lives {
+  position: absolute;
+  top: 10px;
+  left: 12px;
+  background: rgba(255,255,255,.85);
+  border-radius: 10px;
+  padding: 4px 10px;
+  font-size: 1rem;
+  letter-spacing: 2px;
+  line-height: 1.2;
+  z-index: 5;
 }
 .slide-score {
   position: absolute;
@@ -1626,7 +1664,7 @@ button { font: inherit; color: inherit; }
 
 /* S2: Mini-game — Snowball Catch */
 .mini-stage.mini-snowball {
-  background: linear-gradient(#e8f8ff 0 40%, #b0d8ef 40% 100%);
+  background: linear-gradient(#cfeaff 0 34%, #e8f4fd 34% 100%);
   cursor: crosshair;
   touch-action: none;
 }

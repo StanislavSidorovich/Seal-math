@@ -1315,7 +1315,8 @@ function attachEvents() {
   $("startChallengeBtn").addEventListener("click", () => startMission(false));
   $("dailyBtn").addEventListener("click",          () => startMission(true));
   $("miniGameBtn").addEventListener("click",       startMiniGame);
-  $("closeMiniBtn").addEventListener("click",      () => { $("miniGame").hidden = true; if (miniGameTimer) { clearTimeout(miniGameTimer); miniGameTimer = null; } });
+  $("closeMiniBtn").addEventListener("click",      () => { $("miniGame").hidden = true; miniGen++; if (miniGameTimer) { clearTimeout(miniGameTimer); miniGameTimer = null; } });
+  $("skipMiniBtn").addEventListener("click",       skipMiniGame);
   $("hintBtn").addEventListener("click",           showHint);
   $("rewardClose").addEventListener("click",       () => $("rewardModal").hidden = true);
   $("exportBtn").addEventListener("click",         exportProgress);
@@ -5143,17 +5144,174 @@ function renderDashboard() {
 
 
 // ─── S2: Mini-games (5 games, Treasure Hunt removed) ─────────────────────────
+// ─── Mini-game session plumbing ──────────────────────────────────────────────
+// Every mini-game runs open-ended async loops (rock/snowball spawn chains,
+// Web Animations onfinish callbacks) that live in their own closure and only
+// stop when that closure's own `active` flag is cleared by its end function.
+// That was fine while the ONLY way out of a game was finishing it — but the
+// skip button lets a child abandon a game mid-flight, leaving the old chain
+// running and spawning rocks into the new game's stage (same #miniStage DOM
+// node gets reused). `miniGen` is a generation token: every starter takes a
+// fresh one, and every loop checks it's still the current generation before
+// touching anything. Anything from a previous generation quietly no-ops.
+let miniGen = 0;
+// Rotation offset for the skip button. Deliberately NOT persisted and NOT
+// folded into state.miniGamesPlayed — that field is a lifetime stat feeding
+// achievements, so bumping it on a skip would award progress for a game the
+// child never actually played.
+let miniSkipOffset = 0;
+
 function startMiniGame() {
   $("miniGame").hidden  = false;
   $("challenge").hidden = true;
   $("miniGame").scrollIntoView({ behavior: "smooth", block: "start" });
   if (miniGameTimer) { clearTimeout(miniGameTimer); miniGameTimer = null; }
-  const gameIndex = state.miniGamesPlayed % 5;
+  const gameIndex = (state.miniGamesPlayed + miniSkipOffset) % 5;
   if      (gameIndex === 0) startCatchFish();
   else if (gameIndex === 1) startFindPenguin();
   else if (gameIndex === 2) startIceSlide();
   else if (gameIndex === 3) startSnowballCatch();
   else                       startMatchPairs();
+}
+
+// "Not feeling this one" — jump straight to the next mini-game without
+// finishing or scoring the current one. Deliberately awards nothing: it's an
+// escape hatch, not a way to farm the completion rewards.
+function skipMiniGame() {
+  if (miniGameTimer) { clearTimeout(miniGameTimer); miniGameTimer = null; }
+  miniSkipOffset++;
+  startMiniGame();
+}
+
+// Decorative scenery layer for a mini-game stage. Purely visual: absolutely
+// positioned (so it is never a grid item in Match Pairs' grid stage), z-index
+// 0 behind every gameplay element, and pointer-events:none so it can't eat
+// the taps/drags that Snowball Catch and friends read off the stage itself.
+// Each game gets art matching what it actually asks the player to DO —
+// previously every stage was the same two-band blue gradient, so the fishing
+// game, the sledding game and the snowball game all read as the same place.
+// Each scene keeps its own gameplay corridor clear (see the per-game notes).
+const MINI_SCENERY = {
+  // Fish swim horizontally across the middle band; speed bar occupies the top
+  // ~56px. Art is kept to the seabed and the far edges.
+  catchfish: `
+    <path d="M40 0 L120 300 L70 300 L10 0Z" fill="#eafdff" opacity=".14"/>
+    <path d="M250 0 L320 300 L280 300 L215 0Z" fill="#eafdff" opacity=".1"/>
+    <path d="M0 258 Q60 232 130 254 Q210 274 290 250 Q350 234 400 252 L400 300 L0 300Z" fill="#0e7c9b"/>
+    <path d="M0 272 Q80 254 160 270 Q250 288 330 268 Q370 258 400 266 L400 300 L0 300Z" fill="#0a6480"/>
+    <g fill="#2f9c8a" stroke="#0a4f63" stroke-width="2">
+      <path d="M28 300 Q14 250 34 208 Q50 252 42 300Z"/>
+      <path d="M52 300 Q44 244 66 202 Q76 250 68 300Z"/>
+      <path d="M356 300 Q346 254 366 214 Q378 256 370 300Z"/>
+    </g>
+    <g fill="#ff9d6e" stroke="#0a4f63" stroke-width="2">
+      <path d="M300 300 Q296 268 312 256 Q328 268 324 300Z"/>
+      <circle cx="312" cy="262" r="5" fill="#ffd45a" stroke="none"/>
+    </g>
+    <g fill="#cdf3ff" opacity=".55">
+      <circle cx="96" cy="196" r="5"/><circle cx="108" cy="162" r="3.5"/>
+      <circle cx="344" cy="184" r="4.5"/><circle cx="332" cy="150" r="3"/>
+      <circle cx="196" cy="212" r="4"/>
+    </g>`,
+  // Icebergs with the answer numbers sit low and centre; the problem chip is
+  // pinned at the top. Scenery stays on the horizon and the far edges.
+  penguin: `
+    <circle cx="330" cy="52" r="30" fill="#fff6c8" opacity=".75"/>
+    <circle cx="330" cy="52" r="19" fill="#fffdf0" opacity=".9"/>
+    <g fill="#dff2ff">
+      <path d="M0 150 L54 96 L104 150Z"/>
+      <path d="M84 150 L134 104 L182 150Z"/>
+      <path d="M250 150 L300 100 L352 150Z"/>
+    </g>
+    <g fill="#c3e6f8" opacity=".8">
+      <path d="M22 150 L60 116 L100 150Z"/>
+      <path d="M268 150 L302 120 L340 150Z"/>
+    </g>
+    <g fill="#ffffff" opacity=".85">
+      <ellipse cx="60" cy="168" rx="34" ry="8"/>
+      <ellipse cx="340" cy="176" rx="28" ry="7"/>
+      <ellipse cx="196" cy="162" rx="22" ry="6"/>
+    </g>`,
+  // Rocks fall down the whole centre corridor (10%-90% of the width), the seal
+  // sits low and the Left/Right buttons own the bottom strip — so the art is
+  // pushed to the extreme edges and the top ridge line only.
+  slide: `
+    <g fill="#e3f4ff">
+      <path d="M0 88 L70 20 L140 88Z"/>
+      <path d="M120 88 L200 12 L280 88Z"/>
+      <path d="M250 88 L322 24 L396 88Z"/>
+    </g>
+    <g fill="#cfe9fa" opacity=".85">
+      <path d="M22 88 L72 44 L124 88Z"/>
+      <path d="M262 88 L324 40 L388 88Z"/>
+    </g>
+    <path d="M0 84 Q100 74 200 84 Q300 94 400 82 L400 96 L0 96Z" fill="#ffffff"/>
+    <path d="M0 96 Q40 130 26 190 Q14 244 34 300 L0 300Z" fill="#f2fbff"/>
+    <path d="M400 96 Q362 132 376 192 Q388 246 368 300 L400 300Z" fill="#f2fbff"/>
+    <g fill="#4a9a72" stroke="#2f6b50" stroke-width="2">
+      <path d="M22 168 L34 140 L46 168Z"/><path d="M20 186 L34 154 L48 186Z"/>
+      <rect x="31" y="184" width="6" height="12" fill="#7a5230" stroke="none"/>
+      <path d="M356 196 L370 164 L384 196Z"/><path d="M354 214 L370 180 L386 214Z"/>
+      <rect x="367" y="212" width="6" height="12" fill="#7a5230" stroke="none"/>
+    </g>
+    <g stroke="#ffffff" stroke-width="3" stroke-linecap="round" opacity=".35">
+      <line x1="60" y1="132" x2="52" y2="168"/>
+      <line x1="344" y1="140" x2="352" y2="176"/>
+    </g>`,
+  // Snowballs fall the full width; the bucket owns the bottom ~54px. Hills and
+  // trees sit below the bucket line so nothing hides a falling ball.
+  snowball: `
+    <g fill="#ffffff" opacity=".75">
+      <ellipse cx="70" cy="44" rx="34" ry="16"/><ellipse cx="98" cy="38" rx="26" ry="13"/>
+      <ellipse cx="310" cy="60" rx="30" ry="14"/><ellipse cx="336" cy="54" rx="22" ry="11"/>
+    </g>
+    <g fill="#e8f4fd">
+      <path d="M0 176 L58 122 L118 176Z"/>
+      <path d="M288 176 L344 128 L400 176Z"/>
+    </g>
+    <path d="M0 244 Q70 218 148 240 Q230 264 306 238 Q356 222 400 236 L400 300 L0 300Z" fill="#ffffff"/>
+    <path d="M0 268 Q80 250 168 266 Q252 282 330 264 Q368 256 400 262 L400 300 L0 300Z" fill="#eef8ff"/>
+    <g fill="#4a9a72" stroke="#2f6b50" stroke-width="2">
+      <path d="M28 250 L40 220 L52 250Z"/><rect x="37" y="248" width="6" height="12" fill="#7a5230" stroke="none"/>
+      <path d="M348 246 L362 214 L376 246Z"/><rect x="359" y="244" width="6" height="13" fill="#7a5230" stroke="none"/>
+    </g>
+    <g fill="#dceefb"><circle cx="150" cy="252" r="9"/><circle cx="166" cy="256" r="6"/></g>`,
+  // The card grid covers most of the stage — only the gaps show, so this is
+  // deliberately a soft wash rather than distinct shapes.
+  pairs: `
+    <path d="M0 0 Q120 60 400 24 L400 0Z" fill="#a8e8ff" opacity=".45"/>
+    <path d="M0 40 Q140 96 400 58 L400 24 Q120 60 0 0Z" fill="#8fd8f8" opacity=".3"/>
+    <g fill="#ffffff" opacity=".7">
+      <circle cx="52" cy="86" r="2.5"/><circle cx="148" cy="52" r="2"/><circle cx="256" cy="94" r="2.5"/>
+      <circle cx="348" cy="60" r="2"/><circle cx="196" cy="140" r="2"/><circle cx="88" cy="188" r="2.5"/>
+      <circle cx="320" cy="196" r="2"/><circle cx="244" cy="250" r="2.5"/><circle cx="120" cy="262" r="2"/>
+    </g>`,
+  // Shells are laid out at 25% and 58% from the top, so the sand detail sits
+  // below them and along the edges.
+  treasure: `
+    <path d="M0 150 Q60 138 130 150 Q210 164 290 148 Q350 138 400 148 L400 300 L0 300Z" fill="#d9c187"/>
+    <g stroke="#c4a96a" stroke-width="2.5" fill="none" stroke-linecap="round" opacity=".7">
+      <path d="M20 200 Q70 192 120 200"/><path d="M180 226 Q240 218 300 226"/>
+      <path d="M60 262 Q120 254 180 262"/><path d="M250 272 Q310 264 370 272"/>
+    </g>
+    <g fill="#2f9c8a" stroke="#7a6434" stroke-width="2">
+      <path d="M24 300 Q12 258 30 222 Q44 260 38 300Z"/>
+      <path d="M372 300 Q384 256 366 220 Q352 258 358 300Z"/>
+    </g>
+    <g fill="#ff9d6e" stroke="#b06a44" stroke-width="2">
+      <path d="M320 268 l8 -18 l8 18 l18 4 l-14 12 l4 18 l-16 -10 l-16 10 l4 -18 l-14 -12Z"/>
+    </g>
+    <g fill="#f4e0bb" opacity=".8"><circle cx="150" cy="284" r="5"/><circle cx="212" cy="292" r="4"/></g>`
+};
+
+function addMiniScenery(stage, kind) {
+  const art = MINI_SCENERY[kind];
+  if (!art) return;
+  const layer = document.createElement("div");
+  layer.className = "mini-scenery";
+  layer.setAttribute("aria-hidden", "true");
+  layer.innerHTML = `<svg viewBox="0 0 400 300" preserveAspectRatio="xMidYMid slice">${art}</svg>`;
+  stage.appendChild(layer);
 }
 
 // Simple fish icon used by the Catch Fish mini-game — body, tail fork, dorsal fin, eye
@@ -5172,8 +5330,10 @@ function startCatchFish() {
   $("miniTitle").textContent = t("catchFish_title");
   $("miniText").textContent  = t("catchFish_text");
   const stage = $("miniStage");
+  const gen = ++miniGen;
   stage.innerHTML = "";
   stage.className = "mini-stage mini-catchfish";
+  addMiniScenery(stage, "catchfish");
 
   let fishSpeed = 9000; // ms to cross screen (slow)
   const speedBar = document.createElement("div");
@@ -5191,12 +5351,13 @@ function startCatchFish() {
   const fishEls = [];
 
   function finish() {
-    if (finished) return;
+    if (finished || gen !== miniGen) return;
     finished = true;
     finishMiniGame(caught, "catchfish");
   }
 
   function spawnAll(speed) {
+    if (gen !== miniGen) return;
     fishEls.forEach(f => f.remove());
     fishEls.length = 0;
     caught = 0; resolved = 0; finished = false;
@@ -5258,8 +5419,10 @@ function startTreasureHunt() {
   $("miniTitle").textContent = t("treasureHunt_title");
   $("miniText").textContent  = t("treasureHunt_text");
   const stage = $("miniStage");
+  ++miniGen;
   stage.innerHTML = "";
   stage.className = "mini-stage mini-treasure";
+  addMiniScenery(stage, "treasure");
 
   const SHELLS = 6;
   const secretIdx = Math.floor(Math.random()*SHELLS);
@@ -5319,8 +5482,10 @@ function startFindPenguin() {
   $("miniTitle").textContent = t("findPenguin_title");
   $("miniText").textContent  = t("findPenguin_text");
   const stage = $("miniStage");
+  ++miniGen;
   stage.innerHTML = "";
   stage.className = "mini-stage mini-penguin";
+  addMiniScenery(stage, "penguin");
 
   const topic   = chooseTopic(["add10","add20","sub20","multiply","divide"]);
   const problem = generateProblem(topic);
@@ -5830,28 +5995,44 @@ function startIceSlide() {
   $("miniTitle").textContent = t("minigame_slide_title");
   $("miniText").textContent  = t("minigame_slide_text");
   const stage = $("miniStage");
+  const gen = ++miniGen;
   stage.innerHTML = "";
   stage.className = "mini-stage mini-slide";
+  addMiniScenery(stage, "slide");
 
   let pos = 50; // seal x% position
   let score = 0;
   let missed = 0;
   let active = true;
   const ROCKS = 12;
+  const LIVES = 2; // was an invisible 3 — see the hearts row below
   let rocksDone = 0;
 
-  // Seal on slide
+  // Seal on slide. Was 60px, which on a phone made both the seal and the
+  // rocks read as small specks in a large empty stage.
   const sealEl = document.createElement("div");
   sealEl.className = "slide-seal";
   sealEl.style.left = pos + "%";
-  sealEl.innerHTML = `<svg viewBox="0 0 260 220" style="width:60px"><use href="#sausage-body"/></svg>`;
+  sealEl.innerHTML = `<svg viewBox="0 0 260 220" style="width:92px"><use href="#sausage-body"/></svg>`;
   stage.appendChild(sealEl);
 
   // Score display
   const scoreEl = document.createElement("div");
   scoreEl.className = "slide-score";
-  scoreEl.textContent = "Dodge: 0";
+  scoreEl.textContent = `${t("miniDodged")}: 0`;
   stage.appendChild(scoreEl);
+
+  // Lives. `missed` used to be a purely internal counter — the child got no
+  // warning before the game ended, so a loss felt arbitrary. Hearts make the
+  // stake visible on every hit, which is also what makes 2 lives readable as
+  // a rule rather than as a bug.
+  const livesEl = document.createElement("div");
+  livesEl.className = "slide-lives";
+  const renderLives = () => {
+    livesEl.textContent = "❤️".repeat(Math.max(0, LIVES - missed)) + "🤍".repeat(Math.min(missed, LIVES));
+  };
+  renderLives();
+  stage.appendChild(livesEl);
 
   // Left / Right buttons
   const btnWrap = document.createElement("div");
@@ -5859,8 +6040,11 @@ function startIceSlide() {
   btnWrap.innerHTML = `<button class="slide-btn" id="slideLeft">← ${t("left")}</button><button class="slide-btn" id="slideRight">${t("right")} →</button>`;
   stage.appendChild(btnWrap);
 
-  const moveLeft  = () => { if (!active) return; pos = Math.max(10, pos-18); sealEl.style.left = pos+"%"; };
-  const moveRight = () => { if (!active) return; pos = Math.min(90, pos+18); sealEl.style.left = pos+"%"; };
+  // Step widened 18%->22% to stay ahead of the bigger sprites: the hit test
+  // below is the sum of the seal's and the rock's half-widths, so growing both
+  // widened the danger zone — a single tap has to still be enough to clear it.
+  const moveLeft  = () => { if (!active) return; pos = Math.max(10, pos-22); sealEl.style.left = pos+"%"; };
+  const moveRight = () => { if (!active) return; pos = Math.min(90, pos+22); sealEl.style.left = pos+"%"; };
   btnWrap.querySelector("#slideLeft").addEventListener("click",  moveLeft);
   btnWrap.querySelector("#slideRight").addEventListener("click", moveRight);
   // keyboard
@@ -5872,13 +6056,13 @@ function startIceSlide() {
 
   // Spawn rocks from top
   function spawnRock() {
-    if (!active) return;
+    if (!active || gen !== miniGen) return;
     const rock = document.createElement("div");
     rock.className = "slide-rock";
     const rockX = 10 + Math.random()*80;
     const scale = 0.9 + Math.random()*0.45; // size variety: some rocks are noticeably bigger
-    rock.style.width  = Math.round(46*scale) + "px";
-    rock.style.height = Math.round(40*scale) + "px";
+    rock.style.width  = Math.round(62*scale) + "px";
+    rock.style.height = Math.round(54*scale) + "px";
     rock.style.left = rockX+"%";
     rock.style.top  = "-40px";
     stage.appendChild(rock);
@@ -5889,57 +6073,69 @@ function startIceSlide() {
       { duration: 1600 - Math.min(score*40,800), easing:"linear" }
     );
     fall.onfinish = () => {
-      if (!active) return;
+      if (!active || gen !== miniGen) return;
       const rockCenter  = rockX;
       const stageW       = stage.offsetWidth || 360;
       const sealHalfPct  = (sealEl.offsetWidth/2  / stageW) * 100;
       const rockHalfPct  = (rock.offsetWidth/2    / stageW) * 100;
-      if (Math.abs(rockCenter - pos) < sealHalfPct + rockHalfPct) {
+      // .82 forgiveness factor: both sprites grew, and a hitbox that matches
+      // their full drawn width punishes near-misses that visually look clear
+      // (the seal art has transparent margins inside its 260x220 viewBox).
+      if (Math.abs(rockCenter - pos) < (sealHalfPct + rockHalfPct) * .82) {
         missed++;
+        renderLives();
         rock.classList.add("rock-hit");
         playSound("wrong");
         sealEl.classList.add("slide-ouch");
         setTimeout(() => sealEl.classList.remove("slide-ouch"), 400);
       } else {
         score++;
-        scoreEl.textContent = `Dodge: ${score}`;
+        scoreEl.textContent = `${t("miniDodged")}: ${score}`;
         state.fish++;
         renderHeader();
       }
       rock.remove();
-      if (missed >= 3 || rocksDone >= ROCKS) {
-        endSlide();
+      if (missed >= LIVES || rocksDone >= ROCKS) {
+        endSlide(missed >= LIVES);
       } else {
         setTimeout(spawnRock, 500+Math.random()*600);
       }
     };
   }
 
-  function endSlide() {
+  function endSlide(outOfLives) {
+    if (!active) return;
     active = false;
     document.removeEventListener("keydown", keyHandler);
-    const won = score >= 6;
+    const won = score >= 6 && !outOfLives;
     if (won) {
       state.coins += 4; state.stars++;
-      toast(`Ice Slide! Dodged ${score} rocks! +4 coins ⭐`);
+      toast(`${t("miniSlideWin").replace("{n}", score)} ⭐`);
+    } else if (outOfLives) {
+      toast(`${t("miniSlideOut")} 🪨`);
     } else {
-      toast(`Dodged ${score} rocks. Nice try! 🧊`);
+      toast(`${t("miniSlideTry").replace("{n}", score)} 🧊`);
     }
     if (miniGameTimer) clearTimeout(miniGameTimer);
-    miniGameTimer = setTimeout(() => finishMiniGame(won ? 5 : 2, "slide"), 1000);
+    miniGameTimer = setTimeout(() => { if (gen === miniGen) finishMiniGame(won ? 5 : 2, "slide"); }, 1000);
   }
 
   setTimeout(spawnRock, 600);
-  miniGameTimer = setTimeout(() => { if (active) endSlide(); }, 22000);
+  miniGameTimer = setTimeout(() => { if (active) endSlide(false); }, 22000);
 }
 
 // ─── S2: Mini-game 5 — Snowball Catch: swipe bucket to catch snowballs ────────
-function startSnowballCatch() {
+// initialSpeed carries the child's speed choice across the restart that a
+// speed change triggers — without it, picking "Fast" would immediately snap
+// the selector back to the default.
+function startSnowballCatch(initialSpeed) {
   $("miniTitle").textContent = t("minigame_snow_title");
   $("miniText").textContent  = t("minigame_snow_text");
   const stage = $("miniStage");
+  const gen = ++miniGen;
   stage.innerHTML = "";
   stage.className = "mini-stage mini-snowball";
+  addMiniScenery(stage, "snowball");
 
   let bucketX = 50;
   let caught = 0;
@@ -5947,6 +6143,18 @@ function startSnowballCatch() {
   let active = true;
   const TOTAL = 14;
   let spawned = 0;
+  // Fall time for the first snowball. Was a fixed 1200ms accelerating to
+  // 600ms, which is genuinely hard for a 6-year-old — same problem Catch Fish
+  // already solved with a speed selector, so this reuses that exact control
+  // and likewise defaults to the SLOWEST setting.
+  let ballSpeed = initialSpeed || 2400;
+
+  const speedBar = document.createElement("div");
+  speedBar.className = "mini-speed-bar";
+  speedBar.innerHTML = [[2400,"🐢",t("speedSlow")],[1700,"❄️",t("speedNormal")],[1150,"⚡",t("speedFast")]]
+    .map(([ms,icon,label]) => `<button class="speed-btn${ms === ballSpeed ? " active" : ""}" data-speed="${ms}">${icon} ${label}</button>`)
+    .join("");
+  stage.appendChild(speedBar);
 
   // Bucket
   const bucket = document.createElement("div");
@@ -5955,9 +6163,10 @@ function startSnowballCatch() {
   stage.appendChild(bucket);
 
   // Score
+  const goal = Math.ceil(TOTAL*0.6);
   const scoreEl = document.createElement("div");
   scoreEl.className = "slide-score";
-  scoreEl.textContent = `Caught: 0/${Math.ceil(TOTAL*0.6)}`;
+  scoreEl.textContent = `${t("miniCaught")}: 0/${goal}`;
   stage.appendChild(scoreEl);
 
   // Drag / click to move bucket
@@ -5975,7 +6184,7 @@ function startSnowballCatch() {
   });
 
   function spawnBall() {
-    if (!active || spawned >= TOTAL) return;
+    if (!active || spawned >= TOTAL || gen !== miniGen) return;
     spawned++;
     const ball = document.createElement("div");
     ball.className = "snow-ball";
@@ -5984,19 +6193,22 @@ function startSnowballCatch() {
     ball.style.top  = "-20px";
     stage.appendChild(ball);
 
-    const dur = 1200 - Math.min(caught*50, 600);
+    // Ramp softened too (was -50ms per catch capped at -600): on top of a
+    // faster base that made the back half of a round much harder than the
+    // front, which reads as the game "breaking" rather than getting harder.
+    const dur = Math.max(700, ballSpeed - Math.min(caught*35, 420));
     const landTop = stage.offsetHeight-30;
     const anim = ball.animate(
       [{ top:"-20px" }, { top: landTop+"px" }],
       { duration: dur, easing:"linear", fill: "forwards" }
     );
     anim.onfinish = () => {
-      if (!active) return;
+      if (!active || gen !== miniGen) return;
       if (Math.abs(ballX - bucketX) < 14) {
         caught++;
         state.fish++;
         playSound("coin");
-        scoreEl.textContent = `Caught: ${caught}/${Math.ceil(TOTAL*0.6)}`;
+        scoreEl.textContent = `${t("miniCaught")}: ${caught}/${goal}`;
         renderHeader();
         // Drop the ball into the bucket so the catch is unmistakable
         const bucketTop = stage.offsetHeight - 16 - 26;
@@ -6017,7 +6229,7 @@ function startSnowballCatch() {
         setTimeout(() => ball.remove(), 200);
       }
       const remaining = TOTAL - spawned;
-      const needed    = Math.ceil(TOTAL*0.6) - caught;
+      const needed    = goal - caught;
       if (remaining === 0 || (missed > TOTAL*0.5 && needed > remaining)) {
         endSnow();
       } else {
@@ -6027,17 +6239,27 @@ function startSnowballCatch() {
   }
 
   function endSnow() {
+    if (!active) return;
     active = false;
-    const won = caught >= Math.ceil(TOTAL*0.6);
+    const won = caught >= goal;
     if (won) {
       state.coins += 3; state.stars++;
-      toast(`Snowball catch! ${caught} caught! +3 coins ❄️`);
+      toast(`${t("miniSnowWin").replace("{n}", caught)} ❄️`);
     } else {
-      toast(`Caught ${caught}. Slippery flakes! ❄️`);
+      toast(`${t("miniSnowTry").replace("{n}", caught)} ❄️`);
     }
     if (miniGameTimer) clearTimeout(miniGameTimer);
-    miniGameTimer = setTimeout(() => finishMiniGame(won ? 5 : 1, "snowball"), 900);
+    miniGameTimer = setTimeout(() => { if (gen === miniGen) finishMiniGame(won ? 5 : 1, "snowball"); }, 900);
   }
+
+  // Changing speed restarts the round fresh, same contract as Catch Fish.
+  speedBar.querySelectorAll(".speed-btn").forEach(btn => {
+    btn.addEventListener("click", () => {
+      speedBar.querySelectorAll(".speed-btn").forEach(b => b.classList.remove("active"));
+      btn.classList.add("active");
+      startSnowballCatch(Number(btn.dataset.speed));
+    });
+  });
 
   for (let i=0; i<3; i++) setTimeout(spawnBall, i*400+300);
   miniGameTimer = setTimeout(() => { if (active) endSnow(); }, 24000);
@@ -6048,8 +6270,10 @@ function startMatchPairs() {
   $("miniTitle").textContent = t("matchPairs_title") || "Match Pairs!";
   $("miniText").textContent  = t("matchPairs_text")  || "Flip cards and find matching pairs!";
   const stage = $("miniStage");
+  ++miniGen;
   stage.innerHTML = "";
   stage.className = "mini-stage mini-pairs";
+  addMiniScenery(stage, "pairs");
 
   const EMOJIS = ["🐧","🐟","🐻","🦊","🐳","🦭","🌟","❄"];
   const GRID_SIZE = EMOJIS.length;  // 8 pairs = 16 cards
@@ -7177,6 +7401,14 @@ const STRINGS = {
     findPenguin_title:"Find the Penguin!", findPenguin_text:"Solve it, then tap the iceberg with the right answer!",
     miniWellDone:"Well done!", miniGoodEffort:"Good effort!",
     miniPlayAgain:"Play Again", miniNextGame:"Next Mini-game", miniReturnMap:"Return to Map",
+    // In-stage HUD labels — these were hardcoded English and showed up
+    // untranslated on a Russian device ("Dodge: 0", "Caught: 5/9").
+    miniDodged:"Dodged", miniCaught:"Caught", miniSkip:"Next game",
+    miniSlideWin:"Ice Slide! Dodged {n} rocks! +4 coins",
+    miniSlideTry:"Dodged {n} rocks. Nice try!",
+    miniSlideOut:"Ouch! Out of hearts — try again!",
+    miniSnowWin:"Snowball catch! {n} caught! +3 coins",
+    miniSnowTry:"Caught {n}. Slippery flakes!",
     // Rewards / shop
     costumesAndPets:"Costumes and Pets", spendCoins:"Spend coins on playful looks for Sausage.",
     achievements:"Achievements", owned:"Owned", buy:"Buy", equip:"Equip", equipped:"Equipped",
@@ -7336,6 +7568,12 @@ const STRINGS = {
     findPenguin_title:"Найди пингвина!", findPenguin_text:"Реши задачу, потом нажми на айсберг с правильным ответом!",
     miniWellDone:"Отлично!", miniGoodEffort:"Хорошая попытка!",
     miniPlayAgain:"Играть снова", miniNextGame:"Следующая игра", miniReturnMap:"На карту",
+    miniDodged:"Уклонился", miniCaught:"Поймал", miniSkip:"Другая игра",
+    miniSlideWin:"Ледяная горка! Уклонился от {n} камней! +4 монеты",
+    miniSlideTry:"Уклонился от {n} камней. Хорошая попытка!",
+    miniSlideOut:"Ой! Сердечки кончились — попробуй ещё!",
+    miniSnowWin:"Снежки пойманы! {n} штук! +3 монеты",
+    miniSnowTry:"Поймал {n}. Скользкие снежинки!",
     // Rewards / shop
     costumesAndPets:"Костюмы и питомцы", spendCoins:"Трать монеты на образы для Сосиски.",
     achievements:"Достижения", owned:"Куплено", buy:"Купить", equip:"Надеть", equipped:"Надето",
@@ -7534,6 +7772,7 @@ function applyLangToDOM() {
     startChallengeBtn: t("startMission"),
     miniGameBtn:       t("playBonus"),
     closeMiniBtn:      `← ${t("returnToMap")}`,
+    skipMiniBtn:       `${t("miniSkip")} 🎮`,
     dailyBtn:          t("playDaily"),
     exportBtn:         t("exportCopy"),
     importBtn:         t("importProgress"),
