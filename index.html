@@ -61,7 +61,7 @@
     <div class="title-screen-art" aria-hidden="true"></div>
     <div class="title-screen-top">
       <h1 id="titleScreenHeading" class="title-screen-title">Arctic Math Rescue</h1>
-      <p class="title-screen-sub" data-i18n="titleTagline">Arctic Math Adventure</p>
+      <p class="title-screen-sub" data-i18n="titleTagline">Seal Adventure</p>
     </div>
     <button class="title-play-btn" id="titlePlayBtn" data-i18n="titlePlay" type="button">▶ Play</button>
   </div>
@@ -444,12 +444,20 @@
       <h2 id="schoolTitle" data-i18n="seaSchool">🎓 Sea School</h2>
       <div class="school-tabs" id="schoolTabs" role="tablist">
         <button class="school-tab active" data-school-tab="table" role="tab" data-i18n="schoolTable">Times table</button>
+        <button class="school-tab" data-school-tab="how" role="tab" data-i18n="schoolHow">How to count</button>
         <button class="school-tab" data-school-tab="rules" role="tab" data-i18n="schoolRules">Rules</button>
         <button class="school-tab" data-school-tab="train" role="tab" data-i18n="schoolTrain">Practice</button>
       </div>
       <div class="school-panel" id="schoolTablePanel">
         <div class="school-grid" id="schoolGrid"></div>
         <p class="school-eq" id="schoolEq" data-i18n="schoolTapCell">Tap a cell 👆</p>
+      </div>
+      <!-- "How to count": worked, picture-first explanations of the four
+           operations plus column multiplication and long division, for a
+           child who has forgotten HOW rather than just the answer. -->
+      <div class="school-panel" id="schoolHowPanel" hidden>
+        <div class="school-how-ops" id="schoolHowOps" role="tablist"></div>
+        <div class="school-how-body" id="schoolHowBody"></div>
       </div>
       <div class="school-panel" id="schoolRulesPanel" hidden>
         <div class="school-rules" id="schoolRules"></div>

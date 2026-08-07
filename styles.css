@@ -384,11 +384,20 @@ button { font: inherit; color: inherit; }
    stretch keeps height auto, so the ratio resolves the normal way —
    width from the column, height from the width. */
 .challenge-scene.has-custom-bg { aspect-ratio: 8 / 5; min-height: 220px; height: auto; align-self: start; }
+/* On an island with bespoke art the three generic fallback layers are dead
+   weight painted straight over it. Hiding them here rather than from JS is
+   deliberate: startMission() creates the watermark and ground-accent lazily,
+   after setupIslandScene() has already run, so any inline hiding missed them
+   on the first mission of a session. A rule keyed off the parent class can't
+   lose that race no matter what order the nodes appear in. */
+.challenge-scene.has-custom-bg > .iceberg,
+.challenge-scene.has-custom-bg > .challenge-watermark,
+.challenge-scene.has-custom-bg > .challenge-ground-accent { display: none; }
 /* Bespoke per-island scene art (Snow Beach, Fish Bay, Whale Coast,
    Penguin Islands...). Sits behind everything else in the scene — the
-   iceberg/watermark/ground-accent layers are display:none'd by
-   setupIslandScene() in game.js whenever this is populated, so there's
-   no double-up between the generic and bespoke art on the same island. */
+   generic iceberg/watermark/ground-accent layers are hidden by the rule
+   above whenever this is populated, so there's no double-up between the
+   generic and bespoke art on the same island. */
 .challenge-custom-bg {
   position: absolute;
   inset: 0;
@@ -621,6 +630,10 @@ button { font: inherit; color: inherit; }
   padding: 10px 12px;
 }
 #problemText { margin: 0; font-size: clamp(1.6rem, 3.2vw, 2.6rem); line-height: 1.25; }
+/* Sentence-length problems step down to a normal reading size (see the note
+   in styles-mobile.css — this is the desktop half of the same rule). */
+#problemText.is-long  { font-size: clamp(1.3rem, 2.2vw, 1.8rem);  line-height: 1.3; }
+#problemText.is-xlong { font-size: clamp(1.15rem, 1.8vw, 1.5rem); line-height: 1.35; }
 .answers { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
 .answer {
   min-height: 70px;
@@ -753,10 +766,10 @@ button { font: inherit; color: inherit; }
   border: 4px solid #9be8ff; position: relative;
 }
 .school-box h2 { margin: 0 0 14px; font-size: 1.3rem; color: var(--deep); text-align: center; }
-.school-tabs { display: flex; gap: 8px; justify-content: center; margin-bottom: 16px; }
+.school-tabs { display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; margin-bottom: 16px; }
 .school-tab {
-  padding: 8px 18px; border-radius: 999px; border: 2px solid #cdeaf5;
-  background: #eef7fb; color: var(--deep); font-weight: 800; cursor: pointer; font-size: .95rem;
+  padding: 8px 14px; border-radius: 999px; border: 2px solid #cdeaf5;
+  background: #eef7fb; color: var(--deep); font-weight: 800; cursor: pointer; font-size: .9rem;
 }
 .school-tab.active { background: #ffd45a; border-color: #f5b800; }
 .school-panel[hidden] { display: none !important; }
@@ -782,8 +795,17 @@ button { font: inherit; color: inherit; }
   position: sticky; top: 0; left: 0; z-index: 4;
   background: #b6dcea; font-weight: 900; cursor: default;
 }
-.school-cell.hl { background: #ffe9a8; }
-.school-cell.sel { background: #ffd45a; color: #6a3a00; font-weight: 900; }
+/* Trail leading into the tapped cell — deliberately fainter than .sel so the
+   answer itself stays the loudest thing on the grid. */
+.school-cell.hl { background: #fff3d0; }
+/* The two factors on the sticky edges, tinted a step stronger than the trail. */
+.school-cell.head.hl-head { background: #ffe08a; color: #6a3a00; }
+.school-cell.sel {
+  background: #ffd45a;
+  color: #6a3a00;
+  font-weight: 900;
+  box-shadow: 0 0 0 3px #f7a600 inset;
+}
 
 /* Sea School Town landmark — always present, gently bobs + glows to draw the
    eye. Bob uses the `translate` property (not `transform`) so the hover
@@ -796,8 +818,11 @@ button { font: inherit; color: inherit; }
 /* Two classes deliberately: the base `.town-building` width rule lives
    LATER in this file, so a plain `.town-school` selector would lose to it
    on source order (verified live — the width stayed 128px). */
-.town-building.town-school { width: clamp(96px, 18.6vw, 160px); }
-.town-school { z-index: 5; animation: schoolAttract 2.6s ease-in-out infinite; }
+.town-building.town-school {
+  width: clamp(96px, 18.6vw, 160px);
+  margin-left: calc(clamp(96px, 18.6vw, 160px) / -2);
+}
+.town-school { z-index: 4; animation: schoolAttract 2.6s ease-in-out infinite; }
 .town-school svg { position: relative; z-index: 1; }
 @keyframes schoolAttract { 0%, 100% { translate: 0 0; } 50% { translate: 0 -5px; } }
 .town-school::before {
@@ -863,6 +888,106 @@ button { font: inherit; color: inherit; }
   font-weight: 800; color: var(--deep); white-space: pre-line; font-size: .9rem;
 }
 
+/* ── SEA SCHOOL — "How to count" ──────────────────────────────────────────
+   Picture-first explanations of the four operations plus the two column
+   methods. Shares the card look of .school-rule-card so the two reference
+   tabs read as one place. */
+.school-how-ops {
+  display: flex; flex-wrap: wrap; gap: 6px; justify-content: center; margin-bottom: 14px;
+}
+.school-how-op {
+  display: flex; align-items: center; gap: 5px;
+  padding: 6px 12px; border-radius: 999px; border: 2px solid #e0eef5;
+  background: #f7fbfd; color: var(--deep); font-weight: 800; cursor: pointer; font-size: .82rem;
+}
+.school-how-op.active { background: #9be8ff; border-color: #6fd0f0; }
+.school-how-op .how-op-icon { font-size: 1rem; line-height: 1; }
+
+.school-how-card {
+  background: #f7fbfd; border: 2px solid #e0eef5; border-radius: 18px; padding: 16px;
+}
+.school-how-card h3 { margin: 0 0 8px; font-size: 1.05rem; color: var(--deep); }
+.how-idea { margin: 0 0 14px; font-size: .92rem; color: #3a4a55; line-height: 1.5; }
+
+/* Object rows. `flex-wrap` everywhere: on a narrow phone a row of twelve
+   shells has to fold rather than force the modal to scroll sideways. */
+.how-demo {
+  display: flex; align-items: center; justify-content: center; flex-wrap: wrap; gap: 8px;
+  background: #fff; border: 1px dashed #b9d6e2; border-radius: 14px; padding: 12px; margin-bottom: 12px;
+}
+.how-set, .how-group { display: flex; flex-wrap: wrap; gap: 3px; justify-content: center; }
+.how-group {
+  border: 2px solid #b9d6e2; border-radius: 10px; padding: 5px 6px; background: #f2fafd;
+  max-width: 92px;
+}
+.how-obj { font-size: 1.25rem; line-height: 1.1; }
+/* "Taken away" — still visible, because seeing what left is the explanation. */
+.how-obj.is-gone { position: relative; display: inline-block; }
+.how-obj.is-gone > i { opacity: .32; filter: grayscale(1); font-style: normal; }
+.how-obj.is-gone::after {
+  content: ""; position: absolute; left: -1px; right: -1px; top: 50%;
+  border-top: 2.5px solid #e06a6a; transform: rotate(-18deg);
+}
+.how-op { font-size: 1.1rem; font-weight: 900; color: #5f7487; }
+.how-total {
+  font-size: 1.35rem; font-weight: 900; color: var(--deep);
+  background: #ffe9a8; border-radius: 10px; padding: 2px 12px;
+}
+.how-demo-plates { gap: 10px; }
+.how-plate {
+  display: flex; flex-wrap: wrap; gap: 3px; justify-content: center; align-content: center;
+  border: 2px solid #b9d6e2; border-radius: 999px; padding: 10px 8px 6px; background: #fff;
+  min-width: 74px; position: relative;
+}
+.how-plate-lbl {
+  position: absolute; top: -9px; left: 50%; transform: translateX(-50%);
+  background: #b9d6e2; color: #17446a; font-size: .6rem; font-weight: 800;
+  padding: 1px 7px; border-radius: 999px; white-space: nowrap;
+}
+
+/* Worked column layouts. Digits are grid cells, not pre-formatted text, so
+   the columns stay aligned whatever monospace font the device falls back to. */
+.how-column {
+  background: #fff; border: 1px dashed #b9d6e2; border-radius: 14px;
+  padding: 14px 16px; margin-bottom: 12px;
+  display: flex; flex-direction: column; align-items: center; gap: 2px;
+}
+.how-col-row { display: flex; align-items: center; }
+.how-col-row.is-carry .how-col-cell { font-size: .78rem; color: #e08a2a; }
+.how-col-sign { width: 1.5ch; text-align: right; font-weight: 900; color: #5f7487; font-size: 1.2rem; }
+.how-col-cell {
+  width: 1.6ch; text-align: center; font-weight: 900; font-size: 1.35rem;
+  color: var(--deep); font-variant-numeric: tabular-nums;
+}
+.how-col-rule { width: 6.3ch; border-top: 3px solid #17446a; margin: 3px 0; align-self: center; }
+
+.how-div-head { display: flex; align-items: stretch; font-weight: 900; font-size: 1.35rem; color: var(--deep); }
+.how-div-dividend { padding-right: 10px; }
+.how-div-bar { border-left: 3px solid #17446a; }
+.how-div-divisor { padding-left: 10px; border-bottom: 3px solid #17446a; }
+.how-div-body { display: flex; flex-wrap: wrap; gap: 14px; align-items: center; justify-content: center; margin-top: 10px; }
+.how-div-ladder { display: flex; flex-direction: column; gap: 3px; }
+.how-div-step { display: flex; align-items: baseline; gap: 8px; font-size: .8rem; color: #5f7487; }
+.how-div-step b { font-size: 1.05rem; color: var(--deep); min-width: 2.2ch; text-align: right; font-variant-numeric: tabular-nums; }
+.how-div-quotient {
+  display: flex; flex-direction: column; align-items: center;
+  background: #ffe9a8; border-radius: 12px; padding: 5px 14px;
+}
+.how-div-q-lbl { font-size: .6rem; font-weight: 800; color: #6a3a00; text-transform: uppercase; letter-spacing: .04em; }
+.how-div-quotient b { font-size: 1.4rem; color: var(--deep); }
+
+.how-example {
+  margin: 0 0 10px; text-align: center;
+  font-size: 1.15rem; font-weight: 900; color: var(--deep);
+}
+.how-steps { margin: 0 0 10px; padding-left: 20px; display: flex; flex-direction: column; gap: 6px; }
+.how-steps li { font-size: .88rem; color: #3a4a55; line-height: 1.45; }
+.how-tip {
+  margin: 0; background: #fff; border-radius: 12px; padding: 8px 12px;
+  border: 1px dashed #b9d6e2; font-size: .85rem; color: #3a4a55; line-height: 1.45;
+}
+.how-tip b { color: var(--deep); }
+
 /* ── SEA SCHOOL — practice drill (quiz + fill-the-grid) ── */
 .school-train-modes { display: flex; gap: 8px; justify-content: center; margin-bottom: 16px; }
 .school-mode-btn {
@@ -924,16 +1049,35 @@ button { font: inherit; color: inherit; }
 /* Base building look — full animation list lives here so later theme patches
    (e.g. the Living Town glow below) only need to ADD a keyframe name to this
    list instead of re-declaring `animation` and silently wiping these out. */
+/* Town objects are placed by CENTRE + ground line: renderTown() sets `left`
+   (the centre) and `bottom` (where the object stands), and each width is
+   paired with a matching negative margin-left. margin-left rather than
+   transform/translate on purpose — every one of these elements already
+   animates `transform` (townPop, friend-waddle, critter-walk) or `translate`
+   (buildingIdle), so a centring offset on either property would be wiped out
+   the moment an animation ran. `align-items: flex-end` keeps the artwork
+   sitting on the given ground line rather than floating at the top of the
+   min-height touch target. */
 .town-building {
   position: absolute;
   width: clamp(78px, 15vw, 128px);
-  min-height: 118px;
+  margin-left: calc(clamp(78px, 15vw, 128px) / -2);
+  display: flex;
+  align-items: flex-end;
   border: 0;
   background: transparent;
   cursor: pointer;
   transition: transform .25s ease;
   z-index: 3;
   animation: townPop .5s ease both, buildingIdle 3.5s ease-in-out infinite, building-glow 4s ease-in-out infinite;
+}
+/* Back row: smaller and dimmer so the two rows read as depth rather than as
+   a jumble of same-sized boxes at different heights. */
+.town-building.is-far {
+  width: clamp(62px, 12vw, 102px);
+  margin-left: calc(clamp(62px, 12vw, 102px) / -2);
+  z-index: 2;
+  opacity: .93;
 }
 .town-building:hover { transform: scale(1.08) translateY(-4px); }
 .town-building svg { width: 100%; filter: drop-shadow(0 15px 12px rgba(28,88,115,.2)); }
@@ -943,7 +1087,9 @@ button { font: inherit; color: inherit; }
    composition's focal role instead of being visually equal to a fish stall. */
 .town-building.is-finale {
   width: clamp(112px, 22vw, 188px);
-  z-index: 4;
+  margin-left: calc(clamp(112px, 22vw, 188px) / -2);
+  z-index: 2;
+  opacity: 1;
 }
 
 /* S7: translucent preview of the next building to unlock, sitting in its
@@ -951,10 +1097,20 @@ button { font: inherit; color: inherit; }
 .town-ghost-wrap {
   position: absolute;
   width: clamp(78px, 15vw, 128px);
+  margin-left: calc(clamp(78px, 15vw, 128px) / -2);
   z-index: 2;
   pointer-events: none;
 }
-.town-ghost-wrap.is-finale { width: clamp(112px, 22vw, 188px); z-index: 3; }
+.town-ghost-wrap.is-far {
+  width: clamp(62px, 12vw, 102px);
+  margin-left: calc(clamp(62px, 12vw, 102px) / -2);
+  z-index: 1;
+}
+.town-ghost-wrap.is-finale {
+  width: clamp(112px, 22vw, 188px);
+  margin-left: calc(clamp(112px, 22vw, 188px) / -2);
+  z-index: 1;
+}
 .town-building-ghost {
   opacity: .3;
   filter: grayscale(1) brightness(1.7);
@@ -991,8 +1147,11 @@ button { font: inherit; color: inherit; }
 }
 .town-friend {
   position: absolute;
-  width: 52px;
-  z-index: 3;
+  width: 40px;
+  margin-left: -20px;
+  /* Above every building: friends walk along the front of the scene, so they
+     must paint over the near row's base rather than disappear behind it. */
+  z-index: 5;
   animation: friend-waddle 3s ease-in-out infinite;
   border: 0;
   background: transparent;
@@ -1017,14 +1176,15 @@ button { font: inherit; color: inherit; }
   position: absolute;
   pointer-events: none;
 }
-.town-critter { width: 46px; z-index: 3; animation: critter-walk 6s ease-in-out infinite; }
+.town-critter { width: 46px; margin-left: -23px; z-index: 4; animation: critter-walk 6s ease-in-out infinite; }
 /* P9: Town Decorations — purely cosmetic props bought with coins, sit in
    the gap band between the buildings row and the friends row. Same pop-in
    entrance as buildings, but smaller and non-interactive. */
 .town-decor {
   position: absolute;
   width: 42px;
-  z-index: 3;
+  margin-left: -21px;
+  z-index: 6;
   pointer-events: none;
   animation: townPop .5s ease both;
 }
@@ -1666,8 +1826,13 @@ button { font: inherit; color: inherit; }
   z-index: 3;
 }
 .slide-seal.slide-ouch { animation: shake .25s ease; }
+/* translateX(-50%) makes `left` mean the rock's CENTRE, exactly as it already
+   does for .slide-seal. Without it the two sprites were measured from
+   different anchors — seal centre vs rock left edge — which biased the hit
+   test by half a rock and counted clean dodges to the right as hits. */
 .slide-rock {
   position: absolute;
+  transform: translateX(-50%);
   background: #788fa0;
   border-radius: 40% 44% 36% 48%;
   box-shadow: inset -5px -5px 0 rgba(0,0,0,.15), inset 4px 4px 0 rgba(255,255,255,.25);
@@ -1863,7 +2028,13 @@ button { font: inherit; color: inherit; }
   animation: rockHitFlash .3s ease;
   background: #ff7b7b;
 }
-@keyframes rockHitFlash { 50% { transform: scale(1.4); opacity:.5; } }
+/* Keeps the translateX(-50%) anchor from .slide-rock — a bare scale() here
+   would drop it and make the rock jump half its width to the right. */
+@keyframes rockHitFlash {
+  from { transform: translateX(-50%) scale(1); }
+  50%  { transform: translateX(-50%) scale(1.4); opacity:.5; }
+  to   { transform: translateX(-50%) scale(1); }
+}
 
 
 /* ═══════════════════════════════════════════════════════

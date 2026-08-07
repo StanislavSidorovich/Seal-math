@@ -265,20 +265,22 @@ function shopName(item) { return currentLang === "ru" ? (shopNamesRu[item.id] ||
 
 // P9: economy expansion — Town Decorations, a second coin sink alongside
 // the costume shop. Purely cosmetic, no zone-collision logic needed (unlike
-// costumes you simply collect them all). Anchored to the scene edges
-// (bottom, so every prop stands on the snow) rather than the building
-// cluster — the buildings/friends overlap each other so densely (by
-// design, resolved via z-index/DOM order) that there's no clean gap inside
-// that area to anchor a new prop to without it disappearing behind one.
+// costumes you simply collect them all). Every prop is bottom-anchored so it
+// stands on the snow, and `pos` puts them on the front-most ground line of
+// the scene — nearer the viewer than the friends, who are in turn nearer
+// than the two building rows (see the depth ladder in renderTown).
+// `left` is the prop's CENTRE, and each one is parked in a gap between two
+// friends (the friends row steps 11% from 6%), so a bought decoration never
+// grows out of a friend's back.
 const decorations = [
-  ["Snowman",        10, 6,  3, "bottom"],
-  ["Ice Lantern",      8, 88, 4, "bottom"],
-  ["Park Bench",      12, 27, 2, "bottom"],
-  ["Ice Sculpture",   16, 51, 3, "bottom"],
+  ["Snowman",        10, 11.5, 1, "bottom"],
+  ["Ice Lantern",      8, 88.5, 1, "bottom"],
+  ["Park Bench",      12, 33.5, 1, "bottom"],
+  ["Ice Sculpture",   16, 55.5, 1, "bottom"],
   // The garland is two poles with bunting strung between them — anchored to
   // the ground like the other props, NOT to `top` (it used to sit at top:6%,
   // i.e. its poles floated in the middle of the night sky).
-  ["Garland Flags",   20, 38, 3, "bottom"],
+  ["Garland Flags",   20, 77.5, 1, "bottom"],
 ].map((d,i) => ({ id:i, name:d[0], cost:d[1], left:d[2], pos:d[3], anchor:d[4] }));
 const decorationNamesRu = ["Снеговик","Ледяной фонарь","Скамейка","Ледяная скульптура","Гирлянда флажков"];
 function decorName(i) { return currentLang === "ru" ? (decorationNamesRu[i] || decorations[i].name) : decorations[i].name; }
@@ -1418,6 +1420,12 @@ function attachEvents() {
   });
   document.querySelectorAll(".school-mode-btn").forEach(b =>
     b.addEventListener("click", () => switchSchoolTrainMode(b.dataset.trainMode)));
+  // Delegated: renderSchoolHow() rewrites these buttons on every op change.
+  const schoolHowOpsEl = $("schoolHowOps");
+  if (schoolHowOpsEl) schoolHowOpsEl.addEventListener("click", e => {
+    const b = e.target.closest(".school-how-op");
+    if (b) switchSchoolHowOp(b.dataset.howOp);
+  });
   const schoolQuizAnswersEl = $("schoolQuizAnswers");
   if (schoolQuizAnswersEl) schoolQuizAnswersEl.addEventListener("click", e => {
     const b = e.target.closest(".answer");
@@ -3213,6 +3221,388 @@ const OCTOPUS_CAVE_SCENE_SVG    = `<svg viewBox="0 0 800 500" xmlns="http://www.
   </g>
 </svg>`;
 
+const NORTHERN_KINGDOM_SCENE_SVG = `<svg viewBox="0 0 800 500" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="xMidYMid slice" aria-label="Northern Kingdom — a crowned ice castle on a rise under a violet aurora, with a loaded supply sled on the road and Nova the narwhal waiting in a cracked ice pool" role="img">
+
+  <!-- ════════════════════════════════════════════════════════════
+       NORTHERN KINGDOM — mission scene background
+       Sausage the Seal: Arctic Math Adventure
+       Same conventions as the other islands (flat vector, no
+       gradients, navy/slate outlines, viewBox 0 0 800 500). Palette
+       pulled straight from worlds[6].palette (#ffe5ee / #b78cff) —
+       rose-and-violet royal twilight, the only purple island.
+
+       The castle sits right-of-centre as the DESTINATION the
+       supplies have to reach, matching worlds[6].subtitle ("Carry
+       supplies to the castle"). The loaded sled is stalled on the
+       road below it, which is the problem Sausage turns up to fix.
+
+       FRIEND: #islandFriendSpot is Nova's permanent position for the
+       whole mission — a narwhal, so she waits in a cracked pool in
+       the ice rather than on it, left of the castle and clear of the
+       seal rig's landing box. Colours match ANIMAL_SVGS[6] exactly
+       (body #7868c8, belly #a898e8, tusk #e0d0f8, eye #1a2030) so
+       she is recognizably the same Nova from her rescue card.
+       ════════════════════════════════════════════════════════════ -->
+
+  <defs>
+    <clipPath id="nk-canvas"><rect x="0" y="0" width="800" height="500"/></clipPath>
+  </defs>
+
+  <style>
+    /* Aurora curtains over the castle — slow, offset drifts so the sky
+       never reads as a static backdrop */
+    .nk-aurora-1 { animation: nk-drift 11s ease-in-out infinite; }
+    .nk-aurora-2 { animation: nk-drift 14s ease-in-out infinite; animation-delay: -4s; }
+    .nk-aurora-3 { animation: nk-drift 9s  ease-in-out infinite; animation-delay: -7s; }
+    @keyframes nk-drift {
+      0%,100% { transform: translateX(0) scaleY(1);    opacity: .55; }
+      50%     { transform: translateX(26px) scaleY(1.12); opacity: .8; }
+    }
+
+    /* Castle windows lit from inside — the kingdom is awake and waiting */
+    .nk-window { animation: nk-lamp 3.6s ease-in-out infinite; }
+    .nk-window-b { animation: nk-lamp 3.6s ease-in-out infinite; animation-delay: -1.8s; }
+    @keyframes nk-lamp { 0%,100% { opacity: 1; } 50% { opacity: .55; } }
+
+    /* Pennants on the towers */
+    .nk-pennant   { transform-origin: 0px 0px; animation: nk-flutter 2.2s ease-in-out infinite; }
+    .nk-pennant-b { transform-origin: 0px 0px; animation: nk-flutter 2.2s ease-in-out infinite; animation-delay: -1.1s; }
+    @keyframes nk-flutter { 0%,100% { transform: scaleX(1); } 50% { transform: scaleX(.82); } }
+
+    /* Nova — idle bob, same proven trick as every other friend */
+    .nk-nova { transform-origin: 0px 2px; animation: nk-bob 3.8s ease-in-out infinite; }
+    @keyframes nk-bob { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-4px); } }
+
+    /* Ripples in Nova's pool */
+    .nk-ripple { animation: nk-ripple-out 3.4s ease-out infinite; transform-origin: 0px 0px; }
+    @keyframes nk-ripple-out {
+      0%   { transform: scale(.5); opacity: .7; }
+      100% { transform: scale(1.4); opacity: 0; }
+    }
+
+    /* The crown finial above the keep gives a slow royal glint */
+    .nk-crown { animation: nk-glint 4.2s ease-in-out infinite; }
+    @keyframes nk-glint { 0%,100% { opacity: .85; } 50% { opacity: 1; } }
+  </style>
+
+  <g clip-path="url(#nk-canvas)">
+
+    <!-- ── Twilight sky ──────────────────────────────────────────── -->
+    <rect width="800" height="330" fill="#c9aee8"/>
+    <rect y="200" width="800" height="140" fill="#e2cdf4"/>
+    <rect y="290" width="800" height="60" fill="#ffe5ee" opacity=".7"/>
+
+    <!-- ── Stars ─────────────────────────────────────────────────── -->
+    <g fill="#fff6fb">
+      <circle cx="70"  cy="52"  r="2.5" opacity=".9"/>
+      <circle cx="180" cy="90"  r="2"   opacity=".7"/>
+      <circle cx="300" cy="44"  r="2.2" opacity=".85"/>
+      <circle cx="470" cy="78"  r="2"   opacity=".6"/>
+      <circle cx="620" cy="40"  r="2.6" opacity=".9"/>
+      <circle cx="720" cy="96"  r="2"   opacity=".7"/>
+      <circle cx="392" cy="120" r="1.8" opacity=".55"/>
+    </g>
+
+    <!-- ── Aurora curtains ───────────────────────────────────────── -->
+    <g fill="none" stroke-linecap="round">
+      <path class="nk-aurora-1" d="M-40 150 Q180 96 400 142 T860 116" stroke="#ffffff" stroke-width="18" opacity=".45"/>
+      <path class="nk-aurora-2" d="M-40 194 Q220 142 460 186 T860 158" stroke="#ffe5ee" stroke-width="12" opacity=".5"/>
+      <path class="nk-aurora-3" d="M-40 116 Q240 72 520 108 T860 84"   stroke="#8be0d8" stroke-width="10" opacity=".35"/>
+    </g>
+
+    <!-- ── Distant peaks ─────────────────────────────────────────── -->
+    <g fill="#b193dd">
+      <path d="M0 340 L90 246 L184 340Z"/>
+      <path d="M636 340 L714 262 L800 340Z"/>
+    </g>
+    <g fill="#c9b0ea" opacity=".9">
+      <path d="M120 340 L196 272 L276 340Z"/>
+      <path d="M560 340 L628 284 L700 340Z"/>
+    </g>
+
+    <!-- ── The castle on its rise, right-of-centre ───────────────── -->
+    <g transform="translate(500,0)">
+      <!-- rise the castle stands on -->
+      <path d="M-60 372 Q60 316 190 340 Q250 352 268 376 L268 400 L-60 400Z" fill="#e6dcf6" stroke="#c6b2e6" stroke-width="2.5"/>
+
+      <!-- keep -->
+      <rect x="34" y="196" width="118" height="150" rx="6" fill="#efe6fb" stroke="#a98cd8" stroke-width="3"/>
+      <path d="M34 200 L34 176 L52 190 L70 176 L88 190 L106 176 L124 190 L142 176 L152 190 L152 200Z" fill="#dcc9f4" stroke="#a98cd8" stroke-width="2.5"/>
+      <!-- side towers -->
+      <rect x="-6" y="228" width="44" height="118" rx="5" fill="#e6dcf6" stroke="#a98cd8" stroke-width="3"/>
+      <rect x="148" y="228" width="44" height="118" rx="5" fill="#e6dcf6" stroke="#a98cd8" stroke-width="3"/>
+      <path d="M-6 232 L-6 212 L6 222 L18 212 L30 222 L38 212 L38 232Z" fill="#dcc9f4" stroke="#a98cd8" stroke-width="2.5"/>
+      <path d="M148 232 L148 212 L160 222 L172 212 L184 222 L192 212 L192 232Z" fill="#dcc9f4" stroke="#a98cd8" stroke-width="2.5"/>
+      <!-- gate -->
+      <path d="M74 346 L74 296 Q93 278 112 296 L112 346Z" fill="#8f6fc4" stroke="#6f4fa4" stroke-width="2.5"/>
+      <!-- lit windows -->
+      <circle class="nk-window"   cx="62"  cy="240" r="11" fill="#ffe5ee" stroke="#a98cd8" stroke-width="2.5"/>
+      <circle class="nk-window-b" cx="124" cy="240" r="11" fill="#ffe5ee" stroke="#a98cd8" stroke-width="2.5"/>
+      <rect class="nk-window-b" x="10" y="262" width="16" height="26" rx="7" fill="#ffe5ee" stroke="#a98cd8" stroke-width="2"/>
+      <rect class="nk-window"   x="164" y="262" width="16" height="26" rx="7" fill="#ffe5ee" stroke="#a98cd8" stroke-width="2"/>
+      <!-- crown finial over the keep -->
+      <g class="nk-crown" transform="translate(93,150)">
+        <path d="M-26 22 L-26 -2 L-13 10 L0 -8 L13 10 L26 -2 L26 22Z" fill="#ffd45a" stroke="#e0a828" stroke-width="2.5" stroke-linejoin="round"/>
+        <circle cx="0" cy="-13" r="4" fill="#ff9dc0"/>
+      </g>
+      <!-- pennants -->
+      <line x1="16" y1="212" x2="16" y2="182" stroke="#a98cd8" stroke-width="3"/>
+      <path class="nk-pennant" d="M16 182 L46 191 L16 200Z" fill="#ff9dc0"/>
+      <line x1="170" y1="212" x2="170" y2="182" stroke="#a98cd8" stroke-width="3"/>
+      <path class="nk-pennant-b" d="M170 182 L200 191 L170 200Z" fill="#8be0d8"/>
+    </g>
+
+    <!-- ── Snow ground ───────────────────────────────────────────── -->
+    <path d="M0,398 Q160,378 320,396 T640,392 T800,386 L800,500 L0,500Z" fill="#f6eefc"/>
+    <path d="M0,398 Q160,378 320,396 T640,392 T800,386" fill="none" stroke="#d9c9ee" stroke-width="3" opacity=".85"/>
+
+    <!-- ── The supply road up to the gate ────────────────────────── -->
+    <path d="M300 486 Q460 452 592 400" fill="none" stroke="#e6dcf6" stroke-width="16" stroke-linecap="round" opacity=".75"/>
+    <path d="M300 486 Q460 452 592 400" fill="none" stroke="#cbb6e8" stroke-width="2.5" stroke-dasharray="14 16" stroke-linecap="round" opacity=".8"/>
+
+    <!-- ── The stalled supply sled — the mission, in one prop ────── -->
+    <g transform="translate(150,404)">
+      <rect x="-6"  y="-42" width="44" height="30" rx="4" fill="#e2b98c" stroke="#b98f5e" stroke-width="2.5"/>
+      <rect x="38"  y="-34" width="36" height="22" rx="4" fill="#d8a97a" stroke="#b98f5e" stroke-width="2.5"/>
+      <rect x="8"   y="-64" width="32" height="24" rx="4" fill="#eecfa6" stroke="#b98f5e" stroke-width="2.5"/>
+      <line x1="-6" y1="-27" x2="38" y2="-27" stroke="#b98f5e" stroke-width="2"/>
+      <line x1="8"  y1="-52" x2="40" y2="-52" stroke="#b98f5e" stroke-width="2"/>
+      <rect x="-14" y="-12" width="96" height="9" rx="4" fill="#a98cd8" stroke="#7f63ae" stroke-width="2.5"/>
+      <path d="M-14 -3 L-24 8 M82 -3 L92 8" stroke="#7f63ae" stroke-width="3" stroke-linecap="round"/>
+      <path d="M-26 8 L94 8" stroke="#7f63ae" stroke-width="4" stroke-linecap="round"/>
+    </g>
+
+    <!-- ── Banner poles lining the road ──────────────────────────── -->
+    <g stroke="#a98cd8" stroke-width="3" stroke-linecap="round">
+      <line x1="286" y1="440" x2="286" y2="386"/>
+      <line x1="438" y1="424" x2="438" y2="372"/>
+    </g>
+    <path class="nk-pennant"   d="M286 386 L316 395 L286 404Z" fill="#ffd45a"/>
+    <path class="nk-pennant-b" d="M438 372 L468 381 L438 390Z" fill="#ff9dc0"/>
+
+    <!-- ── NOVA — a narwhal, so she waits in a cracked pool in the
+         ice rather than on top of it. Colours match ANIMAL_SVGS[6]. ── -->
+    <g id="islandFriendSpot" transform="translate(300,0)">
+      <!-- the pool: cracked ice ring + open water -->
+      <ellipse cx="60" cy="442" rx="104" ry="34" fill="#d9c9ee" stroke="#bda6e0" stroke-width="2.5"/>
+      <ellipse cx="60" cy="442" rx="88"  ry="26" fill="#7a63b8"/>
+      <ellipse cx="60" cy="438" rx="88"  ry="26" fill="#9a83d4" opacity=".6"/>
+      <g stroke="#bda6e0" stroke-width="2" fill="none" stroke-linecap="round">
+        <path d="M-46 430 L-70 416 M-40 458 L-66 470 M166 432 L192 420 M160 458 L188 468"/>
+      </g>
+      <ellipse class="nk-ripple" cx="60" cy="440" rx="52" ry="16" fill="none" stroke="#c9b4ea" stroke-width="2.5"/>
+
+      <g transform="translate(60,414)">
+        <g class="nk-nova">
+          <!-- body -->
+          <ellipse cx="6" cy="10" rx="46" ry="21" fill="#7868c8"/>
+          <ellipse cx="0" cy="15" rx="34" ry="11" fill="#a898e8" opacity=".45"/>
+          <!-- tail -->
+          <path d="M50 10 Q64 -2 68 10 Q64 22 50 10Z" fill="#7868c8"/>
+          <path d="M50 4  Q60 -1 59 10Z" fill="#5848a8"/>
+          <path d="M50 16 Q60 21 59 10Z" fill="#5848a8"/>
+          <!-- head + eye -->
+          <ellipse cx="-30" cy="6" rx="20" ry="15" fill="#7868c8"/>
+          <circle cx="-34" cy="1" r="6" fill="#1a2030"/><circle cx="-32" cy="-1" r="2" fill="#fff"/>
+          <path d="M-44 12 Q-38 17 -30 15" fill="none" stroke="#5848a8" stroke-width="2" stroke-linecap="round"/>
+          <!-- the tusk: a long spiral tooth -->
+          <path d="M-46 2 Q-62 -14 -78 -34 Q-73 -40 -68 -34 Q-56 -20 -42 -4Z" fill="#e0d0f8"/>
+          <path d="M-46 2 L-78 -34" fill="none" stroke="#c0b0e0" stroke-width="1.4" stroke-linecap="round"/>
+          <path d="M-56 -8 L-52 -14 M-64 -18 L-60 -24 M-71 -27 L-67 -32" stroke="#c0b0e0" stroke-width="1.2" stroke-linecap="round"/>
+        </g>
+      </g>
+    </g>
+
+  </g>
+</svg>`;
+
+const ARCTIC_CHAMPION_SCENE_SVG = `<svg viewBox="0 0 800 500" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="xMidYMid slice" aria-label="Arctic Champion — a golden dawn over the Guardian's podium, ringed with bunting and rising stars, where Tumble the sea otter floats in an open lead of water holding a champion's shell" role="img">
+
+  <!-- ════════════════════════════════════════════════════════════
+       ARCTIC CHAMPION — mission scene background
+       Sausage the Seal: Arctic Math Adventure
+       Same conventions as the other islands (flat vector, no
+       gradients, navy/slate outlines, viewBox 0 0 800 500). Palette
+       pulled straight from worlds[7].palette (#fff8b8 / #2dd6a6) —
+       gold-and-green, the warmest sky in the game, because this is
+       the campaign finale and it should not look like another cold
+       island.
+
+       The Guardian's podium sits right-of-centre as the DESTINATION,
+       matching worlds[7].subtitle ("Become Guardian of the Arctic")
+       and the Guardian ceremony that completeMission() fires when
+       this island's fifth mission lands. Bunting, sunburst rays and
+       rising stars carry the "final celebration" read.
+
+       FRIEND: #islandFriendSpot is Tumble's permanent position for
+       the whole mission — a sea otter, so he floats on his back in
+       an open lead of water, holding the champion's shell he is
+       waiting to hand over. Colours match ANIMAL_SVGS[8] exactly
+       (body #5c3a28, head #7a5038, muzzle #c8a080, eye #1a2030).
+       ════════════════════════════════════════════════════════════ -->
+
+  <defs>
+    <clipPath id="ac-canvas"><rect x="0" y="0" width="800" height="500"/></clipPath>
+  </defs>
+
+  <style>
+    /* Sunburst behind the podium — a very slow turn, so the finale sky
+       reads as alive without ever pulling the eye off the problem text */
+    .ac-rays { transform-origin: 596px 300px; animation: ac-turn 48s linear infinite; }
+    @keyframes ac-turn { to { transform: rotate(360deg); } }
+
+    /* Stars rising toward the podium */
+    .ac-star-1 { animation: ac-rise 5.2s ease-in-out infinite; }
+    .ac-star-2 { animation: ac-rise 6.4s ease-in-out infinite; animation-delay: -2.1s; }
+    .ac-star-3 { animation: ac-rise 4.6s ease-in-out infinite; animation-delay: -3.4s; }
+    .ac-star-4 { animation: ac-rise 7s   ease-in-out infinite; animation-delay: -1.2s; }
+    @keyframes ac-rise {
+      0%   { transform: translateY(10px) scale(.8); opacity: .25; }
+      50%  { transform: translateY(-16px) scale(1); opacity: .95; }
+      100% { transform: translateY(-42px) scale(.8); opacity: 0; }
+    }
+
+    /* The Guardian's star on the podium — a steady champion's pulse */
+    .ac-trophy { transform-origin: 0px 0px; animation: ac-pulse 3s ease-in-out infinite; }
+    @keyframes ac-pulse { 0%,100% { transform: scale(1); } 50% { transform: scale(1.08); } }
+
+    /* Bunting */
+    .ac-bunting   { transform-origin: 0px 0px; animation: ac-sway 3.2s ease-in-out infinite; }
+    .ac-bunting-b { transform-origin: 0px 0px; animation: ac-sway 3.2s ease-in-out infinite; animation-delay: -1.6s; }
+    @keyframes ac-sway { 0%,100% { transform: rotate(0deg); } 50% { transform: rotate(5deg); } }
+
+    /* Tumble — floating bob, a touch slower than the land friends so he
+       reads as riding the swell rather than hopping */
+    .ac-tumble { transform-origin: 0px 2px; animation: ac-float 4.4s ease-in-out infinite; }
+    @keyframes ac-float {
+      0%,100% { transform: translateY(0) rotate(-1.5deg); }
+      50%     { transform: translateY(-5px) rotate(1.5deg); }
+    }
+    .ac-ripple { animation: ac-ripple-out 3.6s ease-out infinite; transform-origin: 0px 0px; }
+    @keyframes ac-ripple-out {
+      0%   { transform: scale(.5); opacity: .65; }
+      100% { transform: scale(1.45); opacity: 0; }
+    }
+  </style>
+
+  <g clip-path="url(#ac-canvas)">
+
+    <!-- ── Golden dawn sky ───────────────────────────────────────── -->
+    <rect width="800" height="340" fill="#ffeaa0"/>
+    <rect y="150" width="800" height="190" fill="#fff8b8"/>
+    <rect y="280" width="800" height="70" fill="#d8f4dc"/>
+
+    <!-- ── Sunburst behind the podium ────────────────────────────── -->
+    <g class="ac-rays" fill="#ffd45a" opacity=".38">
+      <path d="M596 300 L520 -20 L672 -20Z"/>
+      <path d="M596 300 L300 120 L340 -10Z"/>
+      <path d="M596 300 L880 130 L850 -10Z"/>
+      <path d="M596 300 L250 340 L250 250Z"/>
+      <path d="M596 300 L940 340 L940 250Z"/>
+    </g>
+
+    <!-- ── Distant green-lit peaks ───────────────────────────────── -->
+    <g fill="#9fe3c4">
+      <path d="M0 348 L96 250 L196 348Z"/>
+      <path d="M600 348 L700 244 L800 348Z"/>
+    </g>
+    <g fill="#6fd3ae" opacity=".85">
+      <path d="M120 348 L206 276 L296 348Z"/>
+      <path d="M486 348 L566 286 L648 348Z"/>
+    </g>
+
+    <!-- ── The Guardian's podium, right-of-centre ────────────────── -->
+    <g transform="translate(596,0)">
+      <!-- tiered ice steps -->
+      <rect x="-96" y="356" width="192" height="34" rx="6" fill="#dff6ec" stroke="#7fc9ab" stroke-width="3"/>
+      <rect x="-74" y="322" width="148" height="36" rx="6" fill="#eafbf4" stroke="#7fc9ab" stroke-width="3"/>
+      <rect x="-52" y="286" width="104" height="38" rx="6" fill="#f6fffb" stroke="#7fc9ab" stroke-width="3"/>
+      <!-- pedestal column -->
+      <rect x="-24" y="206" width="48" height="82" rx="5" fill="#eafbf4" stroke="#7fc9ab" stroke-width="3"/>
+      <rect x="-38" y="194" width="76" height="16" rx="5" fill="#dff6ec" stroke="#7fc9ab" stroke-width="3"/>
+      <!-- the Guardian's star, waiting to be claimed -->
+      <g transform="translate(0,150)">
+        <g class="ac-trophy">
+          <path d="M0 -34 L11 -11 L36 -8 L18 9 L23 34 L0 22 L-23 34 L-18 9 L-36 -8 L-11 -11Z"
+                fill="#ffd45a" stroke="#e0a828" stroke-width="3" stroke-linejoin="round"/>
+          <circle cx="0" cy="0" r="8" fill="#fff8b8"/>
+        </g>
+      </g>
+      <line x1="0" y1="180" x2="0" y2="194" stroke="#7fc9ab" stroke-width="3"/>
+      <!-- step numbers as tiny laurel ticks, purely decorative -->
+      <g fill="#7fc9ab">
+        <circle cx="-70" cy="373" r="3"/><circle cx="70" cy="373" r="3"/>
+        <circle cx="-52" cy="340" r="3"/><circle cx="52" cy="340" r="3"/>
+      </g>
+    </g>
+
+    <!-- ── Bunting strung across the top of the scene ────────────── -->
+    <path d="M-10 74 Q200 140 400 92 T810 116" fill="none" stroke="#2dd6a6" stroke-width="3"/>
+    <g>
+      <path class="ac-bunting"   d="M110 108 L134 108 L122 136Z" fill="#ff9dc0"/>
+      <path class="ac-bunting-b" d="M196 124 L220 124 L208 152Z" fill="#ffd45a"/>
+      <path class="ac-bunting"   d="M284 124 L308 124 L296 152Z" fill="#8be0d8"/>
+      <path class="ac-bunting-b" d="M372 100 L396 100 L384 128Z" fill="#ff9dc0"/>
+      <path class="ac-bunting"   d="M472 92  L496 92  L484 120Z" fill="#ffd45a"/>
+      <path class="ac-bunting-b" d="M584 100 L608 100 L596 128Z" fill="#8be0d8"/>
+      <path class="ac-bunting"   d="M692 110 L716 110 L704 138Z" fill="#ff9dc0"/>
+    </g>
+
+    <!-- ── Rising stars ──────────────────────────────────────────── -->
+    <g fill="#ffd45a">
+      <path class="ac-star-1" d="M150 250 L156 264 L171 266 L160 276 L163 291 L150 284 L137 291 L140 276 L129 266 L144 264Z" opacity=".9"/>
+      <path class="ac-star-2" d="M330 210 L335 221 L347 223 L338 231 L340 243 L330 237 L320 243 L322 231 L313 223 L325 221Z" opacity=".8"/>
+      <path class="ac-star-3" d="M700 230 L705 241 L717 243 L708 251 L710 263 L700 257 L690 263 L692 251 L683 243 L695 241Z" opacity=".85"/>
+      <path class="ac-star-4" d="M446 178 L450 187 L460 188 L453 195 L455 205 L446 200 L437 205 L439 195 L432 188 L442 187Z" opacity=".75"/>
+    </g>
+
+    <!-- ── Snow ground ───────────────────────────────────────────── -->
+    <path d="M0,402 Q170,380 340,398 T660,394 T800,388 L800,500 L0,500Z" fill="#f4fffa"/>
+    <path d="M0,402 Q170,380 340,398 T660,394 T800,388" fill="none" stroke="#c7ead9" stroke-width="3" opacity=".9"/>
+
+    <!-- ── A path of pressed snow leading to the steps ───────────── -->
+    <path d="M300 490 Q440 456 500 412" fill="none" stroke="#e4f7ee" stroke-width="18" stroke-linecap="round" opacity=".8"/>
+    <path d="M300 490 Q440 456 500 412" fill="none" stroke="#a9dfc7" stroke-width="2.5" stroke-dasharray="14 16" stroke-linecap="round" opacity=".75"/>
+
+    <!-- ── TUMBLE — a sea otter, so he floats on his back in an open
+         lead of water. Colours match ANIMAL_SVGS[8]. ── -->
+    <g id="islandFriendSpot" transform="translate(290,0)">
+      <!-- the lead: open water in the ice -->
+      <ellipse cx="60" cy="446" rx="108" ry="34" fill="#c7ead9" stroke="#a9dfc7" stroke-width="2.5"/>
+      <ellipse cx="60" cy="446" rx="92"  ry="26" fill="#2a9c86"/>
+      <ellipse cx="60" cy="442" rx="92"  ry="26" fill="#2dd6a6" opacity=".45"/>
+      <ellipse class="ac-ripple" cx="60" cy="444" rx="54" ry="16" fill="none" stroke="#8be0d8" stroke-width="2.5"/>
+
+      <g transform="translate(60,424)">
+        <g class="ac-tumble">
+          <!-- body, floating belly-up -->
+          <ellipse cx="0" cy="6" rx="50" ry="20" fill="#5c3a28"/>
+          <ellipse cx="2" cy="2" rx="38" ry="13" fill="#7a5038"/>
+          <!-- back paws, up out of the water -->
+          <path d="M40 0 Q56 -10 60 2 Q54 12 40 10Z" fill="#4c2a18"/>
+          <path d="M50 4 Q64 -4 66 8 Q58 16 48 12Z" fill="#4c2a18"/>
+          <!-- head -->
+          <ellipse cx="-38" cy="-6" rx="22" ry="18" fill="#7a5038"/>
+          <ellipse cx="-40" cy="-1" rx="13" ry="10" fill="#c8a080"/>
+          <circle cx="-46" cy="-11" r="5.5" fill="#1a2030"/><circle cx="-44" cy="-13" r="2" fill="#fff"/>
+          <circle cx="-31" cy="-11" r="5.5" fill="#1a2030"/><circle cx="-29" cy="-13" r="2" fill="#fff"/>
+          <ellipse cx="-40" cy="-4" rx="4" ry="3" fill="#2a1a14"/>
+          <path d="M-46 2 Q-40 6 -34 2" fill="none" stroke="#8a6048" stroke-width="1.8" stroke-linecap="round"/>
+          <ellipse cx="-53" cy="-20" rx="5" ry="4.5" fill="#5c3a28"/>
+          <ellipse cx="-25" cy="-20" rx="5" ry="4.5" fill="#5c3a28"/>
+          <!-- front paws holding the champion's shell on his chest -->
+          <path d="M-14 -6 Q-6 -18 6 -12" fill="none" stroke="#4c2a18" stroke-width="7" stroke-linecap="round"/>
+          <g transform="translate(-4,-14)">
+            <path d="M0 6 Q-14 2 -11 -8 Q0 -16 11 -8 Q14 2 0 6Z" fill="#ffe0ea" stroke="#e0a8bc" stroke-width="2"/>
+            <path d="M0 6 L-6 -9 M0 6 L0 -12 M0 6 L6 -9" stroke="#e0a8bc" stroke-width="1.4" stroke-linecap="round"/>
+          </g>
+        </g>
+      </g>
+    </g>
+
+  </g>
+</svg>`;
+
 const ISLAND_SCENES = {
   0: SNOW_BEACH_SCENE_SVG,      // Snow Beach      — Pip,      stranded near driftwood
   1: FISH_BAY_SCENE_SVG,        // Fish Bay        — Nori,     stranded near the lighthouse
@@ -3220,6 +3610,8 @@ const ISLAND_SCENES = {
   3: PENGUIN_ISLANDS_SCENE_SVG, // Penguin Islands — Pebble,   stranded, isolated on the ice
   4: OCTOPUS_CAVE_SCENE_SVG,    // Octopus Cave    — Professor Octo, wedged by the wall, tentacle pinned under a rock
   5: POLAR_ACADEMY_SCENE_SVG,   // Polar Academy   — Miska,    stuck in a snowdrift on the way to the schoolhouse
+  6: NORTHERN_KINGDOM_SCENE_SVG,// Northern Kingdom— Nova,     waiting in a cracked ice pool below the castle road
+  7: ARCTIC_CHAMPION_SCENE_SVG, // Arctic Champion — Tumble,   floating in an open lead by the Guardian's podium
 };
 
 // Mounts/unmounts the bespoke scene in #challengeCustomBg. Islands with no
@@ -3250,16 +3642,18 @@ function setupIslandScene(scene, worldId) {
   // missing. Only applied when bespoke art is active — the generic
   // fallback's absolutely-positioned iceberg/watermark are tuned for the
   // old fixed height and shouldn't be touched.
+  // The generic per-island layers (iceberg, emblem watermark, ground accent)
+  // would otherwise sit on top of — and visually clash with — the bespoke art,
+  // so this class hides them; the rule lives in styles.css.
+  //
+  // It has to be a CSS rule rather than the inline display juggling that used
+  // to be here: startMission() CREATES .challenge-watermark and
+  // .challenge-ground-accent lazily, and it does that AFTER calling this
+  // function. On the first mission of a session they simply did not exist yet
+  // when we tried to hide them, so the emblem and the footprints/bubbles layer
+  // were painted straight over the bespoke scene on every one of these
+  // islands until the player happened to start a second mission.
   scene.classList.toggle("has-custom-bg", !!svg);
-  // The generic per-island layers would otherwise sit on top of (and
-  // visually clash with) the bespoke art, so hide just those three on
-  // islands that have custom art.
-  const iceberg = scene.querySelector(".iceberg");
-  const wm      = scene.querySelector(".challenge-watermark");
-  const ga      = scene.querySelector(".challenge-ground-accent");
-  if (iceberg) iceberg.style.display = svg ? "none" : "";
-  if (wm)      wm.style.display      = svg ? "none" : "";
-  if (ga)      ga.style.display      = svg ? "none" : "";
 }
 
 // Sausage swims in from off-screen-left toward his usual spot as
@@ -3540,8 +3934,14 @@ function missionGoalIcon(world, mission) {
   return icons[mission] || "🏁";
 }
 
+// % across the track. The 8→92 range this used to return was a double inset:
+// .mission-trail is ALREADY inset left:8%/right:8% inside the scene, and the
+// start/goal icons hang OUTSIDE the track (left:-6px / right:-6px), so there
+// was nothing at either end to stay clear of. The visible effect was that a
+// finished mission left the marker stranded short of the goal icon instead of
+// arriving at it.
 function missionTrailPos(solved, needed) {
-  return 8 + Math.min(1, solved / needed) * 84; // % across the track, clear of start/goal icons
+  return Math.min(1, solved / needed) * 100;
 }
 
 // S15/S16: storm boss mode — progress is driven by stormIntensity (clamped
@@ -3550,7 +3950,7 @@ function missionTrailPos(solved, needed) {
 // trail + label) so init and every answer share the exact same code path —
 // no risk of one spot drawing a stale state.
 function stormTrailPos() {
-  return 8 + Math.min(1, Math.max(0, (100 - trip.stormIntensity) / 100)) * 84;
+  return Math.min(1, Math.max(0, (100 - trip.stormIntensity) / 100)) * 100;
 }
 function syncStormVisuals() {
   const pct = trip.stormIntensity / 100;
@@ -3594,7 +3994,12 @@ function makeProblem() {
   }
   syncMissionSeal();
   $("missionTrailGoal").innerHTML = missionGoalIcon(world, trip.mission);
-  $("problemText").textContent   = currentProblem.text;
+  // Arithmetic prompts stay headline-sized; word problems are full sentences
+  // and step down to a normal reading size so the answers stay above the fold.
+  const problemEl = $("problemText");
+  problemEl.textContent = currentProblem.text;
+  problemEl.classList.toggle("is-long",  currentProblem.text.length > 40);
+  problemEl.classList.toggle("is-xlong", currentProblem.text.length > 80);
   $("hintText").hidden           = true;
   $("hintText").textContent      = currentProblem.hint;
   // P2: clear any previous correct-reveal and continue button
@@ -4727,13 +5132,14 @@ function showGuardianCeremony() {
 function townGhostHtml(positions) {
   const next = nextBuilding();
   if (!next) return "";
-  const [left, top] = positions[next.id];
+  const [left, bottom, depth] = positions[next.id];
   const finale = next.id === 7 ? " is-finale" : "";
+  const far    = depth === "far" ? " is-far" : "";
   const need = Math.max(0, next.cost - state.stars);
   const badge = currentLang === "ru"
     ? `⭐ ${need} до постройки: ${buildingName(next)}`
     : `⭐ ${need} to build ${buildingName(next)}`;
-  return `<div class="town-ghost-wrap${finale}" style="left:${left}%;top:${top}%" aria-hidden="true">
+  return `<div class="town-ghost-wrap${finale}${far}" style="left:${left}%;bottom:${bottom}%" aria-hidden="true">
     <div class="town-building-ghost">${buildingSvg(next.id)}</div>
     <div class="town-ghost-badge">${badge}</div>
   </div>`;
@@ -4768,16 +5174,33 @@ function townFishSvg(variant = 0) {
 // across the whole scene, with Ice Castle (id 7, the priciest/finale building)
 // centered, set slightly further back, and rendered larger via .is-finale.
 function renderTown() {
+  // Layout is a staged composition, not a scatter. Two depth rows on the snow
+  // band — a FAR row set higher up and drawn ~20% smaller, and a NEAR row at
+  // full size in front of it — with the friends walking along the very front.
+  //
+  // Everything here is bottom-anchored and `left` is the object's CENTRE (the
+  // CSS pairs each width with a matching negative margin-left). The old table
+  // anchored by top-left with no centring, so the real footprint of every
+  // building started at its `left` and ran a further ~20% right: neighbours
+  // ran into each other, the castle sat on top of Seal House and Penguin
+  // Village, the school label landed on the castle, and the friends row cut
+  // straight through all of it.
+  //
+  // Slots are interleaved so the two rows fill each other's gaps — the
+  // "checkerboard" effect — and no two objects in the SAME row overlap in x.
+  const FAR = "far", NEAR = "near";
   const positions = [
-    [6, 56],   // 0 Fish Market
-    [18, 48],  // 1 Lighthouse
-    [30, 58],  // 2 Aquarium
-    [41, 50],  // 3 Seal House
-    [60, 50],  // 4 Penguin Village
-    [71, 58],  // 5 Harbor
-    [84, 48],  // 6 Arctic Museum
-    [50, 36],  // 7 Ice Castle — centered, set back, larger (focal point)
+    [19, 16, NEAR],  // 0 Fish Market
+    [ 8, 27, FAR],   // 1 Lighthouse
+    [74, 27, FAR],   // 2 Aquarium
+    [39, 16, NEAR],  // 3 Seal House
+    [27, 27, FAR],   // 4 Penguin Village
+    [59, 16, NEAR],  // 5 Harbor
+    [91, 27, FAR],   // 6 Arctic Museum
+    [50, 27, FAR],   // 7 Ice Castle — centred and set back: the focal point
   ];
+  const SCHOOL_POS = [81, 16];   // NEAR row, clear of the castle's x-range
+  const depthClass = d => d === FAR ? " is-far" : "";
 
   // S6: Living Town — aurora, stars, snowflakes
   const starCount = 18;
@@ -4803,18 +5226,18 @@ function renderTown() {
     <span class="town-fish" style="left:-50px;top:50%;animation-delay:0s;animation-duration:17s">${townFishSvg(0)}</span>
     <span class="town-fish" style="left:-130px;top:62%;animation-delay:4s;animation-duration:21s">${townFishSvg(1)}</span>
     <span class="town-fish" style="left:-90px;top:44%;animation-delay:9s;animation-duration:19s">${townFishSvg(2)}</span>
-    <span class="town-splash" style="left:76%;top:47%"></span>
-    <span class="town-critter" style="left:8%;top:74%">${animalSvg(1)}</span>
-    <span class="town-critter" style="left:88%;top:68%;animation-delay:1s">${animalSvg(8)}</span>
+    <span class="town-splash" style="left:76%;bottom:24%"></span>
+    <span class="town-critter" style="left:42%;bottom:22%">${animalSvg(1)}</span>
+    <span class="town-critter" style="left:68%;bottom:21%;animation-delay:1s">${animalSvg(8)}</span>
   `;
   $("townScene").innerHTML = livelyExtras +
     buildings.map((b,i) => {
       if (!state.buildings.includes(b.id)) return "";
-      const [left,top] = positions[i];
+      const [left,bottom,depth] = positions[i];
       const finale = b.id === 7 ? " is-finale" : "";
-      return `<button class="town-building${finale}" style="left:${left}%;top:${top}%" data-building="${b.id}" aria-label="${b.name}">${buildingSvg(b.id)}</button>`;
+      return `<button class="town-building${finale}${depthClass(depth)}" style="left:${left}%;bottom:${bottom}%" data-building="${b.id}" aria-label="${b.name}">${buildingSvg(b.id)}</button>`;
     }).join("") +
-    `<button class="town-building town-school" style="left:38.5%;top:54%" data-school="1" aria-label="${currentLang==="ru"?"Морская школа — таблица и правила":"Sea School — times table and rules"}"><span class="town-school-label">${currentLang==="ru"?"🎓 Школа":"🎓 School"}</span>${schoolBuildingSvg()}</button>` +
+    `<button class="town-building town-school" style="left:${SCHOOL_POS[0]}%;bottom:${SCHOOL_POS[1]}%" data-school="1" aria-label="${currentLang==="ru"?"Морская школа — таблица и правила":"Sea School — times table and rules"}"><span class="town-school-label">${currentLang==="ru"?"🎓 Школа":"🎓 School"}</span>${schoolBuildingSvg()}</button>` +
     townGhostHtml(positions) +
     decorations.map(d => {
       if (!state.decorations.includes(d.id)) return "";
@@ -4828,7 +5251,14 @@ function renderTown() {
       const label   = currentLang === "ru"
         ? `Покормить ${a ? a.name : "друга"} — ${FEED_COST} рыбки`
         : `Feed ${a ? a.name : "friend"} — ${FEED_COST} fish`;
-      return `<button class="town-friend${canFeed?"":" feed-disabled"}" style="left:${15+i*8}%;top:${70+(i%3)*6}%;animation-delay:${i*.25}s" data-feed="${id}" ${canFeed?"":"disabled"} aria-label="${label}">${animalSvg(id)}<span class="town-friend-badge">${badge}</span></button>`;
+      // Friends walk the front of the scene in two staggered depths. The old
+      // 8%-per-friend step was narrower than a friend is wide, so nine of them
+      // piled into a single overlapping clump across the middle of the town.
+      // 11% apart, so same-row neighbours (22% apart) never touch and the two
+      // rows sit 8.5% of the scene height from each other.
+      const left   = 6 + i * 11;
+      const bottom = i % 2 === 0 ? 3 : 11.5;
+      return `<button class="town-friend${canFeed?"":" feed-disabled"}" style="left:${left}%;bottom:${bottom}%;animation-delay:${i*.25}s" data-feed="${id}" ${canFeed?"":"disabled"} aria-label="${label}">${animalSvg(id)}<span class="town-friend-badge">${badge}</span></button>`;
     }).join("");
   const scene = $("townScene");
   if (scene && !scene.dataset.bound) {
@@ -5122,9 +5552,32 @@ function renderDaily() {
 function renderDashboard() {
   const prof        = getActiveProfile();
   const accuracy    = state.solved ? Math.round((state.correct/state.solved)*100) : 0;
-  const sorted      = Object.entries(state.topics).sort((a,b) => weakness(a[0]) - weakness(b[0]));
-  const strong      = sorted.slice(0,3).map(([tk]) => topicLabel(tk)).join(", ") || t("playToDiscover");
-  const weak        = sorted.slice(-3).reverse().map(([tk]) => topicLabel(tk)).join(", ") || t("playToDiscover");
+  // Strong/weak are only meaningful for topics the child has actually met.
+  // Every topic is pre-seeded at {correct:0, wrong:0}, and weakness() scores an
+  // untouched topic (1/3) as worse than a perfectly answered one (1/13) — so
+  // ranking the raw list and taking the bottom three reported topics that had
+  // never come up, and kept reporting three "weak" topics at 100% accuracy.
+  // Attempted topics only, and a topic has to genuinely be below par to be
+  // named. WEAK_MIN_ATTEMPTS stops one unlucky miss on a fresh topic from
+  // labelling it a weakness.
+  const WEAK_MIN_ATTEMPTS = 4;
+  const WEAK_MAX_ACCURACY = 0.7;
+  const STRONG_MIN_ACCURACY = 0.8;
+  const attempted = Object.entries(state.topics)
+    .map(([key, v]) => ({ key, total: v.correct + v.wrong, acc: (v.correct + v.wrong) ? v.correct/(v.correct+v.wrong) : 0 }))
+    .filter(x => x.total > 0);
+  const strongList = attempted
+    .filter(x => x.acc >= STRONG_MIN_ACCURACY)
+    .sort((a,b) => b.acc - a.acc || b.total - a.total)
+    .slice(0,3);
+  const weakList = attempted
+    .filter(x => x.total >= WEAK_MIN_ATTEMPTS && x.acc < WEAK_MAX_ACCURACY)
+    .sort((a,b) => a.acc - b.acc || b.total - a.total)
+    .slice(0,3);
+  const strong = strongList.map(x => topicLabel(x.key)).join(", ")
+    || (attempted.length ? t("keepPracticing") : t("playToDiscover"));
+  const weak = weakList.map(x => topicLabel(x.key)).join(", ")
+    || (attempted.length ? t("noWeakTopics") : t("playToDiscover"));
   const minutes     = Math.round((state.timePlayed+(Date.now()-state.startedAt)/1000)/60);
   const missionTotal= Object.values(state.missions).reduce((a,b)=>a+b,0);
   const langDisplay = currentLang === "learn" ? "📖 Learning" : currentLang === "ru" ? "🇷🇺 Russian" : "🇺🇸 English";
@@ -5909,10 +6362,12 @@ function closeSchool() {
 function switchSchoolTab(id) {
   document.querySelectorAll(".school-tab").forEach(b =>
     b.classList.toggle("active", b.dataset.schoolTab === id));
-  const tp = $("schoolTablePanel"), rp = $("schoolRulesPanel"), np = $("schoolTrainPanel");
+  const tp = $("schoolTablePanel"), rp = $("schoolRulesPanel"), np = $("schoolTrainPanel"), hp = $("schoolHowPanel");
   if (tp) tp.hidden = id !== "table";
+  if (hp) hp.hidden = id !== "how";
   if (rp) rp.hidden = id !== "rules";
   if (np) np.hidden = id !== "train";
+  if (id === "how") renderSchoolHow();
   // Lazy-init on first visit only — switchSchoolTrainMode's own guards stop it
   // from resetting an in-progress quiz/fill puzzle on repeat visits.
   if (id === "train") switchSchoolTrainMode(schoolTrainMode);
@@ -5923,9 +6378,11 @@ function renderSchoolTable() {
   if (!grid) return;
   const isRu = currentLang === "ru";
   let html = `<button class="school-cell corner" tabindex="-1" aria-hidden="true">×</button>`;
-  for (let c = 1; c <= 10; c++) html += `<div class="school-cell head head-col">${c}</div>`;
+  // data-head-* lets the click handler light the two factors along with the
+  // trail, so the child can read "7 × 8" off the edges without hunting.
+  for (let c = 1; c <= 10; c++) html += `<div class="school-cell head head-col" data-head-c="${c}">${c}</div>`;
   for (let r = 1; r <= 10; r++) {
-    html += `<div class="school-cell head head-row">${r}</div>`;
+    html += `<div class="school-cell head head-row" data-head-r="${r}">${r}</div>`;
     for (let c = 1; c <= 10; c++) {
       html += `<button class="school-cell" data-r="${r}" data-c="${c}" aria-label="${r} × ${c} = ${r*c}">${r*c}</button>`;
     }
@@ -5940,18 +6397,362 @@ function renderSchoolTable() {
       const cell = e.target.closest(".school-cell[data-r]");
       if (!cell) return;
       const R = Number(cell.dataset.r), C = Number(cell.dataset.c);
+      // Trail, not a full cross. Lighting the entire row AND column edge to
+      // edge put ~19 highlighted cells on screen and ran past the answer in
+      // both directions, so the actual result was the hardest cell to spot.
+      // Now only the two runs that lead INTO the cell are tinted — from the
+      // row header rightwards and from the column header downwards — which
+      // reads as "walk along 7, walk down 8, here it is".
       grid.querySelectorAll(".school-cell").forEach(x => {
-        x.classList.remove("hl", "sel");
+        x.classList.remove("hl", "sel", "hl-head");
+        if (x.dataset.headR) { if (Number(x.dataset.headR) === R) x.classList.add("hl-head"); return; }
+        if (x.dataset.headC) { if (Number(x.dataset.headC) === C) x.classList.add("hl-head"); return; }
         const xr = Number(x.dataset.r), xc = Number(x.dataset.c);
-        if ((xr === R || xc === C) && !(xr === R && xc === C)) x.classList.add("hl");
+        if (!xr || !xc || (xr === R && xc === C)) return;
+        if ((xr === R && xc < C) || (xc === C && xr < R)) x.classList.add("hl");
       });
       cell.classList.add("sel");
+      // The grid scrolls on phones, and columns past ~6 sit off-screen — the
+      // tapped answer has to be brought into view or the highlight is moot.
+      cell.scrollIntoView({ behavior: "smooth", block: "nearest", inline: "nearest" });
       const groups = isRu ? `(${R} по ${C})` : `(${R} groups of ${C})`;
       const eqEl = $("schoolEq");
       if (eqEl) eqEl.innerHTML = `${R} × ${C} = ${R*C}<small>${groups}</small>`;
       playSound("tap");
     });
   }
+}
+
+// ── SEA SCHOOL — "How to count" ─────────────────────────────────────────────
+// A child who has forgotten HOW an operation works needs a picture, not
+// another drill. Each entry below is one operation explained three ways, in
+// this order: the plain-language idea, the same thing acted out on countable
+// objects, then a worked example broken into the steps a child can copy.
+//
+// Objects are emoji on purpose: they render at any size on every device the
+// game ships to, they cost nothing to add, and a fish/berry/penguin is
+// concrete in a way a coloured square is not. `item` is chosen per operation
+// so the six pages don't all look like the same page.
+//
+// The two column-arithmetic pages (× and ÷ in columns) render a real worked
+// layout instead of an object row — that's the whole point of them — using
+// the same step list underneath.
+const SCHOOL_HOW = {
+  en: [
+    {
+      id: "add", icon: "➕", label: "Adding", item: "🐟",
+      title: "Adding — put them together",
+      idea: "Adding means pushing two groups together and counting everything you now have.",
+      demo: { kind: "combine", a: 4, b: 3, sign: "+", result: 7 },
+      example: "4 + 3 = 7",
+      steps: [
+        "Start with the bigger group: 4 fish.",
+        "Count the second group ON from there: 5, 6, 7.",
+        "You stopped at 7 — so 4 + 3 = 7.",
+      ],
+      tip: "Swapping the two numbers never changes the answer: 3 + 4 = 7 too.",
+    },
+    {
+      id: "sub", icon: "➖", label: "Taking away", item: "🫐",
+      title: "Subtracting — take some away",
+      idea: "Subtracting means taking part of a group away and counting what is left.",
+      demo: { kind: "remove", a: 7, b: 3, sign: "−", result: 4 },
+      example: "7 − 3 = 4",
+      steps: [
+        "Start with all 7 berries.",
+        "Cross out 3 of them — those are gone.",
+        "Count what is still there: 4. So 7 − 3 = 4.",
+      ],
+      tip: "Check it by adding back: 4 + 3 = 7. If it matches, you got it right.",
+    },
+    {
+      id: "mul", icon: "✖️", label: "Times", item: "🐧",
+      title: "Multiplying — equal groups",
+      idea: "Multiplying is adding the SAME number several times. 3 × 4 means three groups of four.",
+      demo: { kind: "groups", groups: 3, per: 4, sign: "×", result: 12 },
+      example: "3 × 4 = 12",
+      steps: [
+        "Make 3 groups with 4 penguins in each.",
+        "That is the same as 4 + 4 + 4.",
+        "Count them all: 12. So 3 × 4 = 12.",
+      ],
+      tip: "Groups can swap too: 4 × 3 is also 12. That halves how much of the table you must learn.",
+    },
+    {
+      id: "div", icon: "➗", label: "Sharing", item: "🐚",
+      title: "Dividing — share out fairly",
+      idea: "Dividing means sharing a pile into equal parts. 12 ÷ 3 asks: if 12 shells go onto 3 plates fairly, how many land on each plate?",
+      demo: { kind: "share", total: 12, parts: 3, sign: "÷", result: 4 },
+      example: "12 ÷ 3 = 4",
+      steps: [
+        "Deal the 12 shells out one at a time, plate after plate.",
+        "Every plate ends up with the same amount.",
+        "Each plate has 4. So 12 ÷ 3 = 4.",
+      ],
+      tip: "Dividing undoes multiplying: 4 × 3 = 12, so 12 ÷ 3 = 4.",
+    },
+    {
+      id: "colmul", icon: "🧮", label: "× in columns",
+      title: "Multiplying in columns",
+      idea: "For bigger numbers, stack them and multiply one digit at a time, right to left — carrying anything over 9 into the next column.",
+      column: {
+        kind: "mul",
+        rows: [
+          { label: "carry", cells: ["", "1", ""] },
+          { label: "", cells: ["", "2", "3"] },
+          { label: "×", cells: ["", "", "4"] },
+          { label: "rule" },
+          { label: "", cells: ["", "9", "2"] },
+        ],
+      },
+      example: "23 × 4 = 92",
+      steps: [
+        "Line the numbers up so the ones sit under the ones.",
+        "Ones first: 3 × 4 = 12. Write the 2, carry the 1 above the tens.",
+        "Tens next: 2 × 4 = 8, plus the carried 1 makes 9. Write the 9.",
+        "Read it off: 92.",
+      ],
+      tip: "The carry is just the tens digit of a two-digit answer waiting its turn.",
+    },
+    {
+      id: "coldiv", icon: "📏", label: "÷ in columns",
+      title: "Dividing in columns",
+      idea: "Work left to right through the digits. Each step asks the same small question: how many times does the divisor fit?",
+      column: {
+        kind: "div",
+        dividend: "96", divisor: "4", quotient: "24",
+        work: [["8", "take away 4 × 2 = 8"], ["16", "bring down the 6"], ["16", "4 × 4 = 16"], ["0", "nothing left over"]],
+      },
+      example: "96 ÷ 4 = 24",
+      steps: [
+        "Take the first digit: how many 4s fit in 9? Two, because 4 × 2 = 8. Write 2 on top.",
+        "9 − 8 = 1 left over. Bring the 6 down next to it to make 16.",
+        "How many 4s fit in 16? Four exactly, because 4 × 4 = 16. Write 4 on top.",
+        "16 − 16 = 0, nothing left. The answer on top is 24.",
+      ],
+      tip: "Check any division by multiplying back: 24 × 4 = 96. ✓",
+    },
+  ],
+  ru: [
+    {
+      id: "add", icon: "➕", label: "Сложение", item: "🐟",
+      title: "Сложение — соединяем вместе",
+      idea: "Сложить — значит сдвинуть две группы вместе и посчитать всё, что получилось.",
+      demo: { kind: "combine", a: 4, b: 3, sign: "+", result: 7 },
+      example: "4 + 3 = 7",
+      steps: [
+        "Начни с большей группы: 4 рыбки.",
+        "Досчитывай вторую группу дальше: 5, 6, 7.",
+        "Остановился на 7 — значит 4 + 3 = 7.",
+      ],
+      tip: "Если поменять числа местами, ответ не изменится: 3 + 4 тоже 7.",
+    },
+    {
+      id: "sub", icon: "➖", label: "Вычитание", item: "🫐",
+      title: "Вычитание — убираем часть",
+      idea: "Вычесть — значит убрать часть группы и посчитать, сколько осталось.",
+      demo: { kind: "remove", a: 7, b: 3, sign: "−", result: 4 },
+      example: "7 − 3 = 4",
+      steps: [
+        "Возьми все 7 ягод.",
+        "Зачеркни 3 — их больше нет.",
+        "Посчитай оставшиеся: 4. Значит 7 − 3 = 4.",
+      ],
+      tip: "Проверь сложением обратно: 4 + 3 = 7. Сошлось — значит верно.",
+    },
+    {
+      id: "mul", icon: "✖️", label: "Умножение", item: "🐧",
+      title: "Умножение — одинаковые группы",
+      idea: "Умножить — значит сложить ОДНО И ТО ЖЕ число несколько раз. 3 × 4 — это три группы по четыре.",
+      demo: { kind: "groups", groups: 3, per: 4, sign: "×", result: 12 },
+      example: "3 × 4 = 12",
+      steps: [
+        "Собери 3 группы, в каждой по 4 пингвина.",
+        "Это то же самое, что 4 + 4 + 4.",
+        "Посчитай всех: 12. Значит 3 × 4 = 12.",
+      ],
+      tip: "Группы тоже можно поменять местами: 4 × 3 — тоже 12. Учить таблицу вдвое меньше.",
+    },
+    {
+      id: "div", icon: "➗", label: "Деление", item: "🐚",
+      title: "Деление — делим поровну",
+      idea: "Разделить — значит разложить кучку на равные части. 12 ÷ 3 спрашивает: если 12 ракушек разложить поровну на 3 тарелки, сколько ляжет на каждую?",
+      demo: { kind: "share", total: 12, parts: 3, sign: "÷", result: 4 },
+      example: "12 ÷ 3 = 4",
+      steps: [
+        "Раскладывай 12 ракушек по одной, тарелка за тарелкой.",
+        "На каждой тарелке окажется поровну.",
+        "На каждой по 4. Значит 12 ÷ 3 = 4.",
+      ],
+      tip: "Деление отменяет умножение: 4 × 3 = 12, значит 12 ÷ 3 = 4.",
+    },
+    {
+      id: "colmul", icon: "🧮", label: "× столбиком",
+      title: "Умножение столбиком",
+      idea: "Для больших чисел записывай их друг под другом и умножай по одной цифре справа налево, перенося всё, что больше 9, в следующий разряд.",
+      column: {
+        kind: "mul",
+        rows: [
+          { label: "carry", cells: ["", "1", ""] },
+          { label: "", cells: ["", "2", "3"] },
+          { label: "×", cells: ["", "", "4"] },
+          { label: "rule" },
+          { label: "", cells: ["", "9", "2"] },
+        ],
+      },
+      example: "23 × 4 = 92",
+      steps: [
+        "Запиши числа так, чтобы единицы стояли под единицами.",
+        "Сначала единицы: 3 × 4 = 12. Пиши 2, а 1 держи в уме над десятками.",
+        "Теперь десятки: 2 × 4 = 8, плюс 1 в уме — получается 9. Пиши 9.",
+        "Читай ответ: 92.",
+      ],
+      tip: "«Держать в уме» — это просто десятки двузначного ответа, которые ждут своей очереди.",
+    },
+    {
+      id: "coldiv", icon: "📏", label: "÷ столбиком",
+      title: "Деление столбиком (уголком)",
+      idea: "Иди по цифрам слева направо. На каждом шаге один и тот же простой вопрос: сколько раз помещается делитель?",
+      column: {
+        kind: "div",
+        dividend: "96", divisor: "4", quotient: "24",
+        work: [["8", "вычитаем 4 × 2 = 8"], ["16", "сносим 6"], ["16", "4 × 4 = 16"], ["0", "остатка нет"]],
+      },
+      example: "96 ÷ 4 = 24",
+      steps: [
+        "Берём первую цифру: сколько четвёрок помещается в 9? Две, ведь 4 × 2 = 8. Пишем 2 в ответ.",
+        "9 − 8 = 1 в остатке. Сносим 6 — получается 16.",
+        "Сколько четвёрок в 16? Ровно четыре, ведь 4 × 4 = 16. Пишем 4 в ответ.",
+        "16 − 16 = 0, остатка нет. В ответе 24.",
+      ],
+      tip: "Любое деление проверяй умножением обратно: 24 × 4 = 96. ✓",
+    },
+  ],
+};
+
+let schoolHowOp = "add";
+
+function schoolHowPages() { return SCHOOL_HOW[currentLang === "ru" ? "ru" : "en"]; }
+
+// The object rows. Each operation gets a different arrangement because the
+// arrangement IS the explanation — a combine row reads left-to-right, groups
+// are boxed so "three fours" is visible without counting, and sharing is drawn
+// as actual plates.
+function schoolHowDemoHtml(page) {
+  const d = page.demo;
+  if (!d) return "";
+  const dot  = n => Array.from({ length: n }, () => `<span class="how-obj">${page.item}</span>`).join("");
+  // The glyph is faded by an inner <i> rather than by .is-gone itself, so the
+  // strike-through drawn on .is-gone::after keeps its own colour instead of
+  // being greyed out along with the object it is crossing off.
+  const gone = n => Array.from({ length: n }, () => `<span class="how-obj is-gone"><i>${page.item}</i></span>`).join("");
+  const isRu = currentLang === "ru";
+
+  if (d.kind === "combine") {
+    return `<div class="how-demo">
+      <span class="how-set">${dot(d.a)}</span>
+      <span class="how-op">${d.sign}</span>
+      <span class="how-set">${dot(d.b)}</span>
+      <span class="how-op">=</span>
+      <span class="how-total">${d.result}</span>
+    </div>`;
+  }
+  if (d.kind === "remove") {
+    return `<div class="how-demo">
+      <span class="how-set">${dot(d.a - d.b)}${gone(d.b)}</span>
+      <span class="how-op">=</span>
+      <span class="how-total">${d.result}</span>
+    </div>`;
+  }
+  if (d.kind === "groups") {
+    const box = `<span class="how-group">${dot(d.per)}</span>`;
+    return `<div class="how-demo">
+      ${Array.from({ length: d.groups }, () => box).join(`<span class="how-op">+</span>`)}
+      <span class="how-op">=</span>
+      <span class="how-total">${d.result}</span>
+    </div>`;
+  }
+  if (d.kind === "share") {
+    const per   = d.total / d.parts;
+    const plate = `<span class="how-plate"><span class="how-plate-lbl">${isRu ? "тарелка" : "plate"}</span>${dot(per)}</span>`;
+    return `<div class="how-demo how-demo-plates">
+      ${Array.from({ length: d.parts }, () => plate).join("")}
+      <span class="how-op">=</span>
+      <span class="how-total">${d.result}</span>
+    </div>`;
+  }
+  return "";
+}
+
+// Worked column layouts. Rendered as a grid of digit cells rather than
+// pre-formatted text so the digits stay aligned at any font size — ASCII art
+// falls apart the moment the user's browser picks a different monospace font.
+function schoolHowColumnHtml(page) {
+  const c = page.column;
+  if (!c) return "";
+  const isRu = currentLang === "ru";
+
+  if (c.kind === "mul") {
+    return `<div class="how-column" aria-label="${page.example}">
+      ${c.rows.map(r => r.label === "rule"
+        ? `<div class="how-col-rule"></div>`
+        : `<div class="how-col-row${r.label === "carry" ? " is-carry" : ""}">
+             <span class="how-col-sign">${r.label === "carry" || r.label === "" ? "" : r.label}</span>
+             ${r.cells.map(v => `<span class="how-col-cell">${v}</span>`).join("")}
+           </div>`).join("")}
+    </div>`;
+  }
+
+  // Long division, drawn the way it is taught: dividend on the left, divisor
+  // boxed off to the right with the quotient under it, and the subtraction
+  // ladder running down the left.
+  return `<div class="how-column how-column-div" aria-label="${page.example}">
+    <div class="how-div-head">
+      <span class="how-div-dividend">${c.dividend}</span>
+      <span class="how-div-bar"></span>
+      <span class="how-div-divisor">${c.divisor}</span>
+    </div>
+    <div class="how-div-body">
+      <div class="how-div-ladder">
+        ${c.work.map(([num, note]) => `<div class="how-div-step"><b>${num}</b><span>${note}</span></div>`).join("")}
+      </div>
+      <div class="how-div-quotient">
+        <span class="how-div-q-lbl">${isRu ? "ответ" : "answer"}</span>
+        <b>${c.quotient}</b>
+      </div>
+    </div>
+  </div>`;
+}
+
+function renderSchoolHow() {
+  const opsEl = $("schoolHowOps"), bodyEl = $("schoolHowBody");
+  if (!opsEl || !bodyEl) return;
+  const pages = schoolHowPages();
+  if (!pages.some(p => p.id === schoolHowOp)) schoolHowOp = pages[0].id;
+
+  opsEl.innerHTML = pages.map(p =>
+    `<button class="school-how-op${p.id === schoolHowOp ? " active" : ""}" data-how-op="${p.id}" role="tab" aria-selected="${p.id === schoolHowOp}">
+       <span class="how-op-icon" aria-hidden="true">${p.icon}</span>${p.label}
+     </button>`).join("");
+
+  const page = pages.find(p => p.id === schoolHowOp);
+  const isRu = currentLang === "ru";
+  bodyEl.innerHTML = `
+    <article class="school-how-card">
+      <h3>${page.title}</h3>
+      <p class="how-idea">${page.idea}</p>
+      ${schoolHowDemoHtml(page)}
+      ${schoolHowColumnHtml(page)}
+      <p class="how-example">${page.example}</p>
+      <ol class="how-steps">${page.steps.map(s => `<li>${s}</li>`).join("")}</ol>
+      <p class="how-tip"><b>${isRu ? "Подсказка" : "Tip"}:</b> ${page.tip}</p>
+    </article>`;
+}
+
+function switchSchoolHowOp(id) {
+  schoolHowOp = id;
+  renderSchoolHow();
+  playSound("tap");
 }
 
 function renderSchoolRules() {
@@ -6155,8 +6956,13 @@ function finishMiniGame(caught, type) {
   }
   save();
 
-  // Show result overlay inside mini-game instead of hiding it
+  // Show result overlay inside mini-game instead of hiding it.
+  // The class has to be reset, not just the innerHTML: each starter stamps its
+  // own layout onto the shared #miniStage node, and Match Pairs' is a 4-column
+  // CSS grid. Leaving it in place made the result card a grid item, so "Well
+  // done!" rendered pinned to the left quarter of the stage instead of centred.
   const stage = $("miniStage");
+  stage.className = "mini-stage mini-result-stage";
   const isRu = currentLang === "ru";
   const resultMsg = caught >= 5 ? t("miniWellDone") : t("miniGoodEffort");
   const coinsBit  = isRu
@@ -6274,14 +7080,18 @@ function startIceSlide() {
     );
     fall.onfinish = () => {
       if (!active || gen !== miniGen) return;
-      const rockCenter  = rockX;
+      // Both `rockX` and `pos` are sprite CENTRES — .slide-rock and .slide-seal
+      // each carry translateX(-50%). Before that, the rock's `left` was its
+      // edge while the seal's was its centre, so the whole hit window sat half
+      // a rock too far left and a rock that visibly cleared the seal on the
+      // right still scored as a hit.
       const stageW       = stage.offsetWidth || 360;
       const sealHalfPct  = (sealEl.offsetWidth/2  / stageW) * 100;
       const rockHalfPct  = (rock.offsetWidth/2    / stageW) * 100;
       // .82 forgiveness factor: both sprites grew, and a hitbox that matches
       // their full drawn width punishes near-misses that visually look clear
       // (the seal art has transparent margins inside its 260x220 viewBox).
-      if (Math.abs(rockCenter - pos) < (sealHalfPct + rockHalfPct) * .82) {
+      if (Math.abs(rockX - pos) < (sealHalfPct + rockHalfPct) * .82) {
         missed++;
         renderLives();
         rock.classList.add("rock-hit");
@@ -7654,6 +8464,7 @@ const STRINGS = {
     strongTopics:"Strong Topics", weakTopics:"Weak Topics", timePlayed:"Time Played",
     missionProgress:"Mission Progress", townProgress:"Town Progress",
     friendRescue:"Friend Rescue", collection:"Collection", playToDiscover:"Play to discover",
+    noWeakTopics:"None yet — all topics on track", keepPracticing:"Still building — keep practising",
     // Toasts
     statsReset:"Statistics reset. Adventure progress stayed safe.",
     adventureStarted:"New adventure started. Rewards stayed in the closet.",
@@ -7704,11 +8515,11 @@ const STRINGS = {
     albumPanel:"Rescue Album", albumPanelDesc:"Every rescued friend brings a fun Arctic fact.",
     goFishing:"🎣 Go Fishing",
     openSchool:"🎓 Sea School", seaSchool:"🎓 Sea School",
-    schoolTable:"Times table", schoolRules:"Rules", schoolTapCell:"Tap a cell 👆",
+    schoolHow:"How to count", schoolTable:"Times table", schoolRules:"Rules", schoolTapCell:"Tap a cell 👆",
     schoolTrain:"Practice", schoolQuiz:"Quiz", schoolFillMode:"Fill the grid", schoolNewPuzzle:"New puzzle",
     schoolFillPick:"pick the answer below 👇",
     // Title screen
-    titleTagline:"Arctic Math Adventure", titlePlay:"▶ Play",
+    titleTagline:"Seal Adventure", titlePlay:"▶ Play",
     // Profile screen + editor
     chooseProfile:"Choose Player", newPlayerBtn:"➕ New Player",
     noPlayers:"No players yet.", tapToCreate:"Tap ➕ to create one!",
@@ -7826,6 +8637,7 @@ const STRINGS = {
     strongTopics:"Сильные темы", weakTopics:"Слабые темы", timePlayed:"Время в игре",
     missionProgress:"Прогресс миссий", townProgress:"Прогресс города",
     friendRescue:"Спасённые друзья", collection:"Коллекция", playToDiscover:"Играй, чтобы узнать",
+    noWeakTopics:"Пока нет — все темы в порядке", keepPracticing:"Пока набирается — продолжайте",
     // Toasts
     statsReset:"Статистика сброшена. Приключение сохранено.",
     adventureStarted:"Новое приключение! Награды остались в гардеробе.",
@@ -7876,12 +8688,12 @@ const STRINGS = {
     albumPanel:"Альбом спасений", albumPanelDesc:"Каждый спасённый друг приносит интересный факт об Арктике.",
     goFishing:"🎣 На рыбалку",
     openSchool:"🎓 Морская школа", seaSchool:"🎓 Морская школа",
-    schoolTable:"Таблица", schoolRules:"Правила", schoolTapCell:"Нажми на клетку 👆",
+    schoolHow:"Как считать", schoolTable:"Таблица", schoolRules:"Правила", schoolTapCell:"Нажми на клетку 👆",
     schoolTrain:"Тренировка", schoolQuiz:"Викторина", schoolFillMode:"Заполни таблицу", schoolNewPuzzle:"Новая головоломка",
     schoolFillPick:"выбери ответ ниже 👇",
     // Экран профиля + редактор
     // Title screen
-    titleTagline:"Арктическая математика: миссия спасения", titlePlay:"▶ Играть",
+    titleTagline:"Приключения тюленя", titlePlay:"▶ Играть",
     // Profile screen + editor
     chooseProfile:"Выбери игрока", newPlayerBtn:"➕ Новый игрок",
     noPlayers:"Пока нет игроков.", tapToCreate:"Нажми ➕, чтобы создать!",
