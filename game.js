@@ -13,7 +13,7 @@ const PROFILE_EMOJIS  = ["🦭","🐧","🐻","🦊","🐳","🦁","🐼","🦋"
 // Shown in the About modal. MUST be kept in step with `versionName` in
 // android/app/build.gradle — it sat at 1.0.0 through five releases (QA M-05),
 // which made every user-reported "I'm on version X" untrustworthy.
-const GAME_VERSION = "1.7";
+const GAME_VERSION = "1.8";
 
 // ─── Learning Mode (lang = "learn") ─────────────────────────────────────────
 // Shows English + Russian translation below every string.
@@ -533,8 +533,27 @@ function setActiveProfileId(id) {
 
 // App-level language default (used on the profile screen, before any profile
 // is active, and to seed the language of the next new profile).
+// Falls back to the device's own language on a first run rather than always
+// starting in English — a Russian-speaking child opening the game for the
+// first time should not have to find the language toggle before they can
+// read anything. Only ever a DEFAULT: once anything is stored (which setLang
+// does on the first explicit switch) the stored choice always wins.
+function deviceLang() {
+  try {
+    const tags = navigator.languages && navigator.languages.length
+      ? navigator.languages
+      : [navigator.language || ""];
+    for (const tag of tags) {
+      const base = String(tag).toLowerCase().split("-")[0];
+      if (base === "ru") return "ru";
+      if (base === "en") return "en";
+    }
+  } catch {}
+  return "en";
+}
+
 function getAppLang() {
-  try { return localStorage.getItem(APP_LANG_KEY) || "en"; } catch { return "en"; }
+  try { return localStorage.getItem(APP_LANG_KEY) || deviceLang(); } catch { return deviceLang(); }
 }
 function setAppLang(lang) {
   try { localStorage.setItem(APP_LANG_KEY, lang); } catch {}
@@ -1512,6 +1531,7 @@ function attachEvents() {
   });
 
   setupHardwareBackButton();
+  setupBrowserBackButton();
 }
 
 // ─── Android hardware back button (Capacitor) ─────────────────────────────
@@ -1523,58 +1543,100 @@ function attachEvents() {
 // on-screen close/cancel button already calls, so back-button and tap
 // behavior can't drift apart.
 let _lastBackPressAt = 0;
+
+// One shared answer to "what should Back do right now?", used by BOTH the
+// Android hardware button and the browser's history back. Returns "consumed"
+// when it handled the press, or "home" when there is genuinely nothing left
+// to back out of.
+function handleBackRequest() {
+  const modalCloses = [
+    ["exitMissionModal",   closeExitMissionModal],
+    ["parentGateModal",    closeParentGate],
+    ["profileEditModal",   closeProfileEdit],
+    ["rescueCelebration",  closeRescueCelebration],
+    ["briefingModal",      closeBriefing],
+    ["onboardingModal",    closeOnboarding],
+    ["tourOverlay",        endTour],
+    ["luckyCatchModal",    closeLuckyCatch],
+    ["schoolModal",        closeSchool],
+    ["smartHintPanel",     closeSmartHint],
+    ["aboutModal",         () => { $("aboutModal").hidden = true; }],
+    ["rewardModal",        () => { $("rewardModal").hidden = true; }],
+    ["welcomeBackOverlay", () => { $("welcomeBackOverlay").hidden = true; }],
+  ];
+  for (const [id, close] of modalCloses) {
+    const el = $(id);
+    if (el && !el.hidden) { close(); return "consumed"; }
+  }
+
+  // Mobile nav drawer (hamburger menu) open.
+  const tabsEl = $("tabs");
+  if (tabsEl && tabsEl.classList.contains("open")) { tabsEl.classList.remove("open"); return "consumed"; }
+
+  // Bonus mini-game panel open.
+  const miniGameEl = $("miniGame");
+  if (miniGameEl && !miniGameEl.hidden) { closeMiniGame(); return "consumed"; }
+
+  // Mission in progress — same confirm dialog as the on-screen back-to-map button.
+  if (trip && trip.active) { exitMission(); return "consumed"; }
+
+  // Any tab other than the main Adventure map — return to it first.
+  const activeView = document.querySelector(".view.active");
+  const appEl = $("app");
+  if (appEl && !appEl.hidden && activeView && activeView.id !== "adventure") {
+    switchView("adventure");
+    return "consumed";
+  }
+
+  // Title screen and the player picker have nothing above them, but they are
+  // still inside the app — falling straight out of a stray tap there is the
+  // thing this whole handler exists to prevent, so they get the same
+  // press-again treatment as the map.
+  return "home";
+}
+
+// Shared "are you sure" step for the two surfaces. True = really leave.
+function backRequestsExit() {
+  const now = Date.now();
+  if (now - _lastBackPressAt < 2000) return true;
+  _lastBackPressAt = now;
+  toast(currentLang === "ru" ? "Нажмите «Назад» ещё раз для выхода" : "Press back again to exit");
+  return false;
+}
+
 function setupHardwareBackButton() {
   const CapApp = window.Capacitor?.Plugins?.App;
   if (!window.Capacitor?.isNativePlatform?.() || !CapApp) return;
-
   CapApp.addListener("backButton", () => {
-    const modalCloses = [
-      ["exitMissionModal",   closeExitMissionModal],
-      ["parentGateModal",    closeParentGate],
-      ["profileEditModal",   closeProfileEdit],
-      ["rescueCelebration",  closeRescueCelebration],
-      ["briefingModal",      closeBriefing],
-      ["onboardingModal",    closeOnboarding],
-      ["tourOverlay",        endTour],
-      ["luckyCatchModal",    closeLuckyCatch],
-      ["schoolModal",        closeSchool],
-      ["smartHintPanel",     closeSmartHint],
-      ["aboutModal",         () => { $("aboutModal").hidden = true; }],
-      ["rewardModal",        () => { $("rewardModal").hidden = true; }],
-      ["welcomeBackOverlay", () => { $("welcomeBackOverlay").hidden = true; }],
-    ];
-    for (const [id, close] of modalCloses) {
-      const el = $(id);
-      if (el && !el.hidden) { close(); return; }
+    if (handleBackRequest() === "consumed") return;
+    if (backRequestsExit()) CapApp.exitApp();
+  });
+}
+
+// Browser/PWA counterpart. Without this the game had NO history handling at
+// all off-native: Android's Back was plain browser navigation, so one tap
+// anywhere — mid-mission, inside the School, on the Town tab — left the game
+// outright. A single sentinel history entry is kept in front of the app; a
+// Back press pops it, we run the same chain the hardware button uses, and
+// re-arm the sentinel so the player stays put. Only a second press on the
+// home screen within 2s is allowed through to actually leave the page.
+let _backSentinelArmed = false;
+function armBackSentinel() {
+  if (_backSentinelArmed) return;
+  try { history.pushState({ sealGuard: true }, ""); _backSentinelArmed = true; } catch {}
+}
+function setupBrowserBackButton() {
+  if (window.Capacitor?.isNativePlatform?.()) return;   // native path owns it
+  armBackSentinel();
+  window.addEventListener("popstate", () => {
+    _backSentinelArmed = false;
+    if (handleBackRequest() === "consumed") { armBackSentinel(); return; }
+    if (backRequestsExit()) {
+      // Sentinel already popped — one more step actually leaves the page.
+      history.back();
+      return;
     }
-
-    // Mobile nav drawer (hamburger menu) open.
-    const tabsEl = $("tabs");
-    if (tabsEl && tabsEl.classList.contains("open")) { tabsEl.classList.remove("open"); return; }
-
-    // Bonus mini-game panel open.
-    const miniGameEl = $("miniGame");
-    if (miniGameEl && !miniGameEl.hidden) { closeMiniGame(); return; }
-
-    // Mission in progress — same confirm dialog as the on-screen back-to-map button.
-    if (trip && trip.active) { exitMission(); return; }
-
-    // Any tab other than the main Adventure map — return to it first.
-    const activeView = document.querySelector(".view.active");
-    if (activeView && activeView.id !== "adventure") { switchView("adventure"); return; }
-
-    // Player picker screen — nothing to lose, exit immediately.
-    if ($("app")?.hidden) { CapApp.exitApp(); return; }
-
-    // True home screen — require a second press within 2s, so a stray tap
-    // can't kill the app out from under a child mid-session.
-    const now = Date.now();
-    if (now - _lastBackPressAt < 2000) {
-      CapApp.exitApp();
-    } else {
-      _lastBackPressAt = now;
-      toast(currentLang === "ru" ? "Нажмите «Назад» ещё раз для выхода" : "Press back again to exit");
-    }
+    armBackSentinel();
   });
 }
 
