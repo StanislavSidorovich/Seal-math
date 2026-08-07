@@ -13,7 +13,7 @@ const PROFILE_EMOJIS  = ["🦭","🐧","🐻","🦊","🐳","🦁","🐼","🦋"
 // Shown in the About modal. MUST be kept in step with `versionName` in
 // android/app/build.gradle — it sat at 1.0.0 through five releases (QA M-05),
 // which made every user-reported "I'm on version X" untrustworthy.
-const GAME_VERSION = "1.8";
+const GAME_VERSION = "1.9";
 
 // ─── Learning Mode (lang = "learn") ─────────────────────────────────────────
 // Shows English + Russian translation below every string.
@@ -8522,6 +8522,7 @@ const STRINGS = {
     missionProgress:"Mission Progress", townProgress:"Town Progress",
     friendRescue:"Friend Rescue", collection:"Collection", playToDiscover:"Play to discover",
     noWeakTopics:"None yet — all topics on track", keepPracticing:"Still building — keep practising",
+    dedication:"For Sabrina ❤️",
     // Toasts
     statsReset:"Statistics reset. Adventure progress stayed safe.",
     adventureStarted:"New adventure started. Rewards stayed in the closet.",
@@ -8695,6 +8696,7 @@ const STRINGS = {
     missionProgress:"Прогресс миссий", townProgress:"Прогресс города",
     friendRescue:"Спасённые друзья", collection:"Коллекция", playToDiscover:"Играй, чтобы узнать",
     noWeakTopics:"Пока нет — все темы в порядке", keepPracticing:"Пока набирается — продолжайте",
+    dedication:"Для Сабрины ❤️",
     // Toasts
     statsReset:"Статистика сброшена. Приключение сохранено.",
     adventureStarted:"Новое приключение! Награды остались в гардеробе.",
