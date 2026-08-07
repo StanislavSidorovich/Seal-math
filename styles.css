@@ -819,8 +819,8 @@ button { font: inherit; color: inherit; }
    LATER in this file, so a plain `.town-school` selector would lose to it
    on source order (verified live — the width stayed 128px). */
 .town-building.town-school {
-  width: clamp(96px, 18.6vw, 160px);
-  margin-left: calc(clamp(96px, 18.6vw, 160px) / -2);
+  width: clamp(64px, 24%, 160px);
+  margin-left: calc(clamp(64px, 24%, 160px) / -2);
 }
 .town-school { z-index: 4; animation: schoolAttract 2.6s ease-in-out infinite; }
 .town-school svg { position: relative; z-index: 1; }
@@ -832,10 +832,13 @@ button { font: inherit; color: inherit; }
   animation: schoolGlow 2.6s ease-in-out infinite;
 }
 @keyframes schoolGlow { 0%, 100% { opacity: .28; transform: scale(.85); } 50% { opacity: .72; transform: scale(1.06); } }
+/* Back above the roof — parked on the roof it hid the schoolhouse itself.
+   Kept deliberately narrow (smaller type, tighter padding) so it stays
+   clear of the Ice Castle standing behind and to the right of the School. */
 .town-school-label {
-  position: absolute; left: 50%; top: -10px; transform: translateX(-50%);
-  background: #ffd45a; color: #6a3a00; font-weight: 900; font-size: .8rem;
-  padding: 2px 10px; border-radius: 999px; white-space: nowrap;
+  position: absolute; left: 50%; top: -9px; transform: translateX(-50%);
+  background: #ffd45a; color: #6a3a00; font-weight: 900; font-size: .72rem;
+  padding: 2px 8px; border-radius: 999px; white-space: nowrap;
   box-shadow: 0 2px 6px rgba(0,0,0,.18); z-index: 3; pointer-events: none;
 }
 
@@ -1051,7 +1054,16 @@ button { font: inherit; color: inherit; }
    list instead of re-declaring `animation` and silently wiping these out. */
 /* Town objects are placed by CENTRE + ground line: renderTown() sets `left`
    (the centre) and `bottom` (where the object stands), and each width is
-   paired with a matching negative margin-left. margin-left rather than
+   paired with a matching negative margin-left.
+
+   Widths are a PERCENTAGE OF THE SCENE, not vw and not fixed pixels. The
+   positions in renderTown() are percentages, so a width in any other unit
+   drifts against them: the same table that spaced cleanly on a 412px phone
+   had the entire far row colliding at 360px, because a 62px building is 18%
+   of a narrow scene but only 15% of a wider one. Percentages keep the row
+   spacing true at every width; the clamp floor and ceiling only stop the
+   extremes getting silly and are set wide enough that neither binds on a
+   phone. margin-left rather than
    transform/translate on purpose — every one of these elements already
    animates `transform` (townPop, friend-waddle, critter-walk) or `translate`
    (buildingIdle), so a centring offset on either property would be wiped out
@@ -1060,8 +1072,8 @@ button { font: inherit; color: inherit; }
    min-height touch target. */
 .town-building {
   position: absolute;
-  width: clamp(78px, 15vw, 128px);
-  margin-left: calc(clamp(78px, 15vw, 128px) / -2);
+  width: clamp(52px, 19.5%, 128px);
+  margin-left: calc(clamp(52px, 19.5%, 128px) / -2);
   display: flex;
   align-items: flex-end;
   border: 0;
@@ -1074,8 +1086,8 @@ button { font: inherit; color: inherit; }
 /* Back row: smaller and dimmer so the two rows read as depth rather than as
    a jumble of same-sized boxes at different heights. */
 .town-building.is-far {
-  width: clamp(62px, 12vw, 102px);
-  margin-left: calc(clamp(62px, 12vw, 102px) / -2);
+  width: clamp(40px, 14.5%, 102px);
+  margin-left: calc(clamp(40px, 14.5%, 102px) / -2);
   z-index: 2;
   opacity: .93;
 }
@@ -1086,8 +1098,8 @@ button { font: inherit; color: inherit; }
 /* S7: Ice Castle is the priciest building (24 stars) — give it the
    composition's focal role instead of being visually equal to a fish stall. */
 .town-building.is-finale {
-  width: clamp(112px, 22vw, 188px);
-  margin-left: calc(clamp(112px, 22vw, 188px) / -2);
+  width: clamp(74px, 28%, 188px);
+  margin-left: calc(clamp(74px, 28%, 188px) / -2);
   z-index: 2;
   opacity: 1;
 }
@@ -1096,19 +1108,19 @@ button { font: inherit; color: inherit; }
    real future spot on the scene so the town always promises what's coming. */
 .town-ghost-wrap {
   position: absolute;
-  width: clamp(78px, 15vw, 128px);
-  margin-left: calc(clamp(78px, 15vw, 128px) / -2);
+  width: clamp(52px, 19.5%, 128px);
+  margin-left: calc(clamp(52px, 19.5%, 128px) / -2);
   z-index: 2;
   pointer-events: none;
 }
 .town-ghost-wrap.is-far {
-  width: clamp(62px, 12vw, 102px);
-  margin-left: calc(clamp(62px, 12vw, 102px) / -2);
+  width: clamp(40px, 14.5%, 102px);
+  margin-left: calc(clamp(40px, 14.5%, 102px) / -2);
   z-index: 1;
 }
 .town-ghost-wrap.is-finale {
-  width: clamp(112px, 22vw, 188px);
-  margin-left: calc(clamp(112px, 22vw, 188px) / -2);
+  width: clamp(74px, 28%, 188px);
+  margin-left: calc(clamp(74px, 28%, 188px) / -2);
   z-index: 1;
 }
 .town-building-ghost {
@@ -1147,8 +1159,8 @@ button { font: inherit; color: inherit; }
 }
 .town-friend {
   position: absolute;
-  width: 40px;
-  margin-left: -20px;
+  width: clamp(26px, 10%, 48px);
+  margin-left: calc(clamp(26px, 10%, 48px) / -2);
   /* Above every building: friends walk along the front of the scene, so they
      must paint over the near row's base rather than disappear behind it. */
   z-index: 5;
@@ -1176,14 +1188,14 @@ button { font: inherit; color: inherit; }
   position: absolute;
   pointer-events: none;
 }
-.town-critter { width: 46px; margin-left: -23px; z-index: 4; animation: critter-walk 6s ease-in-out infinite; }
+.town-critter { width: clamp(30px, 11.5%, 54px); margin-left: calc(clamp(30px, 11.5%, 54px) / -2); z-index: 4; animation: critter-walk 6s ease-in-out infinite; }
 /* P9: Town Decorations — purely cosmetic props bought with coins, sit in
    the gap band between the buildings row and the friends row. Same pop-in
    entrance as buildings, but smaller and non-interactive. */
 .town-decor {
   position: absolute;
-  width: 42px;
-  margin-left: -21px;
+  width: clamp(28px, 10.5%, 50px);
+  margin-left: calc(clamp(28px, 10.5%, 50px) / -2);
   z-index: 6;
   pointer-events: none;
   animation: townPop .5s ease both;
@@ -3007,6 +3019,22 @@ body.learning-mode .problem-box h2 {
 }
 
 /* Animated snow on the ground */
+/* Two snow terraces, not one. The FAR building row stands at 27% of the
+   scene height and the castle at 33% — both above the front band's 28% top
+   edge, so with only that band the castle and the museum had nothing under
+   them and read as floating in the water. The back terrace is taller,
+   cooler and flatter, so the two planes separate as distance rather than
+   merging into one lumpy shape. */
+.town-ground-back {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 44%;
+  background: linear-gradient(180deg, rgba(190,228,244,.5) 0%, rgba(214,240,250,.92) 40%, rgba(222,244,252,.96) 100%);
+  border-radius: 46% 44% 0 0 / 52px 44px 0 0;
+  z-index: 1;
+}
 .town-ground-snow {
   position: absolute;
   bottom: 0;
