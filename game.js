@@ -13,7 +13,7 @@ const PROFILE_EMOJIS  = ["🦭","🐧","🐻","🦊","🐳","🦁","🐼","🦋"
 // Shown in the About modal. MUST be kept in step with `versionName` in
 // android/app/build.gradle — it sat at 1.0.0 through five releases (QA M-05),
 // which made every user-reported "I'm on version X" untrustworthy.
-const GAME_VERSION = "1.5";
+const GAME_VERSION = "1.6";
 
 // ─── Learning Mode (lang = "learn") ─────────────────────────────────────────
 // Shows English + Russian translation below every string.
@@ -3392,25 +3392,32 @@ const NORTHERN_KINGDOM_SCENE_SVG = `<svg viewBox="0 0 800 500" xmlns="http://www
       </g>
       <ellipse class="nk-ripple" cx="60" cy="440" rx="52" ry="16" fill="none" stroke="#c9b4ea" stroke-width="2.5"/>
 
-      <g transform="translate(60,414)">
+      <g transform="translate(56,400) scale(1.18)">
         <g class="nk-nova">
-          <!-- body -->
-          <ellipse cx="6" cy="10" rx="46" ry="21" fill="#7868c8"/>
-          <ellipse cx="0" cy="15" rx="34" ry="11" fill="#a898e8" opacity=".45"/>
-          <!-- tail -->
-          <path d="M50 10 Q64 -2 68 10 Q64 22 50 10Z" fill="#7868c8"/>
-          <path d="M50 4  Q60 -1 59 10Z" fill="#5848a8"/>
-          <path d="M50 16 Q60 21 59 10Z" fill="#5848a8"/>
-          <!-- head + eye -->
-          <ellipse cx="-30" cy="6" rx="20" ry="15" fill="#7868c8"/>
-          <circle cx="-34" cy="1" r="6" fill="#1a2030"/><circle cx="-32" cy="-1" r="2" fill="#fff"/>
-          <path d="M-44 12 Q-38 17 -30 15" fill="none" stroke="#5848a8" stroke-width="2" stroke-linecap="round"/>
-          <!-- the tusk: a long spiral tooth -->
-          <path d="M-46 2 Q-62 -14 -78 -34 Q-73 -40 -68 -34 Q-56 -20 -42 -4Z" fill="#e0d0f8"/>
-          <path d="M-46 2 L-78 -34" fill="none" stroke="#c0b0e0" stroke-width="1.4" stroke-linecap="round"/>
-          <path d="M-56 -8 L-52 -14 M-64 -18 L-60 -24 M-71 -27 L-67 -32" stroke="#c0b0e0" stroke-width="1.2" stroke-linecap="round"/>
+          <!-- Surfacing pose: head and chest lifted clear of the water, body
+               curving down into the pool. Deliberately much rounder than a
+               side-on resting narwhal, which at this size just reads as a
+               flat purple smudge. -->
+          <ellipse cx="10" cy="16" rx="38" ry="25" fill="#7868c8"/>
+          <ellipse cx="4" cy="24" rx="27" ry="12" fill="#a898e8" opacity=".5"/>
+          <!-- tail, lifted out of the water on the right -->
+          <path d="M44 6 Q60 -12 68 -2 Q60 12 44 16Z" fill="#7868c8"/>
+          <path d="M46 4 Q58 -8 62 -1Z" fill="#5848a8"/>
+          <!-- head, raised -->
+          <ellipse cx="-24" cy="-6" rx="23" ry="21" fill="#7868c8"/>
+          <ellipse cx="-26" cy="4" rx="15" ry="9" fill="#a898e8" opacity=".45"/>
+          <circle cx="-30" cy="-12" r="7" fill="#1a2030"/><circle cx="-27.5" cy="-14.5" r="2.4" fill="#fff"/>
+          <path d="M-40 2 Q-32 8 -22 5" fill="none" stroke="#5848a8" stroke-width="2.2" stroke-linecap="round"/>
+          <!-- the tusk: a long spiral tooth, angled up and forward -->
+          <path d="M-42 -14 Q-58 -34 -74 -56 Q-68 -62 -63 -55 Q-50 -34 -36 -16Z" fill="#e0d0f8"/>
+          <path d="M-42 -14 L-74 -56" fill="none" stroke="#c0b0e0" stroke-width="1.4" stroke-linecap="round"/>
+          <path d="M-52 -27 L-47 -32 M-60 -38 L-55 -43 M-67 -48 L-62 -52" stroke="#c0b0e0" stroke-width="1.3" stroke-linecap="round"/>
         </g>
       </g>
+      <!-- Front lip of the pool, drawn AFTER Nova so the water cuts across her
+           lower body — the same trick the Polar Academy snowdrift uses on
+           Miska. Without it she reads as sitting on top of the ice, not in it. -->
+      <path d="M-28 442 A88 26 0 0 1 148 442 Z" fill="#7a63b8"/>
     </g>
 
   </g>
@@ -3573,31 +3580,36 @@ const ARCTIC_CHAMPION_SCENE_SVG = `<svg viewBox="0 0 800 500" xmlns="http://www.
       <ellipse cx="60" cy="442" rx="92"  ry="26" fill="#2dd6a6" opacity=".45"/>
       <ellipse class="ac-ripple" cx="60" cy="444" rx="54" ry="16" fill="none" stroke="#8be0d8" stroke-width="2.5"/>
 
-      <g transform="translate(60,424)">
+      <g transform="translate(56,412) scale(1.18)">
         <g class="ac-tumble">
-          <!-- body, floating belly-up -->
-          <ellipse cx="0" cy="6" rx="50" ry="20" fill="#5c3a28"/>
-          <ellipse cx="2" cy="2" rx="38" ry="13" fill="#7a5038"/>
+          <!-- Floating on his back with chest and head propped well clear of
+               the water. The previous side-on pose was 2.5:1 wide and read as
+               a brown smudge once the scene was scaled down to a phone. -->
+          <ellipse cx="4" cy="16" rx="42" ry="24" fill="#5c3a28"/>
+          <ellipse cx="6" cy="10" rx="32" ry="16" fill="#7a5038"/>
           <!-- back paws, up out of the water -->
-          <path d="M40 0 Q56 -10 60 2 Q54 12 40 10Z" fill="#4c2a18"/>
-          <path d="M50 4 Q64 -4 66 8 Q58 16 48 12Z" fill="#4c2a18"/>
-          <!-- head -->
-          <ellipse cx="-38" cy="-6" rx="22" ry="18" fill="#7a5038"/>
-          <ellipse cx="-40" cy="-1" rx="13" ry="10" fill="#c8a080"/>
-          <circle cx="-46" cy="-11" r="5.5" fill="#1a2030"/><circle cx="-44" cy="-13" r="2" fill="#fff"/>
-          <circle cx="-31" cy="-11" r="5.5" fill="#1a2030"/><circle cx="-29" cy="-13" r="2" fill="#fff"/>
-          <ellipse cx="-40" cy="-4" rx="4" ry="3" fill="#2a1a14"/>
-          <path d="M-46 2 Q-40 6 -34 2" fill="none" stroke="#8a6048" stroke-width="1.8" stroke-linecap="round"/>
-          <ellipse cx="-53" cy="-20" rx="5" ry="4.5" fill="#5c3a28"/>
-          <ellipse cx="-25" cy="-20" rx="5" ry="4.5" fill="#5c3a28"/>
+          <path d="M34 -2 Q52 -16 58 -2 Q50 10 34 10Z" fill="#4c2a18"/>
+          <path d="M44 2 Q60 -8 63 6 Q54 14 44 12Z" fill="#4c2a18"/>
+          <!-- head, propped up -->
+          <ellipse cx="-32" cy="-10" rx="24" ry="21" fill="#7a5038"/>
+          <ellipse cx="-34" cy="-2" rx="15" ry="11" fill="#c8a080"/>
+          <circle cx="-41" cy="-16" r="6" fill="#1a2030"/><circle cx="-38.5" cy="-18.5" r="2.2" fill="#fff"/>
+          <circle cx="-24" cy="-16" r="6" fill="#1a2030"/><circle cx="-21.5" cy="-18.5" r="2.2" fill="#fff"/>
+          <ellipse cx="-34" cy="-6" rx="4.5" ry="3.4" fill="#2a1a14"/>
+          <path d="M-40 1 Q-34 6 -28 1" fill="none" stroke="#8a6048" stroke-width="2" stroke-linecap="round"/>
+          <ellipse cx="-48" cy="-25" rx="5.5" ry="5" fill="#5c3a28"/>
+          <ellipse cx="-17" cy="-25" rx="5.5" ry="5" fill="#5c3a28"/>
           <!-- front paws holding the champion's shell on his chest -->
-          <path d="M-14 -6 Q-6 -18 6 -12" fill="none" stroke="#4c2a18" stroke-width="7" stroke-linecap="round"/>
-          <g transform="translate(-4,-14)">
-            <path d="M0 6 Q-14 2 -11 -8 Q0 -16 11 -8 Q14 2 0 6Z" fill="#ffe0ea" stroke="#e0a8bc" stroke-width="2"/>
-            <path d="M0 6 L-6 -9 M0 6 L0 -12 M0 6 L6 -9" stroke="#e0a8bc" stroke-width="1.4" stroke-linecap="round"/>
+          <path d="M-10 2 Q0 -12 12 -6" fill="none" stroke="#4c2a18" stroke-width="8" stroke-linecap="round"/>
+          <g transform="translate(1,-9)">
+            <path d="M0 7 Q-15 3 -12 -9 Q0 -18 12 -9 Q15 3 0 7Z" fill="#ffe0ea" stroke="#e0a8bc" stroke-width="2.2"/>
+            <path d="M0 7 L-7 -10 M0 7 L0 -13 M0 7 L7 -10" stroke="#e0a8bc" stroke-width="1.5" stroke-linecap="round"/>
           </g>
         </g>
       </g>
+      <!-- Front lip of the lead, drawn AFTER Tumble so the water cuts across
+           his lower body instead of leaving him sitting on top of it. -->
+      <path d="M-32 446 A92 26 0 0 1 152 446 Z" fill="#2a9c86"/>
     </g>
 
   </g>
@@ -5190,16 +5202,21 @@ function renderTown() {
   // "checkerboard" effect — and no two objects in the SAME row overlap in x.
   const FAR = "far", NEAR = "near";
   const positions = [
-    [19, 16, NEAR],  // 0 Fish Market
+    [ 8, 16, NEAR],  // 0 Fish Market
     [ 8, 27, FAR],   // 1 Lighthouse
-    [74, 27, FAR],   // 2 Aquarium
-    [39, 16, NEAR],  // 3 Seal House
-    [27, 27, FAR],   // 4 Penguin Village
-    [59, 16, NEAR],  // 5 Harbor
-    [91, 27, FAR],   // 6 Arctic Museum
-    [50, 27, FAR],   // 7 Ice Castle — centred and set back: the focal point
+    [75, 27, FAR],   // 2 Aquarium
+    [28, 16, NEAR],  // 3 Seal House
+    [25, 27, FAR],   // 4 Penguin Village
+    [72, 16, NEAR],  // 5 Harbor
+    [92, 27, FAR],   // 6 Arctic Museum
+    [50, 33, FAR],   // 7 Ice Castle — the skyline anchor, centred and set back
   ];
-  const SCHOOL_POS = [81, 16];   // NEAR row, clear of the castle's x-range
+  // The School is the one building the player actually opens (times table,
+  // rules, drills, "How to count"), so it takes the strongest spot in the
+  // composition: dead centre, in the NEAR row, standing in front of the
+  // castle. The castle keeps the centre of the FAR row and is raised a little
+  // so its towers and crown still clear the schoolhouse roof behind it.
+  const SCHOOL_POS = [50, 14];
   const depthClass = d => d === FAR ? " is-far" : "";
 
   // S6: Living Town — aurora, stars, snowflakes
