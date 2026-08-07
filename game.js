@@ -13,7 +13,7 @@ const PROFILE_EMOJIS  = ["🦭","🐧","🐻","🦊","🐳","🦁","🐼","🦋"
 // Shown in the About modal. MUST be kept in step with `versionName` in
 // android/app/build.gradle — it sat at 1.0.0 through five releases (QA M-05),
 // which made every user-reported "I'm on version X" untrustworthy.
-const GAME_VERSION = "1.6";
+const GAME_VERSION = "1.7";
 
 // ─── Learning Mode (lang = "learn") ─────────────────────────────────────────
 // Shows English + Russian translation below every string.
@@ -3221,7 +3221,7 @@ const OCTOPUS_CAVE_SCENE_SVG    = `<svg viewBox="0 0 800 500" xmlns="http://www.
   </g>
 </svg>`;
 
-const NORTHERN_KINGDOM_SCENE_SVG = `<svg viewBox="0 0 800 500" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="xMidYMid slice" aria-label="Northern Kingdom — a crowned ice castle on a rise under a violet aurora, with a loaded supply sled on the road and Nova the narwhal waiting in a cracked ice pool" role="img">
+const NORTHERN_KINGDOM_SCENE_SVG = `<svg viewBox="0 0 800 500" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="xMidYMid slice" aria-label="Northern Kingdom — a crowned ice castle on a rise under a violet aurora, with a loaded supply sled on the road and Nova the narwhal beached on the snow beside it" role="img">
 
   <!-- ════════════════════════════════════════════════════════════
        NORTHERN KINGDOM — mission scene background
@@ -3237,11 +3237,12 @@ const NORTHERN_KINGDOM_SCENE_SVG = `<svg viewBox="0 0 800 500" xmlns="http://www
        road below it, which is the problem Sausage turns up to fix.
 
        FRIEND: #islandFriendSpot is Nova's permanent position for the
-       whole mission — a narwhal, so she waits in a cracked pool in
-       the ice rather than on it, left of the castle and clear of the
-       seal rig's landing box. Colours match ANIMAL_SVGS[6] exactly
-       (body #7868c8, belly #a898e8, tusk #e0d0f8, eye #1a2030) so
-       she is recognizably the same Nova from her rescue card.
+       whole mission — beached on the snow left of the castle and
+       clear of the seal rig's landing box, which is both why she
+       needs rescuing and what keeps her readable. Colours and
+       silhouette match ANIMAL_SVGS[6] (body #7868c8, belly #a898e8,
+       tusk #e0d0f8, eye #1a2030) so she is recognizably the same
+       Nova from her rescue card.
        ════════════════════════════════════════════════════════════ -->
 
   <defs>
@@ -3273,12 +3274,6 @@ const NORTHERN_KINGDOM_SCENE_SVG = `<svg viewBox="0 0 800 500" xmlns="http://www
     .nk-nova { transform-origin: 0px 2px; animation: nk-bob 3.8s ease-in-out infinite; }
     @keyframes nk-bob { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-4px); } }
 
-    /* Ripples in Nova's pool */
-    .nk-ripple { animation: nk-ripple-out 3.4s ease-out infinite; transform-origin: 0px 0px; }
-    @keyframes nk-ripple-out {
-      0%   { transform: scale(.5); opacity: .7; }
-      100% { transform: scale(1.4); opacity: 0; }
-    }
 
     /* The crown finial above the keep gives a slow royal glint */
     .nk-crown { animation: nk-glint 4.2s ease-in-out infinite; }
@@ -3380,50 +3375,39 @@ const NORTHERN_KINGDOM_SCENE_SVG = `<svg viewBox="0 0 800 500" xmlns="http://www
     <path class="nk-pennant"   d="M286 386 L316 395 L286 404Z" fill="#ffd45a"/>
     <path class="nk-pennant-b" d="M438 372 L468 381 L438 390Z" fill="#ff9dc0"/>
 
-    <!-- ── NOVA — a narwhal, so she waits in a cracked pool in the
-         ice rather than on top of it. Colours match ANIMAL_SVGS[6]. ── -->
+    <!-- ── NOVA — beached on the ice, which is both why she needs rescuing
+         and what keeps her readable. She was previously drawn in a pool of
+         open water, but a small flat-coloured ellipse at this scale reads as
+         a purple stain on the snow rather than as water. Silhouette follows
+         ANIMAL_SVGS[6] so she is the same Nova as on her rescue card: long
+         body, tail fluke right, eye and spiral tusk left. ── -->
     <g id="islandFriendSpot" transform="translate(300,0)">
-      <!-- the pool: cracked ice ring + open water -->
-      <ellipse cx="60" cy="442" rx="104" ry="34" fill="#d9c9ee" stroke="#bda6e0" stroke-width="2.5"/>
-      <ellipse cx="60" cy="442" rx="88"  ry="26" fill="#7a63b8"/>
-      <ellipse cx="60" cy="438" rx="88"  ry="26" fill="#9a83d4" opacity=".6"/>
-      <g stroke="#bda6e0" stroke-width="2" fill="none" stroke-linecap="round">
-        <path d="M-46 430 L-70 416 M-40 458 L-66 470 M166 432 L192 420 M160 458 L188 468"/>
-      </g>
-      <ellipse class="nk-ripple" cx="60" cy="440" rx="52" ry="16" fill="none" stroke="#c9b4ea" stroke-width="2.5"/>
-
-      <g transform="translate(56,400) scale(1.18)">
+      <g transform="translate(64,398) scale(1.3)">
+        <!-- contact shadow, so she sits ON the snow instead of hovering -->
+        <ellipse cx="0" cy="26" rx="48" ry="9" fill="#a98cd8" opacity=".28"/>
         <g class="nk-nova">
-          <!-- Surfacing pose: head and chest lifted clear of the water, body
-               curving down into the pool. Deliberately much rounder than a
-               side-on resting narwhal, which at this size just reads as a
-               flat purple smudge. -->
-          <ellipse cx="10" cy="16" rx="38" ry="25" fill="#7868c8"/>
-          <ellipse cx="4" cy="24" rx="27" ry="12" fill="#a898e8" opacity=".5"/>
-          <!-- tail, lifted out of the water on the right -->
-          <path d="M44 6 Q60 -12 68 -2 Q60 12 44 16Z" fill="#7868c8"/>
-          <path d="M46 4 Q58 -8 62 -1Z" fill="#5848a8"/>
-          <!-- head, raised -->
-          <ellipse cx="-24" cy="-6" rx="23" ry="21" fill="#7868c8"/>
-          <ellipse cx="-26" cy="4" rx="15" ry="9" fill="#a898e8" opacity=".45"/>
-          <circle cx="-30" cy="-12" r="7" fill="#1a2030"/><circle cx="-27.5" cy="-14.5" r="2.4" fill="#fff"/>
-          <path d="M-40 2 Q-32 8 -22 5" fill="none" stroke="#5848a8" stroke-width="2.2" stroke-linecap="round"/>
-          <!-- the tusk: a long spiral tooth, angled up and forward -->
-          <path d="M-42 -14 Q-58 -34 -74 -56 Q-68 -62 -63 -55 Q-50 -34 -36 -16Z" fill="#e0d0f8"/>
-          <path d="M-42 -14 L-74 -56" fill="none" stroke="#c0b0e0" stroke-width="1.4" stroke-linecap="round"/>
-          <path d="M-52 -27 L-47 -32 M-60 -38 L-55 -43 M-67 -48 L-62 -52" stroke="#c0b0e0" stroke-width="1.3" stroke-linecap="round"/>
+          <ellipse cx="0" cy="2" rx="40" ry="23" fill="#7868c8"/>
+          <ellipse cx="-4" cy="8" rx="28" ry="12" fill="#a898e8" opacity=".45"/>
+          <!-- tail fluke -->
+          <path d="M38 2 Q54 -10 58 2 Q54 14 38 2Z" fill="#7868c8"/>
+          <path d="M40 -3 Q50 -8 49 2Z" fill="#5848a8"/>
+          <path d="M40 7  Q50 12 49 2Z" fill="#5848a8"/>
+          <!-- eye + smile -->
+          <circle cx="-26" cy="-4" r="7" fill="#1a2030"/><circle cx="-23.5" cy="-6.5" r="2.5" fill="#fff"/>
+          <path d="M-38 6 Q-31 11 -22 8" fill="none" stroke="#5848a8" stroke-width="2.2" stroke-linecap="round"/>
+          <!-- the spiral tusk: the one feature that says narwhal, so it is
+               drawn long and angled up where nothing overlaps it -->
+          <path d="M-40 -6 Q-56 -26 -72 -50 Q-66 -56 -61 -49 Q-48 -26 -34 -8Z" fill="#e0d0f8"/>
+          <path d="M-40 -6 L-72 -50" fill="none" stroke="#c0b0e0" stroke-width="1.4" stroke-linecap="round"/>
+          <path d="M-50 -19 L-45 -24 M-58 -30 L-53 -35 M-65 -41 L-60 -45" stroke="#c0b0e0" stroke-width="1.3" stroke-linecap="round"/>
         </g>
       </g>
-      <!-- Front lip of the pool, drawn AFTER Nova so the water cuts across her
-           lower body — the same trick the Polar Academy snowdrift uses on
-           Miska. Without it she reads as sitting on top of the ice, not in it. -->
-      <path d="M-28 442 A88 26 0 0 1 148 442 Z" fill="#7a63b8"/>
     </g>
 
   </g>
 </svg>`;
 
-const ARCTIC_CHAMPION_SCENE_SVG = `<svg viewBox="0 0 800 500" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="xMidYMid slice" aria-label="Arctic Champion — a golden dawn over the Guardian's podium, ringed with bunting and rising stars, where Tumble the sea otter floats in an open lead of water holding a champion's shell" role="img">
+const ARCTIC_CHAMPION_SCENE_SVG = `<svg viewBox="0 0 800 500" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="xMidYMid slice" aria-label="Arctic Champion — a golden dawn over the Guardian's podium, ringed with bunting and rising stars, where Tumble the sea otter sits on the ice holding a champion's shell" role="img">
 
   <!-- ════════════════════════════════════════════════════════════
        ARCTIC CHAMPION — mission scene background
@@ -3442,10 +3426,11 @@ const ARCTIC_CHAMPION_SCENE_SVG = `<svg viewBox="0 0 800 500" xmlns="http://www.
        rising stars carry the "final celebration" read.
 
        FRIEND: #islandFriendSpot is Tumble's permanent position for
-       the whole mission — a sea otter, so he floats on his back in
-       an open lead of water, holding the champion's shell he is
-       waiting to hand over. Colours match ANIMAL_SVGS[8] exactly
-       (body #5c3a28, head #7a5038, muzzle #c8a080, eye #1a2030).
+       the whole mission — sitting up on the ice holding the
+       champion's shell he is waiting to hand over. Drawn FRONT-ON,
+       pose for pose with ANIMAL_SVGS[8] (body #5c3a28, head #7a5038,
+       muzzle #c8a080, eye #1a2030), because that is the picture the
+       child already met on his rescue card.
        ════════════════════════════════════════════════════════════ -->
 
   <defs>
@@ -3484,11 +3469,6 @@ const ARCTIC_CHAMPION_SCENE_SVG = `<svg viewBox="0 0 800 500" xmlns="http://www.
     @keyframes ac-float {
       0%,100% { transform: translateY(0) rotate(-1.5deg); }
       50%     { transform: translateY(-5px) rotate(1.5deg); }
-    }
-    .ac-ripple { animation: ac-ripple-out 3.6s ease-out infinite; transform-origin: 0px 0px; }
-    @keyframes ac-ripple-out {
-      0%   { transform: scale(.5); opacity: .65; }
-      100% { transform: scale(1.45); opacity: 0; }
     }
   </style>
 
@@ -3571,45 +3551,41 @@ const ARCTIC_CHAMPION_SCENE_SVG = `<svg viewBox="0 0 800 500" xmlns="http://www.
     <path d="M300 490 Q440 456 500 412" fill="none" stroke="#e4f7ee" stroke-width="18" stroke-linecap="round" opacity=".8"/>
     <path d="M300 490 Q440 456 500 412" fill="none" stroke="#a9dfc7" stroke-width="2.5" stroke-dasharray="14 16" stroke-linecap="round" opacity=".75"/>
 
-    <!-- ── TUMBLE — a sea otter, so he floats on his back in an open
-         lead of water. Colours match ANIMAL_SVGS[8]. ── -->
+    <!-- ── TUMBLE — sitting up on the ice holding the champion\'s shell.
+         Drawn FRONT-ON to match ANIMAL_SVGS[8] pose for pose, because that
+         is the picture the child already met on his rescue card; the earlier
+         side-on floating pose was unrecognisable at this size (play-testers
+         read it as a bear). The open-water lead is gone for the same reason
+         Nova\'s pool is: a small flat ellipse reads as a green stain. ── -->
     <g id="islandFriendSpot" transform="translate(290,0)">
-      <!-- the lead: open water in the ice -->
-      <ellipse cx="60" cy="446" rx="108" ry="34" fill="#c7ead9" stroke="#a9dfc7" stroke-width="2.5"/>
-      <ellipse cx="60" cy="446" rx="92"  ry="26" fill="#2a9c86"/>
-      <ellipse cx="60" cy="442" rx="92"  ry="26" fill="#2dd6a6" opacity=".45"/>
-      <ellipse class="ac-ripple" cx="60" cy="444" rx="54" ry="16" fill="none" stroke="#8be0d8" stroke-width="2.5"/>
-
-      <g transform="translate(56,412) scale(1.18)">
+      <g transform="translate(64,392) scale(1.22)">
+        <!-- contact shadow -->
+        <ellipse cx="0" cy="36" rx="44" ry="9" fill="#2a9c86" opacity=".22"/>
         <g class="ac-tumble">
-          <!-- Floating on his back with chest and head propped well clear of
-               the water. The previous side-on pose was 2.5:1 wide and read as
-               a brown smudge once the scene was scaled down to a phone. -->
-          <ellipse cx="4" cy="16" rx="42" ry="24" fill="#5c3a28"/>
-          <ellipse cx="6" cy="10" rx="32" ry="16" fill="#7a5038"/>
-          <!-- back paws, up out of the water -->
-          <path d="M34 -2 Q52 -16 58 -2 Q50 10 34 10Z" fill="#4c2a18"/>
-          <path d="M44 2 Q60 -8 63 6 Q54 14 44 12Z" fill="#4c2a18"/>
-          <!-- head, propped up -->
-          <ellipse cx="-32" cy="-10" rx="24" ry="21" fill="#7a5038"/>
-          <ellipse cx="-34" cy="-2" rx="15" ry="11" fill="#c8a080"/>
-          <circle cx="-41" cy="-16" r="6" fill="#1a2030"/><circle cx="-38.5" cy="-18.5" r="2.2" fill="#fff"/>
-          <circle cx="-24" cy="-16" r="6" fill="#1a2030"/><circle cx="-21.5" cy="-18.5" r="2.2" fill="#fff"/>
-          <ellipse cx="-34" cy="-6" rx="4.5" ry="3.4" fill="#2a1a14"/>
-          <path d="M-40 1 Q-34 6 -28 1" fill="none" stroke="#8a6048" stroke-width="2" stroke-linecap="round"/>
-          <ellipse cx="-48" cy="-25" rx="5.5" ry="5" fill="#5c3a28"/>
-          <ellipse cx="-17" cy="-25" rx="5.5" ry="5" fill="#5c3a28"/>
-          <!-- front paws holding the champion's shell on his chest -->
-          <path d="M-10 2 Q0 -12 12 -6" fill="none" stroke="#4c2a18" stroke-width="8" stroke-linecap="round"/>
-          <g transform="translate(1,-9)">
-            <path d="M0 7 Q-15 3 -12 -9 Q0 -18 12 -9 Q15 3 0 7Z" fill="#ffe0ea" stroke="#e0a8bc" stroke-width="2.2"/>
-            <path d="M0 7 L-7 -10 M0 7 L0 -13 M0 7 L7 -10" stroke="#e0a8bc" stroke-width="1.5" stroke-linecap="round"/>
+          <!-- body + the two dark paws, exactly as on the rescue card -->
+          <ellipse cx="0" cy="8" rx="36" ry="28" fill="#5c3a28"/>
+          <path d="M-35 16 Q-48 18 -44 32 Q-30 34 -28 20Z" fill="#4c2a18"/>
+          <path d="M35 16 Q48 18 44 32 Q30 34 28 20Z" fill="#4c2a18"/>
+          <!-- head -->
+          <ellipse cx="0" cy="-14" rx="24" ry="20" fill="#7a5038"/>
+          <ellipse cx="-20" cy="-28" rx="6.5" ry="6" fill="#5c3a28"/>
+          <ellipse cx="20" cy="-28" rx="6.5" ry="6" fill="#5c3a28"/>
+          <ellipse cx="0" cy="-11" rx="15" ry="12" fill="#c8a080"/>
+          <circle cx="-11" cy="-17" r="6" fill="#1a2030"/><circle cx="-9" cy="-19" r="2.2" fill="#fff"/>
+          <circle cx="11" cy="-17" r="6" fill="#1a2030"/><circle cx="13" cy="-19" r="2.2" fill="#fff"/>
+          <ellipse cx="0" cy="-6" rx="7" ry="4.5" fill="#3a2018"/>
+          <path d="M-7 -1 Q0 4 7 -1" fill="none" stroke="#3a2018" stroke-width="2" stroke-linecap="round"/>
+          <!-- whiskers — the cue that separates an otter from a bear cub -->
+          <g stroke="#e8d8c8" stroke-width="1.6" stroke-linecap="round" opacity=".9">
+            <path d="M-15 -8 L-30 -11 M-15 -5 L-30 -4 M15 -8 L30 -11 M15 -5 L30 -4"/>
+          </g>
+          <!-- the champion\'s shell, held on his belly the way the card shows -->
+          <g transform="translate(0,16)">
+            <path d="M0 8 Q-16 4 -13 -8 Q0 -18 13 -8 Q16 4 0 8Z" fill="#ffe0ea" stroke="#e0a8bc" stroke-width="2.2"/>
+            <path d="M0 8 L-7 -10 M0 8 L0 -13 M0 8 L7 -10" stroke="#e0a8bc" stroke-width="1.5" stroke-linecap="round"/>
           </g>
         </g>
       </g>
-      <!-- Front lip of the lead, drawn AFTER Tumble so the water cuts across
-           his lower body instead of leaving him sitting on top of it. -->
-      <path d="M-32 446 A92 26 0 0 1 152 446 Z" fill="#2a9c86"/>
     </g>
 
   </g>
@@ -5203,13 +5179,15 @@ function renderTown() {
   const FAR = "far", NEAR = "near";
   const positions = [
     [ 8, 16, NEAR],  // 0 Fish Market
-    [ 8, 27, FAR],   // 1 Lighthouse
-    [75, 27, FAR],   // 2 Aquarium
+    [ 7, 27, FAR],   // 1 Lighthouse
+    [37, 27, FAR],   // 2 Aquarium
     [28, 16, NEAR],  // 3 Seal House
-    [25, 27, FAR],   // 4 Penguin Village
+    [22, 27, FAR],   // 4 Penguin Village
     [72, 16, NEAR],  // 5 Harbor
-    [92, 27, FAR],   // 6 Arctic Museum
-    [50, 33, FAR],   // 7 Ice Castle — the skyline anchor, centred and set back
+    [94, 27, FAR],   // 6 Arctic Museum
+    // Right of centre by enough that the School's roof label clears its
+    // left tower — the two used to sit on top of each other at 50%.
+    [72, 33, FAR],   // 7 Ice Castle
   ];
   // The School is the one building the player actually opens (times table,
   // rules, drills, "How to count"), so it takes the strongest spot in the
@@ -5235,7 +5213,7 @@ function renderTown() {
   }).join("");
 
   const auroraHtml = `<div class="town-aurora"><div class="town-aurora-band"></div><div class="town-aurora-band"></div><div class="town-aurora-band"></div>${stars}${flakes}</div>`;
-  const groundHtml = `<div class="town-ground-snow"></div>`;
+  const groundHtml = `<div class="town-ground-back"></div><div class="town-ground-snow"></div>`;
 
   const livelyExtras = `
     ${auroraHtml}
