@@ -13,7 +13,7 @@ const PROFILE_EMOJIS  = ["🦭","🐧","🐻","🦊","🐳","🦁","🐼","🦋"
 // Shown in the About modal. MUST be kept in step with `versionName` in
 // android/app/build.gradle — it sat at 1.0.0 through five releases (QA M-05),
 // which made every user-reported "I'm on version X" untrustworthy.
-const GAME_VERSION = "1.3";
+const GAME_VERSION = "1.5";
 
 // ─── Learning Mode (lang = "learn") ─────────────────────────────────────────
 // Shows English + Russian translation below every string.

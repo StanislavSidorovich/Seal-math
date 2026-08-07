@@ -11,7 +11,7 @@
 // (e.g. a new icon or CSS file is added) — the activate handler below
 // deletes any cache that doesn't match the current version, so a bumped
 // version is what actually clears out old cached files.
-const CACHE_VERSION = "v2";
+const CACHE_VERSION = "v3";
 const CACHE_NAME = `sausage-seal-${CACHE_VERSION}`;
 
 // NOTE: cache.addAll() below is all-or-nothing — ONE missing file rejects the
@@ -53,8 +53,15 @@ self.addEventListener("fetch", (event) => {
   // (POST, cross-origin, etc.) go straight to the network untouched.
   if (event.request.method !== "GET") return;
 
+  // `cache: "no-cache"` is what makes "network-first" actually mean it. A bare
+  // fetch() still goes through the browser's HTTP cache, and GitHub Pages
+  // serves these assets with max-age=600 — so for ten minutes after a deploy
+  // the browser could answer from its own cache without ever reaching the
+  // network, and the player would keep seeing the previous build. "no-cache"
+  // forces a revalidation instead (an If-None-Match round trip, so an
+  // unchanged file still costs only a 304, not a re-download).
   event.respondWith(
-    fetch(event.request)
+    fetch(event.request, { cache: "no-cache" })
       .then((networkResponse) => {
         const responseCopy = networkResponse.clone();
         caches.open(CACHE_NAME).then((cache) => cache.put(event.request, responseCopy));
