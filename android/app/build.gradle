@@ -38,7 +38,11 @@ android {
     buildTypes {
         release {
             minifyEnabled false
-            proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
+            // AGP 8.13 dropped the old unoptimized 'proguard-android.txt' template —
+            // getDefaultProguardFile() now only recognises the optimize variant.
+            // minifyEnabled is false here regardless, so this file is just the base
+            // ruleset reference; switching the name doesn't change what actually ships.
+            proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
             if (keystorePropsFile.exists()) {
                 signingConfig signingConfigs.release
             }
