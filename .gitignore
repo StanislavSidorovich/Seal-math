@@ -2,3 +2,9 @@ node_modules/
 www/
 .claude/
 fixes/
+
+# Generated Play Console screenshot packs (~28MB each). Kept locally only —
+# they are reproducible from the Playwright script, and binaries this size
+# would sit in git history forever. The older hand-taken shots above them in
+# screenshots/ stay tracked.
+screenshots/store-*/
