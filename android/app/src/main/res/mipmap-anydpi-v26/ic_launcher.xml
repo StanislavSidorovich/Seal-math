@@ -1,9 +1,13 @@
 <?xml version="1.0" encoding="utf-8"?>
+<!--
+  Both layers used to carry android:inset="16.7%". On the FOREGROUND that is
+  defensible (it keeps art inside the 72dp safe zone), but on the BACKGROUND it
+  shrank the fill to 72dp and left the outer ring empty, so any launcher mask
+  wider than the inset exposed blank edges. The layers are now authored at the
+  right proportions instead: ic_launcher_background.png is full-bleed, and the
+  seal in ic_launcher_foreground.png already sits inside the safe zone.
+-->
 <adaptive-icon xmlns:android="http://schemas.android.com/apk/res/android">
-    <background>
-        <inset android:drawable="@mipmap/ic_launcher_background" android:inset="16.7%" />
-    </background>
-    <foreground>
-        <inset android:drawable="@mipmap/ic_launcher_foreground" android:inset="16.7%" />
-    </foreground>
+    <background android:drawable="@mipmap/ic_launcher_background" />
+    <foreground android:drawable="@mipmap/ic_launcher_foreground" />
 </adaptive-icon>
