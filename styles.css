@@ -1132,17 +1132,37 @@ button { font: inherit; color: inherit; }
 @keyframes ghost-pulse { 0%, 100% { opacity: .2; } 50% { opacity: .42; } }
 .town-ghost-badge {
   position: absolute;
-  left: 50%;
-  bottom: -20px;
+  /* `left` and `bottom` come from the inline style in townGhostHtml(); the
+     badge is a direct child of .town-scene, not of the ghost wrapper. */
   transform: translateX(-50%);
+  /* Above the friends row (z-index 5) — this is a caption that has to stay
+     readable, not scenery that should hide behind a passing walrus. */
+  z-index: 6;
   background: rgba(23,68,106,.85);
   color: #fff;
   font-size: .68rem;
   font-weight: 800;
   padding: 3px 9px;
   border-radius: 999px;
-  white-space: nowrap;
+  /* Was `white-space:nowrap` centred on a 40-102px wrapper. The Russian
+     string ("⭐ 7 до постройки: Арктический музей") is about twice the
+     English one, so it ran off the scene AND the viewport at every phone
+     width. Two changes fix it: the text now wraps inside a capped box, and
+     ghosts near the scene edges anchor the badge to their inner side rather
+     than centring it — the Arctic Museum sits at left:94% (game.js), where
+     no centred width can fit. */
+  white-space: normal;
+  width: max-content;
+  max-width: min(40vw, 150px);
+  text-align: center;
+  line-height: 1.2;
 }
+/* Edge buildings: pin to the scene's own edge rather than to the building,
+   which at phone widths sits too close to the border for a centred caption
+   to fit. These override the centring transform, so no `left` may be emitted
+   inline for them (see townGhostHtml). */
+.town-ghost-badge.badge-start { left: 10px;  right: auto; transform: none; }
+.town-ghost-badge.badge-end   { left: auto;  right: 10px; transform: none; }
 
 /* S7: faint dashed path across the ground band, ties the cluster into one
    place instead of scattered icons (echoes the "footprints in the snow"

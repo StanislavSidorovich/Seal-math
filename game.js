@@ -5189,10 +5189,26 @@ function townGhostHtml(positions) {
   const badge = currentLang === "ru"
     ? `⭐ ${need} до постройки: ${buildingName(next)}`
     : `⭐ ${need} to build ${buildingName(next)}`;
+  // The badge is a UI caption, not scenery, so it is a SIBLING of the ghost
+  // rather than a child. Two reasons: `.town-ghost-wrap` sets a z-index and
+  // therefore a stacking context, so a nested badge can never rise above the
+  // friends row (z-index 5, deliberately over every building) — it ended up
+  // half-hidden behind a walrus. And as a direct child of the scene the badge
+  // can be pinned to the scene's own edge.
+  //
+  // Buildings sit anywhere from left:7% (Lighthouse) to left:94% (Arctic
+  // Museum). Centred on an edge building the badge cannot fit at phone
+  // widths, so near an edge it pins to that edge instead of the building.
+  const side = left >= 70 ? " badge-end" : left <= 30 ? " badge-start" : "";
+  // Edge variants get their `left`/`right` from CSS — emitting an inline
+  // `left:${left}%` here would win over the class and undo the pinning.
+  const badgePos = side
+    ? `bottom:calc(${bottom}% - 20px)`
+    : `left:${left}%;bottom:calc(${bottom}% - 20px)`;
   return `<div class="town-ghost-wrap${finale}${far}" style="left:${left}%;bottom:${bottom}%" aria-hidden="true">
     <div class="town-building-ghost">${buildingSvg(next.id)}</div>
-    <div class="town-ghost-badge">${badge}</div>
-  </div>`;
+  </div>
+  <div class="town-ghost-badge${side}" style="${badgePos}" aria-hidden="true">${badge}</div>`;
 }
 
 // S7: a recognizable little fish for the swimming background decoration —
