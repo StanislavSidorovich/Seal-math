@@ -107,6 +107,13 @@ Set-ExecutionPolicy -Scope CurrentUser -ExecutionPolicy RemoteSigned
 - **Back navigation**: one shared `handleBackRequest()` drives both the
   Capacitor hardware button and the browser's `popstate`. Add new modals to its
   `modalCloses` list, not to a separate handler.
+- **Nothing the child must tap may sit below the fold.** The mission screen is
+  the tight one: topbar + scene + strip + question + four answers on a 360px
+  phone. Answers are a 2x2 grid on phones (a single column ran 270px and hid
+  the bottom two), and `@media (max-width:768px) and (max-height:720px)` in
+  `styles-mobile.css` trims the scene and the island eyebrow so a 360x640
+  phone still shows every answer. Check the **worst case** — the longest word
+  problem, in Russian — not a `3 + 4 = ?`, and measure at 640/720/800 tall.
 - **Equipment slots are body zones, not item types.** `state.equipped` is keyed
   by `EQUIP_ZONES` (`head` / `face` / `neck` / `back` / `pet`), so a hat,
   goggles, a scarf, a cape and a pet are all worn at once and only genuine
@@ -120,15 +127,22 @@ Set-ExecutionPolicy -Scope CurrentUser -ExecutionPolicy RemoteSigned
 
 ## Current state
 
-**v2.1** (`versionCode 14`, `CACHE_VERSION v11`, `manifest.json` 2.1). In
-**open testing** on Google Play. The web build on GitHub Pages is updated by
-pushing to `main`; testers only see a change once a new AAB is uploaded.
+**v2.2** (`versionCode 15`, `CACHE_VERSION v12`, `manifest.json` 2.2). In
+**open testing** on Google Play, latest uploaded release 2.0 (13). The web
+build on GitHub Pages is updated by pushing to `main`; testers only see a
+change once a new AAB is uploaded.
 
-v2.1 is the multi-clothing release: the owner's daughter asked why the seal
-could only wear one thing. It could in fact wear three (one per type slot),
-but the slots cut across the art — Snow Goggles and the Star Scarf knocked
-each other off despite sitting on different parts of the seal. Slots are now
-body zones; see the equipment convention above.
+Two owner-reported fixes are stacked in this branch, both unreleased:
+
+- **v2.1 — multi-clothing.** The owner's daughter asked why the seal could
+  only wear one thing. It could in fact wear three (one per type slot), but
+  the slots cut across the art — Snow Goggles and the Star Scarf knocked each
+  other off despite sitting on different parts of the seal. Slots are now body
+  zones; see the equipment convention above.
+- **v2.2 — answers above the fold.** On her phone only two of the four answer
+  buttons were visible; the child had no way to know the other two existed.
+  Answers are 2x2 on phones now, the eyebrow no longer repeats the mission
+  name the strip already shows, and short screens trim the scene.
 
 Shipped before that: v2.0 branding unification on "Arctic Math Rescue",
 the `manifest.json` version/orientation fix, and the town ghost-badge overflow

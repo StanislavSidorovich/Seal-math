@@ -13,7 +13,7 @@ const PROFILE_EMOJIS  = ["🦭","🐧","🐻","🦊","🐳","🦁","🐼","🦋"
 // Shown in the About modal. MUST be kept in step with `versionName` in
 // android/app/build.gradle — it sat at 1.0.0 through five releases (QA M-05),
 // which made every user-reported "I'm on version X" untrustworthy.
-const GAME_VERSION = "2.1";
+const GAME_VERSION = "2.2";
 
 // ─── Learning Mode (lang = "learn") ─────────────────────────────────────────
 // Shows English + Russian translation below every string.
@@ -4032,9 +4032,14 @@ function makeProblem() {
   const wName   = t(`world${world.id}`) || world.name;
   currentProblem = generateProblem(topic);
   currentProblem.started = Date.now();
+  // P18: the eyebrow used to read "<island> - <mission>", and the strip
+  // immediately below it repeats "Mission N: <mission>". On a 360px phone
+  // that duplicate wrapped to a second line and cost a whole answer button
+  // of height, so the eyebrow now carries only what the strip does not: the
+  // island.
   $("topicLabel").innerHTML    = currentLang === "learn"
-    ? `${wName} - ${details.title}<span class="learn-ru">${topicLabelRu(topic)}</span>`
-    : `${wName} - ${details.title}`;
+    ? `${wName}<span class="learn-ru">${topicLabelRu(topic)}</span>`
+    : wName;
   $("missionTitle").textContent  = trip.daily ? t("dailyRescue") : `${t("missionOf")} ${trip.mission+1}: ${details.title}`;
   if (trip.mission === 4) {
     syncStormVisuals();
