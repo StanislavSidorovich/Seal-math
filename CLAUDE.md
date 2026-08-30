@@ -47,10 +47,14 @@ AAB is uploaded.
    - `CACHE_VERSION` in `sw.js` — **required whenever any cached asset changes**,
      or players keep the old copies; the `activate` handler only evicts caches
      whose name differs.
-3. `npm run build:www` (or `npm run release`, which runs the tests first).
-4. `npx cap sync android`
-5. Android Studio → Build → Generate Signed Bundle / APK → **Android App Bundle**.
-6. Upload the AAB to Play Console.
+3. `npm run release:android` — tests, rebuilds `www/`, then `cap sync android`
+   in one step. Use this rather than the three commands separately: `www/` is
+   gitignored, so a `cap sync` that skips the rebuild silently ships the
+   *previous* bundle, and the resulting APK looks exactly like "the fix did
+   not work". (`npm run build:www` + `npx cap sync android` still work if you
+   need them apart.)
+4. Android Studio → Build → Generate Signed Bundle / APK → **Android App Bundle**.
+5. Upload the AAB to Play Console.
 
 Play rejects an AAB whose `versionCode` already exists, so step 2 is not
 optional even for a rebuild of otherwise identical code.

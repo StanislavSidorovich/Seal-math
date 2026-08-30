@@ -6,7 +6,8 @@
   "scripts": {
     "test": "node tests/run.js",
     "build:www": "node scripts/build-www.mjs",
-    "release": "npm test && npm run build:www"
+    "release": "npm test && npm run build:www",
+    "release:android": "npm test && npm run build:www && cap sync android"
   },
   "dependencies": {
     "@capacitor/android": "8.4.2",
