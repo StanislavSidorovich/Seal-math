@@ -61,6 +61,32 @@
   .answers { gap: 10px; }
   .answer  { min-height: 60px; font-size: clamp(1.2rem, 7vw, 1.8rem); border-radius: 14px; }
 
+  /* ── P19: the two quest buttons live in a bar pinned to the bottom ──
+     The quest panel is ~740px tall on a 360x800 phone, so "Start Mission"
+     landed at the fold and the bonus-game button below it. A child does not
+     know to scroll for a button they have never seen. Pinning the pair also
+     fixes the reverse trip: the island map sits *below* the quest panel on
+     phones (.quest-panel { order: -1 }), so scrolling down to pick an island
+     used to carry the Start button off the top of the screen. */
+  .quest-actions {
+    position: fixed;
+    left: 0; right: 0; bottom: 0;
+    z-index: 40;                 /* under the modals, which start at 65 */
+    display: flex;
+    gap: 8px;
+    padding: 8px 10px;
+    padding-bottom: calc(8px + env(safe-area-inset-bottom, 0px));
+    background: rgba(255, 255, 255, .97);
+    box-shadow: 0 -4px 18px rgba(23, 78, 108, .14);
+  }
+  .quest-actions .primary   { flex: 2 1 0; min-width: 0; }
+  .quest-actions .secondary { flex: 1 1 0; min-width: 0; font-size: .82rem; line-height: 1.15; }
+  /* Room for the bar so it never covers the end of the map. The padding goes
+     on .hero, not on #adventure: the mission screen lives in #adventure too,
+     and .hero is exactly what gets hidden while a mission runs — so the
+     clearance appears and disappears together with the bar it is for. */
+  .hero { padding-bottom: 88px; }
+
   /* ── My Seal ──────────────────────────────────────── */
   .seal-room    { grid-template-columns: 1fr; gap: 12px; }
   .seal-preview { min-height: 260px; padding: 14px; }

@@ -107,6 +107,14 @@ Set-ExecutionPolicy -Scope CurrentUser -ExecutionPolicy RemoteSigned
 - **Back navigation**: one shared `handleBackRequest()` drives both the
   Capacitor hardware button and the browser's `popstate`. Add new modals to its
   `modalCloses` list, not to a separate handler.
+- **The two quest buttons are a fixed bar on phones.** `.quest-actions` wraps
+  Start Mission + Bonus Game and is `position: fixed; bottom: 0` under 768px.
+  It deliberately lives inside `.quest-panel`, so it inherits both ways the
+  adventure screen disappears — the view losing `.active`, and `.hero` being
+  hidden during a mission or mini-game — and needs no JS to show or hide.
+  Its clearance (`padding-bottom`) belongs on `.hero` for the same reason;
+  putting it on `#adventure` also padded the mission screen, which is a
+  different child of the same view.
 - **Nothing the child must tap may sit below the fold.** The mission screen is
   the tight one: topbar + scene + strip + question + four answers on a 360px
   phone. Answers are a 2x2 grid on phones (a single column ran 270px and hid
@@ -127,12 +135,12 @@ Set-ExecutionPolicy -Scope CurrentUser -ExecutionPolicy RemoteSigned
 
 ## Current state
 
-**v2.2** (`versionCode 15`, `CACHE_VERSION v12`, `manifest.json` 2.2). In
+**v2.3** (`versionCode 16`, `CACHE_VERSION v13`, `manifest.json` 2.3). In
 **open testing** on Google Play, latest uploaded release 2.0 (13). The web
 build on GitHub Pages is updated by pushing to `main`; testers only see a
 change once a new AAB is uploaded.
 
-Two owner-reported fixes are stacked in this branch, both unreleased:
+Three owner-reported fixes are stacked in this branch, none released yet:
 
 - **v2.1 — multi-clothing.** The owner's daughter asked why the seal could
   only wear one thing. It could in fact wear three (one per type slot), but
@@ -143,6 +151,9 @@ Two owner-reported fixes are stacked in this branch, both unreleased:
   buttons were visible; the child had no way to know the other two existed.
   Answers are 2x2 on phones now, the eyebrow no longer repeats the mission
   name the strip already shows, and short screens trim the scene.
+- **v2.3 — Start Mission above the fold.** Same class of bug on the adventure
+  screen: the quest panel ran ~740px, so the button landed at the fold and
+  the bonus-game button below it. Both are a fixed bottom bar on phones now.
 
 Shipped before that: v2.0 branding unification on "Arctic Math Rescue",
 the `manifest.json` version/orientation fix, and the town ghost-badge overflow
@@ -150,6 +161,20 @@ fix in Russian. Earlier: Android build fix (AGP proguard), `www` build step,
 dedication in Credits, back button off-native + device language + support
 email, town ground/spacing + %-based widths, island friends redrawn, service-
 worker cache busting, and the original batch of nine gameplay/UI fixes.
+
+### Verifying which build is actually on the phone
+
+An owner report of "looks the same" is usually a stale build, not a failed
+fix: `www/` is gitignored, so `npx cap sync android` without a preceding
+`npm run build:www` ships the previous bundle. Two checks, in order:
+
+1. **About (ℹ️) shows the version.** It must match `GAME_VERSION`. If it is
+   behind, nothing about the layout is worth debugging yet.
+2. Watch for a **known visual marker** of the release. For 2.2+ the mission
+   eyebrow reads just the island ("СНЕЖНЫЙ ПЛЯЖ"); through 2.1 it repeated
+   the mission ("СНЕЖНЫЙ ПЛЯЖ - РАЗВЕДАТЬ БЕРЕГ").
+
+The fix is `git pull` → `npm run release` → `npx cap sync android` → rebuild.
 
 ## Roadmap
 
