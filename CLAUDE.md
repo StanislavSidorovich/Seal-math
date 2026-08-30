@@ -159,6 +159,10 @@ Three owner-reported fixes are stacked in this branch, none released yet:
   screen: the quest panel ran ~740px, so the button landed at the fold and
   the bonus-game button below it. Both are a fixed bottom bar on phones now.
 
+Store artwork is ready and committed: the launcher icon is the game's own
+seal on a night-aurora backdrop (all `mipmap-*` densities), and
+`store-assets/` holds `app-icon-512.png` plus the EN and RU feature graphics.
+
 Shipped before that: v2.0 branding unification on "Arctic Math Rescue",
 the `manifest.json` version/orientation fix, and the town ghost-badge overflow
 fix in Russian. Earlier: Android build fix (AGP proguard), `www` build step,
@@ -193,11 +197,15 @@ The fix is `git pull` → `npm run release` → `npx cap sync android` → rebui
 
 ### Before the production release
 
-- **Store screenshots** in `screenshots/` predate the current UI (old town, old
-  islands, old name) and the older pack was 720×1600 = 2.22:1 against Google
-  Play's 2:1 limit. Regenerate at **1080×1920** — Playwright can drive the real
-  app and capture the title screen, map, a mission, the town, Sea School and
-  the parent dashboard, in both languages. To seed a state, write
+- **Store screenshots.** The old `screenshots/` pack was 720×1600 = 2.22:1
+  against Google Play's 2:1 limit and predates the current UI. A Play-legal
+  pack was regenerated into `screenshots/store-2026-08/` (EN+RU x phone /
+  tablet7 / tablet10 x 8 shots) — **gitignored**, so it lives only on the
+  owner's machine and is reproducible from the Playwright script. It shows
+  2.0, so reshoot after 2.3 ships if the changed screens are in the pack.
+  Capture at **1080×1920** — Playwright can drive the real app and take the
+  title screen, map, a mission, the town, Sea School and the parent dashboard,
+  in both languages. To seed a state, write
   `sausage-profiles-v1` + `sausage-active-profile` in `localStorage`, reload,
   then click `#titlePlayBtn` and the profile card **via `evaluate`** — both
   animate, so Playwright's stability check never lets a real `.click()` land.
