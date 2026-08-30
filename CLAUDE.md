@@ -107,18 +107,35 @@ Set-ExecutionPolicy -Scope CurrentUser -ExecutionPolicy RemoteSigned
 - **Back navigation**: one shared `handleBackRequest()` drives both the
   Capacitor hardware button and the browser's `popstate`. Add new modals to its
   `modalCloses` list, not to a separate handler.
+- **Equipment slots are body zones, not item types.** `state.equipped` is keyed
+  by `EQUIP_ZONES` (`head` / `face` / `neck` / `back` / `pet`), so a hat,
+  goggles, a scarf, a cape and a pet are all worn at once and only genuine
+  overlaps swap. A new shop item needs an `ITEM_ZONES` entry listing **every**
+  zone its art covers — the Guardian Cape is `["head","back"]`, the astronaut
+  helmet `["head","face"]` because its visor rules out goggles. Get that array
+  wrong and two pieces of art draw on top of each other. Read/write it through
+  `isEquipped()` / `equipWithZoneCheck()` / `unequipItem()`, never by poking
+  `state.equipped[item.type]` — that shape is gone, and `normalizeEquipped()`
+  is what rewrites pre-v2.1 saves onto the zones.
 
 ## Current state
 
-**v1.9** (`versionCode 12`, `CACHE_VERSION v7`). Everything through PR #8 is
-merged into `main`. In closed testing on Google Play; a v1.9 AAB has been built
-locally and is ready to upload.
+**v2.1** (`versionCode 14`, `CACHE_VERSION v11`, `manifest.json` 2.1). In
+**open testing** on Google Play. The web build on GitHub Pages is updated by
+pushing to `main`; testers only see a change once a new AAB is uploaded.
 
-The eight merged PRs, newest first: Android build fix (AGP proguard), `www`
-build step + these notes, dedication in Credits, back button off-native +
-device language + support email, town ground/spacing + %-based widths,
-island friends redrawn + School centred, service-worker cache busting, and the
-original batch of nine gameplay/UI fixes.
+v2.1 is the multi-clothing release: the owner's daughter asked why the seal
+could only wear one thing. It could in fact wear three (one per type slot),
+but the slots cut across the art — Snow Goggles and the Star Scarf knocked
+each other off despite sitting on different parts of the seal. Slots are now
+body zones; see the equipment convention above.
+
+Shipped before that: v2.0 branding unification on "Arctic Math Rescue",
+the `manifest.json` version/orientation fix, and the town ghost-badge overflow
+fix in Russian. Earlier: Android build fix (AGP proguard), `www` build step,
+dedication in Credits, back button off-native + device language + support
+email, town ground/spacing + %-based widths, island friends redrawn, service-
+worker cache busting, and the original batch of nine gameplay/UI fixes.
 
 ## Roadmap
 
@@ -133,20 +150,22 @@ original batch of nine gameplay/UI fixes.
 
 ### Before the production release
 
-- **Store screenshots** in `screenshots/` are 720×1600 = 2.22:1, and Google
-  Play's limit is 2:1, so they are out of spec. They also predate the current
-  UI (old town, old islands, old name). Regenerate at **1080×1920** — the
-  Playwright setup used throughout this session can drive the real app and
-  capture the title screen, map, a mission, the town, Sea School and the parent
-  dashboard, in both languages.
-- **`manifest.json`** still says `"version": "1.0.0"` and `"lang": "en"`, and
-  declares `"orientation": "portrait"` although mini-games are played landscape.
-- **Header subtitle** still reads "Arctic Math Adventure" while the title screen
-  says "Seal Adventure". Owner asked for the title screen only, so this is a
-  question to raise, not an assumed fix.
+- **Store screenshots** in `screenshots/` predate the current UI (old town, old
+  islands, old name) and the older pack was 720×1600 = 2.22:1 against Google
+  Play's 2:1 limit. Regenerate at **1080×1920** — Playwright can drive the real
+  app and capture the title screen, map, a mission, the town, Sea School and
+  the parent dashboard, in both languages. To seed a state, write
+  `sausage-profiles-v1` + `sausage-active-profile` in `localStorage`, reload,
+  then click `#titlePlayBtn` and the profile card **via `evaluate`** — both
+  animate, so Playwright's stability check never lets a real `.click()` land.
+  The bundled Chromium is at `/opt/pw-browsers/chromium-1194/chrome-linux/chrome`.
 - Confirm **Families policy / target audience / Data Safety** are filled in
   Play Console. Easy case: no ads, no IAP, no analytics, no accounts, nothing
   leaves the device.
+- **Astronaut helmet vs. goggles**: the helmet claims `head` + `face`, so Snow
+  Goggles can't go under the visor. That is the art being honest, but if the
+  daughter asks for it, the fix is to redraw the visor around the goggles
+  rather than to loosen the zones.
 
 ### After production, once the build has settled
 
@@ -155,8 +174,8 @@ original batch of nine gameplay/UI fixes.
   is not guaranteed and teachers rate the **live build** on design, appeal,
   enrichment and age fit. Do not submit while the app is still changing weekly.
   Age bands are 5-and-under / 6–8 / 9–12; this game spans the last two.
-- Open testing before production — real users outside the tester circle, and a
-  natural pause for the build to stabilise.
+- Open testing is now live — real users outside the tester circle, and a
+  natural pause for the build to stabilise before production.
 
 ### Cleanup, no hurry
 
