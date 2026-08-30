@@ -2,7 +2,7 @@
   "name": "Arctic Math Rescue",
   "short_name": "Arctic Rescue",
   "description": "An educational math game for children aged 6–11. Help Sausage the Seal rescue friends across the Arctic!",
-  "version": "2.0",
+  "version": "2.3",
   "start_url": "./",
   "display": "standalone",
   "orientation": "any",

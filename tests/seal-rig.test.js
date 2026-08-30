@@ -127,15 +127,16 @@ check("setSealArt: unknown version falls back to v1", run("sealArtVersion") === 
 
 // ── draw order ──────────────────────────────────────────────────────────────
 run(`setSealArt("v2")`);
-run(`state.equipped = {}`);
+run(`state.equipped = normalizeEquipped({})`);
 check("equippedOverlayParts: nothing equipped → no parts",
   json("equippedOverlayParts()").length === 0);
 
 // Equip the composite reward plus a pet and check both parts show up, sorted.
 const capeItem = shop.find(it => it.className === "guardiancape");
 const petItem  = shop.find(it => it.className === "pet");
-run(`state.equipped = { ${JSON.stringify(capeItem.type)}: ${JSON.stringify(capeItem.id)}, ` +
-    `${JSON.stringify(petItem.type)}: ${JSON.stringify(petItem.id)} }`);
+run(`state.equipped = normalizeEquipped({})`);
+run(`equipWithZoneCheck(shop.find(s => s.id === ${JSON.stringify(capeItem.id)}))`);
+run(`equipWithZoneCheck(shop.find(s => s.id === ${JSON.stringify(petItem.id)}))`);
 const drawn = json("equippedOverlayParts()");
 check("equipped: guardian cape contributes both of its parts",
   drawn.includes("costume-guardiancape") && drawn.includes("costume-guardiancrown"), drawn.join());
@@ -150,11 +151,89 @@ check("equipped: no duplicate parts", new Set(drawn).size === drawn.length, draw
 // ── zones still keep two hats off one head ──────────────────────────────────
 // Retargeting scales every head item onto the same small v2 skull, so an
 // overlap that merely looked crowded on v1 would be a solid blob on v2.
-const headItems = shop.filter(it => ITEM_ZONES[it.className] === "head");
+const EQUIP_ZONES = json("EQUIP_ZONES");
+const zonesOf = it => ITEM_ZONES[it.className] || [];
+const headItems = shop.filter(it => zonesOf(it).includes("head"));
 check("zones: more than one head item exists to collide", headItems.length > 1);
-run(`state.equipped = {}`);
+run(`state.equipped = normalizeEquipped({})`);
 headItems.forEach(it => run(`equipWithZoneCheck(shop.find(s => s.id === ${JSON.stringify(it.id)}))`));
 const worn = json("equippedOverlayParts()")
   .filter(s => OVERLAY_PARTS[s].anchor === "head" && OVERLAY_PARTS[s].z === 30);
 check("zones: equipping every head item in turn leaves exactly one hat on",
   worn.length === 1, worn.join());
+
+// ── P14: zones are the slots, so non-overlapping items stack ────────────────
+// The bug this replaced: Snow Goggles and the Star Scarf are both typed
+// "accessory", so wearing one took the other off even though they sit on
+// different parts of the seal.
+check("zones: every shop item declares at least one zone",
+  shop.every(it => zonesOf(it).length > 0),
+  shop.filter(it => !zonesOf(it).length).map(it => it.className).join());
+check("zones: every declared zone is a real slot",
+  shop.every(it => zonesOf(it).every(z => EQUIP_ZONES.includes(z))),
+  JSON.stringify(ITEM_ZONES));
+
+const byClass = cn => shop.find(it => it.className === cn);
+const stack = ["pirate", "goggles", "scarf", "superhero", "pet"].map(byClass);
+run(`state.equipped = normalizeEquipped({})`);
+stack.forEach(it => {
+  const bumped = json(`equipWithZoneCheck(shop.find(s => s.id === ${JSON.stringify(it.id)}))`);
+  check(`zones: ${it.className} goes on without bumping anything`,
+    bumped.length === 0, JSON.stringify(bumped));
+});
+stack.forEach(it =>
+  check(`zones: ${it.className} is still worn alongside the rest`,
+    run(`isEquipped(shop.find(s => s.id === ${JSON.stringify(it.id)}))`) === true));
+const stacked = json("equippedOverlayParts()");
+check("zones: five non-overlapping items draw five parts",
+  stacked.length === 5, stacked.join());
+
+// A real collision still swaps, and the caller is told what came off.
+const sunny = byClass("sunny");
+const bumpedByHat = json(`equipWithZoneCheck(shop.find(s => s.id === ${JSON.stringify(sunny.id)}))`);
+check("zones: a second hat reports the hat it replaced",
+  bumpedByHat.length === 1 && bumpedByHat[0].className === "pirate",
+  JSON.stringify(bumpedByHat));
+check("zones: the replaced hat is off", run(`isEquipped(shop.find(s => s.className === "pirate"))`) === false);
+check("zones: the scarf survived an unrelated swap",
+  run(`isEquipped(shop.find(s => s.className === "scarf"))`) === true);
+
+// A two-zone item must free BOTH of its zones when something bumps it.
+run(`state.equipped = normalizeEquipped({})`);
+run(`equipWithZoneCheck(shop.find(s => s.className === "guardiancape"))`);
+run(`equipWithZoneCheck(shop.find(s => s.className === "king"))`);
+check("zones: bumping the Guardian Cape's crown takes its cape off too",
+  json("equippedOverlayParts()").every(s => !s.startsWith("costume-guardian")),
+  json("equippedOverlayParts()").join());
+
+// unequipItem clears every zone the item holds.
+run(`state.equipped = normalizeEquipped({})`);
+run(`equipWithZoneCheck(shop.find(s => s.className === "guardiancape"))`);
+run(`unequipItem(shop.find(s => s.className === "guardiancape"))`);
+check("zones: unequipping a two-zone item leaves nothing behind",
+  json("equippedOverlayParts()").length === 0);
+
+// ── P14 migration: pre-zone saves keep their outfit ─────────────────────────
+const legacy = json(`normalizeEquipped({ costume: ${JSON.stringify(byClass("pirate").id)}, ` +
+  `accessory: ${JSON.stringify(byClass("scarf").id)}, pet: ${JSON.stringify(byClass("pet").id)} })`);
+check("migration: legacy costume lands on the head zone",
+  legacy.head === byClass("pirate").id, JSON.stringify(legacy));
+check("migration: legacy accessory lands on the neck zone",
+  legacy.neck === byClass("scarf").id, JSON.stringify(legacy));
+check("migration: legacy pet is kept", legacy.pet === byClass("pet").id, JSON.stringify(legacy));
+check("migration: untouched zones are null",
+  legacy.face === null && legacy.back === null, JSON.stringify(legacy));
+check("migration: no legacy keys survive",
+  JSON.stringify(Object.keys(legacy).sort()) === JSON.stringify(EQUIP_ZONES.slice().sort()),
+  Object.keys(legacy).join());
+
+const zoneShaped = json(`normalizeEquipped({ head: ${JSON.stringify(byClass("king").id)}, ` +
+  `face: ${JSON.stringify(byClass("goggles").id)} })`);
+check("migration: a zone-shaped save passes through unchanged",
+  zoneShaped.head === byClass("king").id && zoneShaped.face === byClass("goggles").id,
+  JSON.stringify(zoneShaped));
+
+check("migration: junk equipped data yields empty zones",
+  EQUIP_ZONES.every(z => json(`normalizeEquipped(null)`)[z] === null));
+check("migration: an id the shop no longer has is dropped",
+  json(`normalizeEquipped({ costume: 999 })`).head === null);

@@ -13,7 +13,7 @@ const PROFILE_EMOJIS  = ["🦭","🐧","🐻","🦊","🐳","🦁","🐼","🦋"
 // Shown in the About modal. MUST be kept in step with `versionName` in
 // android/app/build.gradle — it sat at 1.0.0 through five releases (QA M-05),
 // which made every user-reported "I'm on version X" untrustworthy.
-const GAME_VERSION = "2.0";
+const GAME_VERSION = "2.3";
 
 // ─── Learning Mode (lang = "learn") ─────────────────────────────────────────
 // Shows English + Russian translation below every string.
@@ -585,7 +585,7 @@ function migrateOldSave() {
     Object.keys(base.topics).forEach(t => merged.topics[t] = { ...base.topics[t], ...(oldState.topics||{})[t] });
     merged.streak   = { ...base.streak,   ...(oldState.streak   || {}) };
     merged.daily    = { ...base.daily,    ...(oldState.daily    || {}) };
-    merged.equipped = { ...base.equipped, ...(oldState.equipped || {}) };
+    merged.equipped = normalizeEquipped(oldState.equipped);
     merged.missions = { ...base.missions, ...(oldState.missions || {}) };
     if (!merged.dailySpecial) merged.dailySpecial = dailySpecialName();
     if (oldState.solved !== undefined && oldState.onboarded === undefined) merged.onboarded = true;
@@ -651,7 +651,7 @@ function loadProfileState(profile) {
   Object.keys(base.topics).forEach(t => merged.topics[t] = { ...base.topics[t], ...(raw.topics||{})[t] });
   merged.streak   = { ...base.streak,   ...(raw.streak   || {}) };
   merged.daily    = { ...base.daily,    ...(raw.daily    || {}) };
-  merged.equipped = { ...base.equipped, ...(raw.equipped || {}) };
+  merged.equipped = normalizeEquipped(raw.equipped);
   merged.missions = { ...base.missions, ...(raw.missions || {}) };
   if (!merged.dailySpecial) merged.dailySpecial = dailySpecialName();
   if ((raw.solved !== undefined) && (raw.onboarded === undefined)) merged.onboarded = true;
@@ -699,7 +699,7 @@ function defaultState() {
     solved:0, correct:0, wrong:0, timePlayed:0, startedAt:Date.now(),
     topics, buildings:[], animals:[], shop:[], achievements:[], decorations:[],
     muted:false, volume:1.0, streak:{ count:0, last:"", days:[], freezeTokens:1, longestStreak:0 }, daily:{ date:"", solved:0, claimed:false },
-    hintsUsed:0, perfectTrips:0, missions:{}, equipped:{ costume:null, accessory:null, pet:null },
+    hintsUsed:0, perfectTrips:0, missions:{}, equipped:{ head:null, face:null, neck:null, back:null, pet:null },
     miniGamesPlayed:0, rareTreasures:0, visitors:[], specialCosmetics:[],
     dialogueHistory:{}, dailySpecial:"", doubleRewardsUntil:0, mysteryVisits:0, animalFeeds:{},
     onboarded: false, tourDone: false, gameVersion: GAME_VERSION, guardianCrowned:false,
@@ -4032,9 +4032,14 @@ function makeProblem() {
   const wName   = t(`world${world.id}`) || world.name;
   currentProblem = generateProblem(topic);
   currentProblem.started = Date.now();
+  // P18: the eyebrow used to read "<island> - <mission>", and the strip
+  // immediately below it repeats "Mission N: <mission>". On a 360px phone
+  // that duplicate wrapped to a second line and cost a whole answer button
+  // of height, so the eyebrow now carries only what the strip does not: the
+  // island.
   $("topicLabel").innerHTML    = currentLang === "learn"
-    ? `${wName} - ${details.title}<span class="learn-ru">${topicLabelRu(topic)}</span>`
-    : `${wName} - ${details.title}`;
+    ? `${wName}<span class="learn-ru">${topicLabelRu(topic)}</span>`
+    : wName;
   $("missionTitle").textContent  = trip.daily ? t("dailyRescue") : `${t("missionOf")} ${trip.mission+1}: ${details.title}`;
   if (trip.mission === 4) {
     syncStormVisuals();
@@ -4993,39 +4998,85 @@ function overlayTransform(symbol) {
          `translate(${-from.x},${-from.y})`;
 }
 
-// P12: each costume/accessory occupies a region of the seal's body. Pirate,
-// Astronaut and King are all drawn on the head, same as the Sunny Hat
-// accessory — equipping both at once (e.g. Pirate Seal + Sunny Hat) draws
-// two hats on top of each other. Goggles (face) and Scarf (neck) sit in
-// different regions so they're free to combine with any costume. Tagging
-// the zone here means equipWithZoneCheck() automatically keeps this safe
-// as new costumes/accessories get added later — no per-pair listing needed.
+// P14: what the seal can wear at once.
+//
+// This used to be three type slots — costume / accessory / pet — one item
+// apiece, with a zone check on top that took off anything sharing a region of
+// the body. That made the common case wrong: Snow Goggles and the Star Scarf
+// touch completely different parts of the seal, yet each knocked the other
+// off simply because both are typed "accessory". Children read that as "I am
+// only allowed one thing".
+//
+// The slots are now the body zones the art actually covers, so anything that
+// does not physically overlap can be worn together — a hat, goggles, a scarf,
+// a cape and a pet all at the same time. Only real collisions are still
+// exclusive: two hats on one head, two things round the neck, two pets.
+//
+// An item lists every zone its art occupies. The Guardian Cape is a crown
+// plus a cape, so it takes `head` and `back`; the astronaut helmet wraps the
+// face as well as the skull, so goggles cannot go under it.
+const EQUIP_ZONES = ["head", "face", "neck", "back", "pet"];
+
 const ITEM_ZONES = {
-  pirate:"head", astronaut:"head", king:"head", superhero:"back",
-  sunny:"head",  scarf:"neck",     goggles:"face", pet:null, guardiancape:"head",
-  wizard:"head", bowtie:"neck",    owlpet:null
+  pirate: ["head"], astronaut: ["head", "face"], king: ["head"], wizard: ["head"],
+  sunny:  ["head"], guardiancape: ["head", "back"], superhero: ["back"],
+  scarf:  ["neck"], bowtie: ["neck"], goggles: ["face"],
+  pet:    ["pet"],  owlpet: ["pet"]
 };
 
-// Equip an item, auto-removing anything already worn in the same visual
-// zone so costumes/accessories never visually collide. Returns the item
-// that got bumped (or null), so callers can let the player know.
+function itemZones(item) {
+  return (item && ITEM_ZONES[item.className]) || [];
+}
+
+// Worn right now? A multi-zone item is checked with `some` so a half-cleared
+// save can still be taken off.
+function isEquipped(item) {
+  return itemZones(item).some(z => state.equipped[z] === item.id);
+}
+
+// Take an item off every zone it holds — not just the one being looked at, or
+// the Guardian Cape would leave its crown behind when its cape came off.
+function unequipItem(item) {
+  EQUIP_ZONES.forEach(z => { if (state.equipped[z] === item.id) state.equipped[z] = null; });
+}
+
+// Equip an item, removing only what shares a body zone with it. Returns the
+// items that had to come off (possibly none), so callers can say why.
 function equipWithZoneCheck(item) {
-  const zone = ITEM_ZONES[item.className];
-  let replaced = null;
-  if (zone) {
-    Object.keys(state.equipped).forEach(slot => {
-      if (slot === item.type) return;
-      const otherId = state.equipped[slot];
-      if (otherId === null || otherId === undefined) return;
-      const otherItem = shop.find(s => s.id === otherId);
-      if (otherItem && ITEM_ZONES[otherItem.className] === zone) {
-        state.equipped[slot] = null;
-        replaced = otherItem;
-      }
-    });
-  }
-  state.equipped[item.type] = item.id;
+  const zones = itemZones(item);
+  const replaced = [];
+  zones.forEach(zone => {
+    const otherId = state.equipped[zone];
+    if (otherId === null || otherId === undefined || otherId === item.id) return;
+    const otherItem = shop.find(s => s.id === otherId);
+    if (!otherItem) { state.equipped[zone] = null; return; }
+    if (!replaced.includes(otherItem)) replaced.push(otherItem);
+    unequipItem(otherItem);
+  });
+  zones.forEach(zone => { state.equipped[zone] = item.id; });
   return replaced;
+}
+
+// Saves written before P14 keyed `equipped` by item type — { costume,
+// accessory, pet } — so a returning player's outfit has to be rewritten onto
+// the zone slots. `pet` means the same thing in both shapes, and the new
+// shape passes through untouched. An id the shop no longer has, or one whose
+// zone is already taken, is dropped rather than left dangling.
+function normalizeEquipped(raw) {
+  const out = {};
+  EQUIP_ZONES.forEach(z => { out[z] = null; });
+  if (!raw || typeof raw !== "object") return out;
+  const place = id => {
+    if (id === null || id === undefined) return;
+    const item = shop.find(s => s.id === id);
+    const zones = itemZones(item);
+    if (!zones.length) return;
+    if (zones.some(z => out[z] !== null && out[z] !== item.id)) return;
+    zones.forEach(z => { out[z] = item.id; });
+  };
+  ["costume", "accessory"].forEach(k => place(raw[k]));
+  EQUIP_ZONES.forEach(k => place(raw[k]));
+  return out;
 }
 
 // Collect the overlay symbols the equipped items call for, in draw order.
@@ -5452,7 +5503,7 @@ function feedAnimal(id) {
 function renderShop() {
   $("shopGrid").innerHTML = shop.filter(s => !s.earnedOnly).map(s => {
     const owned    = state.shop.includes(s.id);
-    const equipped = state.equipped[s.type] === s.id;
+    const equipped = isEquipped(s);
     const statusText = owned ? (equipped ? t("equippedOnSausage") : t("ownedEquipInMySeal")) : t("visibleReward");
     return `<article class="item-card">${costumeSvg(s.id)}<h3>${shopName(s)}</h3>
       <p>${statusText}</p>
@@ -5486,38 +5537,43 @@ function buyItem(id) {
 }
 
 function renderCloset() {
-  // S6: Equipment overlay badges
-  const equippedItems = Object.entries(state.equipped).map(([slot,id]) => {
-    const item = shop.find(s => s.id===id);
-    return { slot, item };
+  // P14: one chip per body zone, not per item type — several zones can be
+  // filled at once. A two-zone item (the Guardian Cape) shows under both of
+  // the zones it takes up, which is the honest answer to "why can't I also
+  // wear a crown".
+  const equippedItems = EQUIP_ZONES.map(zone => {
+    const id = state.equipped[zone];
+    return { zone, item: (id === null || id === undefined) ? null : shop.find(s => s.id === id) };
   });
-  const overlayHtml = `<div class="equipment-overlay">${equippedItems.map(({slot,item}) =>
-    item ? `<div class="equip-badge"><span class="equip-slot">${slot}:</span>${shopName(item)}</div>` : ""
-  ).join("")}</div>`;
+  const zoneLabel = zone => t("zone_" + zone);
 
-  // S6: Summary chips row
-  const summaryHtml = `<div class="equipped-summary">${equippedItems.map(({slot,item}) =>
+  // P14: the badge column that used to hang beside the preview said exactly
+  // what the summary chips below say, and with five zones instead of three
+  // slots it turned into a wall of text over the seal. Chips only now.
+
+  // S6: Summary chips row — every zone, so an empty one reads as an invitation.
+  const summaryHtml = `<div class="equipped-summary">${equippedItems.map(({zone,item}) =>
     item
-      ? `<span class="equipped-summary-chip">${slot}: <b>${item.name}</b></span>`
-      : `<span class="equipped-summary-chip empty">${slot}: none</span>`
+      ? `<span class="equipped-summary-chip">${zoneLabel(zone)}: <b>${shopName(item)}</b></span>`
+      : `<span class="equipped-summary-chip empty">${zoneLabel(zone)}: ${t("zoneEmpty")}</span>`
   ).join("")}</div>`;
 
-  // Insert overlay into .seal-preview (needs position:relative via CSS)
+  // Clear the pre-P14 badge column if an older render left one behind.
   const previewEl = document.querySelector(".seal-preview");
   if (previewEl) {
     const existing = previewEl.querySelector(".equipment-overlay");
     if (existing) existing.remove();
-    previewEl.insertAdjacentHTML("beforeend", overlayHtml);
   }
 
   $("equippedList").innerHTML = summaryHtml;
   $("closetGrid").innerHTML   = shop.map(item => {
     const owned  = state.shop.includes(item.id);
-    const active = state.equipped[item.type] === item.id;
-    const lockedText = item.earnedOnly ? t("earnedOnlyLocked") : `Buy in Rewards for ${item.cost} coins.`;
-    return `<article class="item-card ${owned?"":"locked"}">${costumeSvg(item.id)}<h3>${item.name}</h3>
-      <p>${owned?`Slot: ${item.type}`:lockedText}</p>
-      <button class="equip-btn ${active?"active":""}" data-equip="${item.id}" ${owned?"":"disabled"} aria-label="${active?t("unequip"):"Equip "+item.name}">${active?t("unequip"):t("equip")}</button></article>`;
+    const active = isEquipped(item);
+    const lockedText = item.earnedOnly ? t("earnedOnlyLocked") : t("buyInRewards").replace("{cost}", item.cost);
+    const wornOn = itemZones(item).map(zoneLabel).join(" + ");
+    return `<article class="item-card ${owned?"":"locked"}">${costumeSvg(item.id)}<h3>${shopName(item)}</h3>
+      <p>${owned?`${t("wornOn")}: ${wornOn}`:lockedText}</p>
+      <button class="equip-btn ${active?"active":""}" data-equip="${item.id}" ${owned?"":"disabled"} aria-label="${active?t("unequip"):t("equip")+" "+shopName(item)}">${active?t("unequip"):t("equip")}</button></article>`;
   }).join("");
   const closetGrid = $("closetGrid");
   if (closetGrid && !closetGrid.dataset.bound) {
@@ -5528,16 +5584,18 @@ function renderCloset() {
       const item = shop[Number(btn.dataset.equip)];
       if (!item) return;
       // S9: clicking an already-equipped item now unequips it (back to bare
-      // Sausage for that slot) instead of being a one-way-only action.
-      const isActive = state.equipped[item.type] === item.id;
-      if (isActive) {
-        state.equipped[item.type] = null;
+      // Sausage for that zone) instead of being a one-way-only action.
+      if (isEquipped(item)) {
+        unequipItem(item);
       } else {
+        // P14: only the items sharing a zone come off, and the toast names
+        // them — silently losing a hat you liked is what made this confusing.
         const replaced = equipWithZoneCheck(item);
-        if (replaced) {
+        if (replaced.length) {
+          const names = replaced.map(shopName).join(", ");
           toast(currentLang === "ru"
-            ? `${item.name} и ${replaced.name} занимают одно место — сейчас надет ${item.name}.`
-            : `${item.name} and ${replaced.name} share the same spot — wearing ${item.name} now.`);
+            ? `«${shopName(item)}» и «${names}» занимают одно место — теперь на Тюлене «${shopName(item)}».`
+            : `${shopName(item)} and ${names} share the same spot — wearing ${shopName(item)} now.`);
         }
       }
       react("excited");
@@ -8511,6 +8569,9 @@ const STRINGS = {
     ownedTapToEquip:"Owned. Tap to equip.",
     visibleReward:"A visible reward for Sausage.", unlockedAndEquipped:"unlocked and equipped!",
     earnedOnlyLocked:"🏆 Defeat the Arctic Storm on Arctic Champion to unlock.",
+    // P14: body zones — the closet's slots are now parts of the seal.
+    zone_head:"Head", zone_face:"Face", zone_neck:"Neck", zone_back:"Back", zone_pet:"Pet",
+    zoneEmpty:"free", wornOn:"Worn on", buyInRewards:"Buy in Rewards for {cost} coins.",
     guardianTitle:"🏆 Guardian of the Arctic!",
     guardianBody:"You braved every island and calmed the Great Arctic Storm. Sausage is now the Guardian of the Arctic — and earned an exclusive Guardian Cape, found only here. Go equip it in My Seal!",
     // Town
@@ -8582,7 +8643,7 @@ const STRINGS = {
     achievementToast:"Achievement",
     correctLabel:"Correct", wrongLabel:"Wrong", minutesShort:"min",
     topicPerformance:"Topic Performance", islandProgressTitle:"Island Progress", overview:"Overview",
-    mySealPanel:"My Seal", mySealPanelDesc:"Choose Sausage's costume, accessory, and pet. Equipped rewards appear in missions and town.",
+    mySealPanel:"My Seal", mySealPanelDesc:"Dress Sausage up — a hat, goggles, a scarf, a cape and a pet can all be worn at once. Only things that share a spot swap out. Equipped rewards appear in missions and town.",
     costumesPanel:"Costumes and Pets", achievementsPanel:"Achievements",
     dailyChallengePanel:"Daily Challenge", parentDashboardPanel:"Parent Dashboard",
     parentSavedNote:"Progress is saved on this device only.",
@@ -8685,6 +8746,8 @@ const STRINGS = {
     ownedTapToEquip:"Куплено. Нажми, чтобы надеть.",
     visibleReward:"Заметная награда для Тюленя.", unlockedAndEquipped:"открыт и надет!",
     earnedOnlyLocked:"🏆 Открывается за победу над Великой Арктической Бурей на острове Arctic Champion.",
+    zone_head:"Голова", zone_face:"Лицо", zone_neck:"Шея", zone_back:"Спина", zone_pet:"Питомец",
+    zoneEmpty:"свободно", wornOn:"Надевается на", buyInRewards:"Купить в «Наградах» за {cost} монет.",
     guardianTitle:"🏆 Хранитель Арктики!",
     guardianBody:"Ты прошёл все острова и успокоил Великую Арктическую Бурю. Колбаска теперь Хранитель Арктики — и получил эксклюзивный Плащ Хранителя, который больше нигде не получить. Надень его в разделе «Мой Тюлень»!",
     // Town
@@ -8756,7 +8819,7 @@ const STRINGS = {
     achievementToast:"Достижение",
     correctLabel:"Верно", wrongLabel:"Ошибки", minutesShort:"мин",
     topicPerformance:"Успехи по темам", islandProgressTitle:"Прогресс по островам", overview:"Обзор",
-    mySealPanel:"Мой Тюлень", mySealPanelDesc:"Выбери Тюленю костюм, аксессуар и питомца. Надетые награды появляются в миссиях и городе.",
+    mySealPanel:"Мой Тюлень", mySealPanelDesc:"Наряжай Тюленя — шляпу, очки, шарф, плащ и питомца можно надеть все сразу. Меняются только вещи, которые занимают одно место. Надетые награды появляются в миссиях и городе.",
     costumesPanel:"Костюмы и питомцы", achievementsPanel:"Достижения",
     dailyChallengePanel:"Ежедневное задание", parentDashboardPanel:"Родителям",
     parentSavedNote:"Прогресс сохраняется только на этом устройстве.",
