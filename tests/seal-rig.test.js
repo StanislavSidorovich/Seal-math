@@ -98,8 +98,11 @@ Object.keys(OVERLAY_PARTS).forEach(sym => {
   check(`v2: ${sym} transform has no NaN`, !/NaN|undefined/.test(String(t)), String(t));
 });
 
-// The transform must actually move each anchor's centre onto the v2 landmark:
-// translate(to) scale(k) translate(-from) applied to `from` yields `to`.
+// The transform must actually seat each part on the v2 landmark. A part with
+// no optical correction is a plain fit, so its anchor CENTRE lands on v2's
+// centre. A part with `k` is scaled about the top of the anchor circle instead
+// — a hat grows without floating off the skull — so the invariant that has to
+// hold for every part, corrected or not, is CROWN onto crown.
 function applyTransform(t, x, y) {
   const nums = s => s.match(/-?[\d.]+/g).map(Number);
   const m = t.match(/translate\(([^)]*)\)\s*scale\(([^)]*)\)\s*translate\(([^)]*)\)/);
@@ -111,11 +114,54 @@ function applyTransform(t, x, y) {
 Object.entries(OVERLAY_PARTS).forEach(([sym, part]) => {
   const t = run(`overlayTransform(${JSON.stringify(sym)})`);
   const from = RIG.v1[part.anchor], to = RIG.v2[part.anchor];
-  const [gx, gy] = applyTransform(t, from.x, from.y);
-  check(`v2: ${sym} maps the ${part.anchor} anchor onto v2's`,
-    Math.abs(gx - to.x) < 0.05 && Math.abs(gy - to.y) < 0.05,
-    `got (${gx.toFixed(2)}, ${gy.toFixed(2)}) want (${to.x}, ${to.y})`);
+
+  const [cx, cy] = applyTransform(t, from.x, from.y - from.r);
+  check(`v2: ${sym} seats the ${part.anchor} crown on v2's`,
+    Math.abs(cx - to.x) < 0.05 && Math.abs(cy - (to.y - to.r)) < 0.05,
+    `got (${cx.toFixed(2)}, ${cy.toFixed(2)}) want (${to.x}, ${to.y - to.r})`);
+
+  if (!part.k) {
+    const [gx, gy] = applyTransform(t, from.x, from.y);
+    check(`v2: ${sym} maps the ${part.anchor} anchor onto v2's`,
+      Math.abs(gx - to.x) < 0.05 && Math.abs(gy - to.y) < 0.05,
+      `got (${gx.toFixed(2)}, ${gy.toFixed(2)}) want (${to.x}, ${to.y})`);
+  }
 });
+
+// ── the optical correction ──────────────────────────────────────────────────
+// `k` exists to stop v2's much smaller head from shrinking hats out of
+// legibility. Anywhere else it is a bug: the other anchors barely changed, so
+// a correction there would just push art off the body.
+Object.entries(OVERLAY_PARTS).forEach(([sym, part]) => {
+  if (!("k" in part)) return;
+  check(`${sym}: k only on head-anchored art`, part.anchor === "head", part.anchor);
+  check(`${sym}: k is a plausible enlargement`,
+    typeof part.k === "number" && part.k > 1 && part.k <= 1.5, String(part.k));
+});
+check("at least one part carries an optical correction",
+  Object.values(OVERLAY_PARTS).some(p => "k" in p));
+
+// A corrected part must come out bigger than the honest fit would give, and
+// the honest fit itself must be the v1->v2 head ratio.
+(() => {
+  const hat = "costume-king";
+  const t = run(`overlayTransform(${JSON.stringify(hat)})`);
+  const scale = Number(t.match(/scale\(([^)]*)\)/)[1]);
+  const fit = RIG.v2.head.r / RIG.v1.head.r;
+  check("king: corrected scale is k times the honest fit",
+    Math.abs(scale - fit * OVERLAY_PARTS[hat].k) < 0.001,
+    `${scale} vs ${fit * OVERLAY_PARTS[hat].k}`);
+  check("king: correction makes the hat bigger, not smaller", scale > fit);
+})();
+
+// v1 is the pose the art was drawn for, so the correction must stay off there
+// even though the same parts carry a k.
+run(`setSealArt("v1")`);
+Object.keys(OVERLAY_PARTS).forEach(sym => {
+  check(`v1: ${sym} still needs no transform despite k`,
+    run(`overlayTransform(${JSON.stringify(sym)})`) === null);
+});
+run(`setSealArt("v2")`);
 
 // An unknown symbol must not produce a bogus transform.
 check("overlayTransform: unknown symbol yields null",

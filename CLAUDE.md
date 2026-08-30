@@ -136,15 +136,25 @@ Set-ExecutionPolicy -Scope CurrentUser -ExecutionPolicy RemoteSigned
   `isEquipped()` / `equipWithZoneCheck()` / `unequipItem()`, never by poking
   `state.equipped[item.type]` — that shape is gone, and `normalizeEquipped()`
   is what rewrites pre-v2.1 saves onto the zones.
+- **A retargeted hat is scaled about the crown of the skull, not its centre.**
+  v2 shrank the head far harder than the body (`head` r 72 -> 33.6, x0.47,
+  against `neck` x0.81 and `pet` x0.98), so an honest rescale leaves every hat
+  under half the size it was drawn at and unreadable at the 92px the seal is
+  shown at in the topbar. `OVERLAY_PARTS[sym].k` scales it back up — but about
+  the top of the anchor circle, because scaling about the centre visibly lifts
+  a hat off the head by k 1.2. `k` is head-only and applies only when a
+  retarget is actually happening, so v1 (the pose the art was drawn for) is
+  untouched. It is a stopgap for art drawn against the old proportions; new art
+  should be drawn for v2 directly and carry no `k` at all.
 
 ## Current state
 
-**v2.3** (`versionCode 16`, `CACHE_VERSION v13`, `manifest.json` 2.3). In
+**v2.4** (`versionCode 17`, `CACHE_VERSION v14`, `manifest.json` 2.4). In
 **open testing** on Google Play, latest uploaded release 2.0 (13). The web
 build on GitHub Pages is updated by pushing to `main`; testers only see a
 change once a new AAB is uploaded.
 
-Three owner-reported fixes are stacked in this branch, none released yet:
+Four fixes are stacked since 2.0, none released yet:
 
 - **v2.1 — multi-clothing.** The owner's daughter asked why the seal could
   only wear one thing. It could in fact wear three (one per type slot), but
@@ -158,6 +168,8 @@ Three owner-reported fixes are stacked in this branch, none released yet:
 - **v2.3 — Start Mission above the fold.** Same class of bug on the adventure
   screen: the quest panel ran ~740px, so the button landed at the fold and
   the bonus-game button below it. Both are a fixed bottom bar on phones now.
+- **v2.4 — hats read again on the v2 seal.** No new art: an optical `k` on the
+  head-anchored overlays, described with the equipment convention below.
 
 Store artwork is ready and committed: the launcher icon is the game's own
 seal on a night-aurora backdrop (all `mipmap-*` densities), and

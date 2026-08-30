@@ -11,7 +11,7 @@
 // (e.g. a new icon or CSS file is added) — the activate handler below
 // deletes any cache that doesn't match the current version, so a bumped
 // version is what actually clears out old cached files.
-const CACHE_VERSION = "v13";
+const CACHE_VERSION = "v14";
 const CACHE_NAME = `sausage-seal-${CACHE_VERSION}`;
 
 // NOTE: cache.addAll() below is all-or-nothing — ONE missing file rejects the

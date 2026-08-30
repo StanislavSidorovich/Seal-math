@@ -13,7 +13,7 @@ const PROFILE_EMOJIS  = ["🦭","🐧","🐻","🦊","🐳","🦁","🐼","🦋"
 // Shown in the About modal. MUST be kept in step with `versionName` in
 // android/app/build.gradle — it sat at 1.0.0 through five releases (QA M-05),
 // which made every user-reported "I'm on version X" untrustworthy.
-const GAME_VERSION = "2.3";
+const GAME_VERSION = "2.4";
 
 // ─── Learning Mode (lang = "learn") ─────────────────────────────────────────
 // Shows English + Russian translation below every string.
@@ -4956,17 +4956,38 @@ const SEAL_RIG = {
 // Body landmark each overlay symbol hangs off, plus its stacking order within
 // the overlay group (low draws first). Capes go under their badge and crown;
 // pets sit on top of everything since they're beside the seal, not on it.
+//
+// `k` is an optical correction on the retarget, and it only exists because v2
+// shrank the head far more than the rest of the seal: the `head` anchor went
+// from r 72 to r 33.6 (x0.47) while `neck` went 40 -> 32.5 (x0.81) and `pet`
+// barely moved. A geometrically honest rescale therefore drops every hat to
+// under half the size it was drawn at, and at the 92px the seal is shown at in
+// the topbar a crown stops reading as a crown.
+//
+// The part is scaled about the **top of its anchor circle**, not the centre.
+// That distinction is the whole trick: scaling a hat about the centre of the
+// skull pushes it up and away, and at k 1.2 it visibly floats off the head.
+// Seating it at the crown of the skull instead grows it outward and sideways
+// while its brim stays put, which is how a bigger hat actually sits.
+//
+// Left off, `k` means 1 — an honest rescale — which is what everything at
+// neck/eyes/pet scale wants. Only head-anchored art carries a correction, and
+// the astronaut's is smaller than the hats' because its ring wraps the face
+// rather than sitting on the skull, so it has less room to grow upward.
+//
+// The correction belongs to the retarget, not to the art, so it is NOT applied
+// when the active seal is the one the part was drawn for. See overlayTransform.
 const OVERLAY_PARTS = {
   "costume-superhero":     { anchor:"neck", z: 10 },
   "costume-guardiancape":  { anchor:"neck", z: 10 },
   "accessory-scarf":       { anchor:"neck", z: 20 },
   "accessory-bowtie":      { anchor:"neck", z: 20 },
-  "costume-pirate":        { anchor:"head", z: 30 },
-  "costume-king":          { anchor:"head", z: 30 },
-  "costume-wizard":        { anchor:"head", z: 30 },
-  "accessory-sunny":       { anchor:"head", z: 30 },
-  "costume-guardiancrown": { anchor:"head", z: 30 },
-  "costume-astronaut":     { anchor:"head", z: 40 },
+  "costume-pirate":        { anchor:"head", z: 30, k: 1.3 },
+  "costume-king":          { anchor:"head", z: 30, k: 1.3 },
+  "costume-wizard":        { anchor:"head", z: 30, k: 1.3 },
+  "accessory-sunny":       { anchor:"head", z: 30, k: 1.3 },
+  "costume-guardiancrown": { anchor:"head", z: 30, k: 1.3 },
+  "costume-astronaut":     { anchor:"head", z: 40, k: 1.2 },
   "accessory-goggles":     { anchor:"eyes", z: 40 },
   "pet-fish":              { anchor:"pet",  z: 50 },
   "pet-owl":               { anchor:"pet",  z: 50 }
@@ -4986,15 +5007,27 @@ function setSealArt(version) {
 
 // Similarity transform taking a part from the pose it was drawn for (v1) to
 // where it belongs on the active seal. Identity when v1 is active.
+//
+// Composing the honest fit with an optical scale about the crown of the anchor
+// circle collapses back into one translate/scale/translate, because both are
+// similarities: the total scale is fit*k, and the only thing k changes in the
+// translation is a downward nudge of (k-1)*to.r that keeps the crown fixed.
+// So the top of the v1 anchor circle always lands on the top of the target's —
+// that is the invariant the rig test checks, and it holds for every k.
 function overlayTransform(symbol) {
   const part = OVERLAY_PARTS[symbol];
   if (!part) return null;
   const from = SEAL_RIG.v1[part.anchor];
   const to   = (SEAL_RIG[sealArtVersion] || SEAL_RIG.v1)[part.anchor];
   if (!from || !to) return null;
-  const k = to.r / from.r;
-  if (k === 1 && to.x === from.x && to.y === from.y) return null;
-  return `translate(${+to.x.toFixed(2)},${+to.y.toFixed(2)}) scale(${+k.toFixed(4)}) ` +
+  const fit = to.r / from.r;
+  // No retarget happening: the art is already in the right pose, and the
+  // optical correction has nothing to correct.
+  if (fit === 1 && to.x === from.x && to.y === from.y) return null;
+  const k = part.k || 1;
+  const scale = fit * k;
+  const y = to.y + (k - 1) * to.r;
+  return `translate(${+to.x.toFixed(2)},${+y.toFixed(2)}) scale(${+scale.toFixed(4)}) ` +
          `translate(${-from.x},${-from.y})`;
 }
 
