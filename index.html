@@ -823,6 +823,36 @@
     </symbol>
 
     <!-- Star scarf -->
+    <!-- TELNYASHKA — the first body-anchored garment, and the first overlay
+         drawn against the v2 seal rather than retargeted from v1. It sits on
+         the `body` anchor (109.5, 130.8) r 51.4, which only v2 has: the old
+         seal is a sausage with no torso to dress. Stripes are clipped to the
+         vest outline so the shape stays readable at the 92px the seal is drawn
+         at in the topbar. -->
+    <symbol id="costume-telnyashka" viewBox="0 0 260 220">
+      <defs>
+        <clipPath id="telnyashkaClip">
+          <path d="M72 100 Q116 90 157 111 Q172 142 159 172 Q116 189 84 171 Q63 137 72 100Z"/>
+        </clipPath>
+      </defs>
+      <!-- off-white base: a true white vest would vanish into a white seal -->
+      <path d="M72 100 Q116 90 157 111 Q172 142 159 172 Q116 189 84 171 Q63 137 72 100Z"
+            fill="#eef4fa"/>
+      <g clip-path="url(#telnyashkaClip)">
+        <path d="M55 110 Q116 100 185 119 L185 128 Q116 108 55 119Z" fill="#2b4a7a"/>
+        <path d="M55 130 Q116 121 185 138 L185 147 Q116 129 55 139Z" fill="#2b4a7a"/>
+        <path d="M55 150 Q116 142 185 157 L185 166 Q116 150 55 159Z" fill="#2b4a7a"/>
+        <path d="M55 170 Q116 163 185 176 L185 185 Q116 171 55 179Z" fill="#2b4a7a"/>
+      </g>
+      <!-- outline last, over the stripes, so the garment reads as one object -->
+      <path d="M72 100 Q116 90 157 111 Q172 142 159 172 Q116 189 84 171 Q63 137 72 100Z"
+            fill="none" stroke="#1d3557" stroke-width="2.4" stroke-linejoin="round"/>
+      <!-- collar notch at the throat, and a soft shadow under the chest -->
+      <path d="M72 100 Q92 114 112 105" fill="none" stroke="#1d3557" stroke-width="2.2"
+            stroke-linecap="round"/>
+      <path d="M90 172 Q122 185 153 173 Q124 191 90 180Z" fill="rgba(0,0,0,.10)"/>
+    </symbol>
+
     <symbol id="accessory-scarf" viewBox="0 0 260 220">
       <path d="M50 140 Q90 132 130 140 Q132 152 130 156 Q90 148 50 156 Q48 152 50 140Z" fill="#7858d8"/>
       <path d="M50 140 Q52 148 50 156" fill="#5840b0"/>

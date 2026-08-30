@@ -32,12 +32,19 @@ const versions = Object.keys(RIG);
 check("rig: v1 is present", versions.includes("v1"));
 check("rig: v2 is present", versions.includes("v2"));
 
+// Anchors are per-version on purpose. Every seal must carry the landmarks that
+// v1-authored art hangs off, or the whole shop would go missing — but a seal
+// may add one the other has not got. v2 has `body`; v1 does not, because a
+// sausage with no torso has nowhere to put a vest.
 const anchorNames = Object.keys(RIG.v1);
+const CORE_ANCHORS = ["head", "eyes", "neck", "pet"];
+check("v1 has no torso to dress", !RIG.v1.body);
+check("v2 has a torso to dress", !!RIG.v2.body);
 versions.forEach(v => {
-  check(`rig[${v}]: same anchors as v1`,
-    JSON.stringify(Object.keys(RIG[v]).sort()) === JSON.stringify(anchorNames.slice().sort()),
-    `got ${Object.keys(RIG[v]).join()}`);
-  anchorNames.forEach(a => {
+  check(`rig[${v}]: carries every core anchor`,
+    CORE_ANCHORS.every(a => RIG[v][a]),
+    `missing ${CORE_ANCHORS.filter(a => !RIG[v][a]).join()}`);
+  Object.keys(RIG[v]).forEach(a => {
     const p = RIG[v][a] || {};
     check(`rig[${v}].${a}: finite x/y/r`,
       [p.x, p.y, p.r].every(n => typeof n === "number" && Number.isFinite(n)),
@@ -66,8 +73,10 @@ Object.entries(COSTUME_SYMS).forEach(([cn, mapping]) => {
     check(`${cn}: part ${sym} is in OVERLAY_PARTS`,
       Object.prototype.hasOwnProperty.call(OVERLAY_PARTS, sym));
     const part = OVERLAY_PARTS[sym] || {};
+    // The landmark has to exist on the seal the art was actually drawn for.
     check(`${cn}: part ${sym} anchors to a real landmark`,
-      anchorNames.includes(part.anchor), String(part.anchor));
+      Object.keys(RIG[part.authored || "v1"] || {}).includes(part.anchor),
+      `${part.anchor} on ${part.authored || "v1"}`);
     check(`${cn}: part ${sym} has a numeric z`, typeof part.z === "number");
   });
 });
@@ -92,11 +101,30 @@ Object.keys(OVERLAY_PARTS).forEach(sym => {
 });
 
 run(`setSealArt("v2")`);
-Object.keys(OVERLAY_PARTS).forEach(sym => {
+Object.entries(OVERLAY_PARTS).forEach(([sym, part]) => {
   const t = run(`overlayTransform(${JSON.stringify(sym)})`);
+  if ((part.authored || "v1") === "v2") {
+    // Drawn for the seal that ships: nothing to retarget, and asking for a
+    // transform anyway would mean the art is in the wrong coordinates.
+    check(`v2: ${sym} is authored for v2 and needs no transform`, t === null, String(t));
+    return;
+  }
   check(`v2: ${sym} gets a transform`, typeof t === "string" && t.length > 0, String(t));
   check(`v2: ${sym} transform has no NaN`, !/NaN|undefined/.test(String(t)), String(t));
 });
+
+// A part whose anchor the live seal hasn't got must be dropped, not drawn in
+// the wrong place. Only v2 has a torso, so the vest is invisible on v1.
+run(`setSealArt("v1")`);
+check("v1: a body-anchored part does not fit the seal",
+  run(`overlayFitsSeal("costume-telnyashka")`) === false);
+check("v1: head-anchored parts still fit",
+  run(`overlayFitsSeal("costume-king")`) === true);
+run(`setSealArt("v2")`);
+check("v2: a body-anchored part fits the seal",
+  run(`overlayFitsSeal("costume-telnyashka")`) === true);
+check("overlayFitsSeal: unknown symbol does not fit",
+  run(`overlayFitsSeal("costume-nope")`) === false);
 
 // The transform must actually seat each part on the v2 landmark. A part with
 // no optical correction is a plain fit, so its anchor CENTRE lands on v2's
@@ -112,6 +140,7 @@ function applyTransform(t, x, y) {
   return [tx + (x + px) * k, ty + (y + py) * k];
 }
 Object.entries(OVERLAY_PARTS).forEach(([sym, part]) => {
+  if ((part.authored || "v1") !== "v1") return;   // nothing was retargeted
   const t = run(`overlayTransform(${JSON.stringify(sym)})`);
   const from = RIG.v1[part.anchor], to = RIG.v2[part.anchor];
 

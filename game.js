@@ -256,11 +256,15 @@ const shop = [
   // thing to save for even after owning everything above.
   ["Wizard Seal",   55,"costume","wizard"],
   ["Bow Tie",       14,"accessory","bowtie"],
-  ["Snow Owl Pet",  32,"pet","owlpet"]
+  ["Snow Owl Pet",  32,"pet","owlpet"],
+  // P15: the first body-anchored garment. Costume pieces are sold separately
+  // rather than bundled into a set, so a pirate shirt can be worn under a
+  // crown — the whole point of the v2.1 zones.
+  ["Striped Shirt", 22,"costume","telnyashka"]
 ].map((s,i) => ({ id:i, name:s[0], cost:s[1], type:s[2], className:s[3], earnedOnly:!!s[4] }));
 // RU shop names, same order/index as `shop`. Used everywhere a costume/pet
 // name is shown (shop grid, My Seal closet badges, buy toast).
-const shopNamesRu = ["Тюлень-пират","Тюлень-космонавт","Тюлень-король","Тюлень-супергерой","Летняя шляпа","Звёздный шарф","Снежные очки","Рыбка-питомец","Плащ Хранителя","Тюлень-волшебник","Галстук-бабочка","Полярная сова"];
+const shopNamesRu = ["Тюлень-пират","Тюлень-космонавт","Тюлень-король","Тюлень-супергерой","Летняя шляпа","Звёздный шарф","Снежные очки","Рыбка-питомец","Плащ Хранителя","Тюлень-волшебник","Галстук-бабочка","Полярная сова","Тельняшка"];
 function shopName(item) { return currentLang === "ru" ? (shopNamesRu[item.id] || item.name) : item.name; }
 
 // P9: economy expansion — Town Decorations, a second coin sink alongside
@@ -4904,6 +4908,7 @@ const COSTUME_SYMBOLS = {
   astronaut:    { parts:["costume-astronaut"] },
   king:         { parts:["costume-king"] },
   superhero:    { parts:["costume-superhero"] },
+  telnyashka:   { parts:["costume-telnyashka"] },
   guardiancape: { parts:["costume-guardiancape","costume-guardiancrown"] },
   wizard:       { parts:["costume-wizard"] },
   sunny:        { parts:["accessory-sunny"] },
@@ -4938,6 +4943,16 @@ const COSTUME_SYMBOLS = {
 // eye-to-eye span, measured the same way on both seals so the ratio is a true
 // scale. v2's eye centres come from rasterising #sausage-body-v2 and clustering
 // the dark pixels: (52.1, 48.9) and (94.5, 53.8).
+//
+// `body` exists on v2 ONLY, and that is a fact about the art, not an omission.
+// Measured as the largest circle that fits inside the silhouette (rasterised at
+// 4x, distance transform, pick the maximum) — the same rule on both seals. On
+// v2 it lands on the chest and flank, exactly where a vest goes. On v1 the same
+// rule returns a circle sitting almost entirely on the FACE, because v1 is a
+// sausage: its head and its body are one circle and it has no torso to dress.
+// So a body-anchored garment cannot be retargeted between the seals — there is
+// nowhere on v1 to put it. Parts anchored here are skipped when a seal without
+// the anchor is active; see overlayFitsSeal.
 const SEAL_RIG = {
   v1: {
     head: { x:  90, y:  90, r: 72 },
@@ -4946,9 +4961,10 @@ const SEAL_RIG = {
     pet:  { x: 210, y: 165, r: 20 }
   },
   v2: {
-    head: { x: 77.9, y:  49.7, r: 33.6 },
-    eyes: { x: 73.3, y:  51.3, r: 21.2 },
-    neck: { x: 79.4, y:  91.9, r: 32.5 },
+    head: { x: 77.9,  y:  49.7, r: 33.6 },
+    eyes: { x: 73.3,  y:  51.3, r: 21.2 },
+    neck: { x: 79.4,  y:  91.9, r: 32.5 },
+    body: { x: 109.5, y: 130.8, r: 51.4 },
     pet:  { x: 215.9, y: 180.7, r: 19.5 }
   }
 };
@@ -4977,7 +4993,12 @@ const SEAL_RIG = {
 //
 // The correction belongs to the retarget, not to the art, so it is NOT applied
 // when the active seal is the one the part was drawn for. See overlayTransform.
+//
+// `authored` names the seal the art was drawn against, and defaults to "v1"
+// because everything from the original shop was. New art is drawn for the seal
+// that actually ships, so it says "v2" and needs neither a retarget nor a `k`.
 const OVERLAY_PARTS = {
+  "costume-telnyashka":    { anchor:"body", z:  5, authored:"v2" },
   "costume-superhero":     { anchor:"neck", z: 10 },
   "costume-guardiancape":  { anchor:"neck", z: 10 },
   "accessory-scarf":       { anchor:"neck", z: 20 },
@@ -5017,7 +5038,7 @@ function setSealArt(version) {
 function overlayTransform(symbol) {
   const part = OVERLAY_PARTS[symbol];
   if (!part) return null;
-  const from = SEAL_RIG.v1[part.anchor];
+  const from = (SEAL_RIG[part.authored || "v1"] || SEAL_RIG.v1)[part.anchor];
   const to   = (SEAL_RIG[sealArtVersion] || SEAL_RIG.v1)[part.anchor];
   if (!from || !to) return null;
   const fit = to.r / from.r;
@@ -5048,12 +5069,13 @@ function overlayTransform(symbol) {
 // An item lists every zone its art occupies. The Guardian Cape is a crown
 // plus a cape, so it takes `head` and `back`; the astronaut helmet wraps the
 // face as well as the skull, so goggles cannot go under it.
-const EQUIP_ZONES = ["head", "face", "neck", "back", "pet"];
+const EQUIP_ZONES = ["head", "face", "neck", "back", "body", "pet"];
 
 const ITEM_ZONES = {
   pirate: ["head"], astronaut: ["head", "face"], king: ["head"], wizard: ["head"],
   sunny:  ["head"], guardiancape: ["head", "back"], superhero: ["back"],
   scarf:  ["neck"], bowtie: ["neck"], goggles: ["face"],
+  telnyashka: ["body"],
   pet:    ["pet"],  owlpet: ["pet"]
 };
 
@@ -5127,7 +5149,20 @@ function equippedOverlayParts() {
       if (OVERLAY_PARTS[sym] && !parts.includes(sym)) parts.push(sym);
     });
   });
-  return parts.sort((a, b) => OVERLAY_PARTS[a].z - OVERLAY_PARTS[b].z);
+  return parts.filter(overlayFitsSeal)
+              .sort((a, b) => OVERLAY_PARTS[a].z - OVERLAY_PARTS[b].z);
+}
+
+// Can this part be placed on the seal that is live? Not every landmark exists
+// on every seal — v1 has no torso — and a part whose anchor is missing has
+// nowhere to go. Dropping it is the honest answer: drawing it untransformed
+// would land a vest on a face. The item stays owned and equipped, it simply
+// isn't visible on a seal that cannot wear it.
+function overlayFitsSeal(symbol) {
+  const part = OVERLAY_PARTS[symbol];
+  if (!part) return false;
+  const rig = SEAL_RIG[sealArtVersion] || SEAL_RIG.v1;
+  return !!rig[part.anchor] && !!(SEAL_RIG[part.authored || "v1"] || {})[part.anchor];
 }
 
 function applySealLook() {

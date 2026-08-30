@@ -146,6 +146,20 @@ Set-ExecutionPolicy -Scope CurrentUser -ExecutionPolicy RemoteSigned
   retarget is actually happening, so v1 (the pose the art was drawn for) is
   untouched. It is a stopgap for art drawn against the old proportions; new art
   should be drawn for v2 directly and carry no `k` at all.
+- **Anchors are per-version, and art declares which seal it was drawn for.**
+  `OVERLAY_PARTS[sym].authored` defaults to `"v1"` because the original shop
+  was drawn there; new art says `"v2"`, gets no retarget and no `k`.
+  `SEAL_RIG.v2.body` (109.5, 130.8) r 51.4 is the chest/flank, measured as the
+  largest circle fitting inside the silhouette — rasterise the seal at 4x, run
+  a distance transform, take the maximum. **v1 has no `body` on purpose**: the
+  same measurement on v1 returns a circle sitting on its face, because a
+  sausage has no torso. A part whose anchor the live seal lacks is dropped by
+  `overlayFitsSeal` rather than drawn in the wrong place — the item stays owned
+  and equipped, it just isn't visible on a seal that cannot wear it.
+- **Costume pieces are sold separately, not bundled into sets.** A pirate shirt
+  under a crown is the whole point of the v2.1 zones, and a set claiming
+  head+face+body would take that back. The cost is a longer shop grid; group it
+  only if the real grid on a phone actually breaks, not before.
 
 ## Current state
 
